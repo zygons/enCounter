@@ -1,0 +1,41 @@
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+.venv/
+venv/
+
+# PyInstaller / generated releases
+build/
+dist/
+release/
+*.spec.bak
+
+# Runtime / user data
+data/backups/*
+data/exports/*
+data/imports/*
+!data/backups/.gitkeep
+!data/exports/.gitkeep
+!data/imports/.gitkeep
+*.log
+.last-hourly
+
+# User/campaign assets - keep folder structure, not personal content
+assets/backgrounds/**/*
+assets/portraits/**/*
+assets/icons/**/*
+assets/tokens/*
+assets/sounds/*
+!assets/**/.gitkeep
+
+# Keep application branding
+!assets/branding/
+!assets/branding/*
+
+# OS/editor
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/

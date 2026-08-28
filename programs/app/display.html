@@ -1,0 +1,148 @@
+<!--
+  Copyright (C) 2026 enCounter contributors
+  SPDX-License-Identifier: MIT
+  This file is part of enCounter. See LICENSE for the full license terms.
+-->
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+    <title>enCounter — Player Display</title>
+    <link rel="icon" type="image/png" href="/assets/branding/favicon.png" />
+
+    <!-- Main application styles -->
+    <link rel="stylesheet" href="css/base.css" />
+
+    <!-- Player display styles -->
+    <link rel="stylesheet" href="css/display.css" />
+  </head>
+
+  <body class="player-body">
+    <!-- =========================================
+         ENCOUNTER BACKGROUND
+         ========================================= -->
+
+    <div id="displayBackground" class="display-background"></div>
+
+    <!-- Dark overlay placed over encounter backgrounds -->
+    <div class="display-shade"></div>
+
+    <!-- =========================================
+         PLAYER DISPLAY
+         ========================================= -->
+
+    <div class="player-shell">
+      <!-- =========================================
+           PLAYER HEADER
+           ========================================= -->
+
+      <header class="player-header">
+        <!-- enCounter branding + encounter information -->
+        <div class="player-brand-area">
+          <img
+            src="/assets/branding/enCounter-logo.png"
+            alt="enCounter"
+            class="player-logo"
+          />
+
+          <div class="player-encounter-info">
+            <h1 id="displayEncounterName">New Encounter</h1>
+
+            <span id="displaySystem" class="system-pill"> Generic TTRPG </span>
+            <span id="playerAppVersion" class="player-app-version">ALPHA · v0.1.0-alpha.1</span>
+            <span
+              id="displayConnectionStatus"
+              class="display-connection-status connecting"
+              role="status"
+              aria-live="polite"
+              title="Player Display sync requires the DM Console in the same browser profile."
+            >DM SYNC: CONNECTING…</span>
+            <a class="player-legal-link" href="/docs/LEGAL.html" target="_blank" rel="noopener">MIT · License &amp; Notices</a>
+          </div>
+        </div>
+
+        <!-- Round counter -->
+        <div class="display-round">
+          <span> ROUND </span>
+
+          <strong id="displayRound"> 1 </strong>
+        </div>
+
+        <!-- Full screen button -->
+        <button id="fullscreenBtn" type="button">Full Screen</button>
+      </header>
+
+      <!-- =========================================
+           MAIN PLAYER DISPLAY AREA
+           ========================================= -->
+
+      <main class="player-main">
+        <!-- =========================================
+             BETWEEN-ENCOUNTERS BACKGROUND LOGO
+
+             This large logo will be displayed when
+             there are no combatants in the encounter.
+             JavaScript will control whether the
+             "show" class is applied.
+             ========================================= -->
+
+        <div
+          id="idleLogoBackdrop"
+          class="idle-logo-backdrop"
+          aria-hidden="true"
+        >
+          <img
+            src="/assets/branding/enCounter-logo.png"
+            alt=""
+            class="idle-logo-image"
+          />
+        </div>
+
+        <!-- =========================================
+             CURRENT TURN
+             ========================================= -->
+
+        <div class="current-turn">
+          <div class="eyebrow">CURRENT TURN</div>
+
+          <h2 id="currentName">Waiting for combat…</h2>
+        </div>
+
+        <!-- =========================================
+             INITIATIVE TRACK
+             ========================================= -->
+
+        <div id="initiativeTrack" class="initiative-track"></div>
+
+        <!-- =========================================
+             NEXT TURN
+             ========================================= -->
+
+        <div class="next-turn">
+          NEXT:
+
+          <strong id="nextName"> — </strong>
+        </div>
+      </main>
+    </div>
+
+    <!-- =========================================
+         JAVASCRIPT
+         ========================================= -->
+
+    <!-- Shared configuration / system profiles -->
+    <script src="js/core/config.js"></script>
+
+    <!-- IndexedDB access -->
+    <script src="js/core/db.js"></script>
+
+    <!-- DM / Player Display synchronization -->
+    <script src="js/core/sync.js"></script>
+
+    <!-- Player display rendering -->
+    <script src="js/display.js"></script>
+  </body>
+</html>

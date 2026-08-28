@@ -1,0 +1,64 @@
+name: Build portable packages
+
+on:
+  workflow_dispatch:
+  push:
+    tags:
+      - "v*"
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+      - name: Run core JavaScript tests
+        run: node --test tests/*.test.js
+
+  windows:
+    needs: test
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install build dependencies
+        run: python -m pip install -r requirements-build.txt
+      - name: Build Windows package
+        shell: cmd
+        run: call "Build enCounter Windows.bat" < NUL
+      - uses: actions/upload-artifact@v4
+        with:
+          name: enCounter-Windows-Portable
+          path: |
+            release/*Windows-Portable.zip
+            release/*Windows-Portable.sha256.txt
+          if-no-files-found: error
+
+  linux:
+    needs: test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install build dependencies
+        run: python3 -m pip install -r requirements-build.txt
+      - name: Build Linux package
+        run: |
+          chmod +x "Build enCounter Linux.sh"
+          ./Build\ enCounter\ Linux.sh
+      - uses: actions/upload-artifact@v4
+        with:
+          name: enCounter-Linux-Portable
+          path: |
+            release/*Linux-*.tar.gz
+            release/*Linux-*.sha256.txt
+          if-no-files-found: error

@@ -1,0 +1,2 @@
+# Build-time dependency only. End users of packaged Windows/Linux builds do not need Python or PyInstaller.
+PyInstaller>=6.0,<7.0

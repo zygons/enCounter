@@ -1,0 +1,35 @@
+# Copyright (C) 2026 enCounter contributors
+# SPDX-License-Identifier: MIT
+# This file is part of enCounter. See LICENSE for the full license terms.
+
+VSVersionInfo(
+  ffi=FixedFileInfo(
+    filevers=(0, 1, 0, 0),
+    prodvers=(0, 1, 0, 0),
+    mask=0x3f,
+    flags=0x0,
+    OS=0x40004,
+    fileType=0x1,
+    subtype=0x0,
+    date=(0, 0)
+  ),
+  kids=[
+    StringFileInfo([
+      StringTable(
+        u'040904B0',
+        [
+          StringStruct(u'CompanyName', u'enCounter contributors'),
+          StringStruct(u'FileDescription', u'enCounter TTRPG Encounter Console'),
+          StringStruct(u'FileVersion', u'0.1.0-alpha.1'),
+          StringStruct(u'InternalName', u'enCounter'),
+          StringStruct(u'OriginalFilename', u'enCounter.exe'),
+          StringStruct(u'ProductName', u'enCounter'),
+          StringStruct(u'ProductVersion', u'0.1.0-alpha.1'),
+          StringStruct(u'LegalCopyright', u'Copyright (C) 2026 enCounter contributors'),
+          StringStruct(u'Comments', u'Open-source software licensed under the MIT License')
+        ]
+      )
+    ]),
+    VarFileInfo([VarStruct(u'Translation', [1033, 1200])])
+  ]
+)
