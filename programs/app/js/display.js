@@ -9,6 +9,10 @@ ENC.display = {
   lastDmSeenAt: 0,
   connectionTimer: null,
 
+  // Player Display privacy state
+  paused: false,
+  awaitingDmState: true,
+
   /* ========================================
        LOAD ACTIVE ENCOUNTER
     ======================================== */
@@ -45,6 +49,20 @@ ENC.display = {
   markDmSeen() {
     this.lastDmSeenAt = Date.now();
     this.setConnectionState("connected");
+  },
+
+  /* ========================================
+   PLAYER DISPLAY PRIVACY
+======================================== */
+
+  setPaused(paused) {
+    this.paused = Boolean(paused);
+
+    const overlay = document.getElementById("playerDisplayPrivacyOverlay");
+
+    if (!overlay) return;
+
+    overlay.classList.toggle("show", this.paused || this.awaitingDmState);
   },
 
   requestDmPresence() {
@@ -140,6 +158,9 @@ ENC.display = {
     ======================================== */
 
   render() {
+    if (this.paused || this.awaitingDmState) {
+      return;
+    }
     /* ----------------------------------------
            No active encounter
         ---------------------------------------- */
@@ -272,8 +293,7 @@ ENC.display = {
 
         portrait.appendChild(img);
       } else {
-        portrait.textContent =
-          combatant.name?.charAt(0).toUpperCase() || "?";
+        portrait.textContent = combatant.name?.charAt(0).toUpperCase() || "?";
       }
 
       /* ------------------------------------
@@ -387,13 +407,10 @@ ENC.display = {
            NEXT TURN
         ======================================== */
 
-    const next = currentIndex >= 0
-      ? this.nextActive(this.encounter.currentId)
-      : null;
+    const next =
+      currentIndex >= 0 ? this.nextActive(this.encounter.currentId) : null;
 
-    document.getElementById("nextName").textContent = next
-      ? next.name
-      : "—";
+    document.getElementById("nextName").textContent = next ? next.name : "—";
 
     /* ========================================
            CENTER CURRENT CARD
@@ -418,19 +435,84 @@ ENC.display = {
         ---------------------------------------- */
 
     ENC.sync.onMessage((message) => {
+      // ========================================
+      // DM PRESENCE / INITIAL DISPLAY STATE
+      // ========================================
+
       if (message.type === "dm-presence") {
         this.markDmSeen();
+
+        /*
+         * We now know whether the DM wants the
+         * Player Display visible or hidden.
+         */
+        this.awaitingDmState = false;
+
         if (message.encounter) {
           this.encounter = ENC.normalizeEncounter(message.encounter);
+        }
+
+        this.setPaused(Boolean(message.playerDisplayPaused));
+
+        if (!this.paused) {
           this.render();
         }
+
         return;
       }
 
+      // ========================================
+      // HIDE / SHOW PLAYER DISPLAY
+      // ========================================
+
+      if (message.type === "player-display-visibility") {
+        this.markDmSeen();
+
+        this.awaitingDmState = false;
+
+        /*
+         * main.js includes the newest encounter
+         * when changing display visibility.
+         */
+        if (message.encounter) {
+          this.encounter = ENC.normalizeEncounter(message.encounter);
+        }
+
+        this.setPaused(Boolean(message.paused));
+
+        /*
+         * When Show Player Display is pressed,
+         * immediately render the newest state.
+         */
+        if (!this.paused) {
+          this.render();
+        }
+
+        return;
+      }
+
+      // ========================================
+      // NORMAL ENCOUNTER UPDATES
+      // ========================================
+
       if (message.type === "encounter-updated") {
         this.markDmSeen();
+
+        /*
+         * Always receive and store the latest
+         * encounter, even while hidden.
+         */
         this.encounter = ENC.normalizeEncounter(message.encounter || {});
-        this.render();
+
+        /*
+         * But never render private changes while
+         * the privacy screen is active.
+         */
+        if (!this.paused && !this.awaitingDmState) {
+          this.render();
+        }
+
+        return;
       }
     });
 

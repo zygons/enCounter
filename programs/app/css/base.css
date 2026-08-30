@@ -57,6 +57,15 @@ button.danger-outline {
   color: #ffc2c5;
   background: #321a1d;
 }
+button.player-display-paused {
+  border-color: var(--warning);
+  color: #ffe0a3;
+  background: #352813;
+}
+
+button.player-display-paused:hover {
+  background: #493719;
+}
 button:disabled {
   opacity: 0.45;
   cursor: default;
@@ -265,10 +274,9 @@ hr {
   margin-top: 12px;
 }
 .quick-add-grid {
-  grid-template-columns: minmax(240px, 1.2fr) 100px auto minmax(
-      180px,
-      0.8fr
-    ) 140px 100px auto;
+  grid-template-columns:
+    minmax(240px, 1.2fr) 100px auto minmax(180px, 0.8fr)
+    140px 100px auto;
   border-top: 1px solid var(--line);
   padding-top: 14px;
 }
@@ -657,7 +665,6 @@ hr {
   margin-top: 20px;
   flex-wrap: wrap;
 }
-
 
 /* Open-source legal notice link */
 .legal-link {

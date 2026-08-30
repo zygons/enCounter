@@ -29,6 +29,53 @@
   );
 }
 
+/* ========================================
+   PLAYER DISPLAY PRIVACY / STAND BY
+======================================== */
+
+.player-display-privacy-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+
+  display: none;
+
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+
+  gap: 24px;
+
+  background: #02070a;
+}
+
+.player-display-privacy-overlay.show {
+  display: flex;
+}
+
+.player-display-privacy-logo {
+  width: min(62vw, 760px);
+  height: auto;
+
+  opacity: 0.42;
+
+  object-fit: contain;
+
+  pointer-events: none;
+}
+
+.player-display-privacy-text {
+  color: #7895a3;
+
+  font-size: clamp(16px, 2vw, 26px);
+
+  font-weight: 800;
+
+  letter-spacing: 0.3em;
+
+  text-transform: uppercase;
+}
+
 .player-shell {
   position: relative;
   z-index: 2;
@@ -108,7 +155,6 @@
   letter-spacing: 1.2px;
   text-transform: uppercase;
 }
-
 
 .display-connection-status {
   display: inline-block;
@@ -397,7 +443,6 @@
     display: none;
   }
 }
-
 
 /* Open-source legal notice link */
 .player-legal-link {

@@ -29,6 +29,24 @@
 
     <!-- Dark overlay placed over encounter backgrounds -->
     <div class="display-shade"></div>
+    <!-- =========================================
+     PLAYER DISPLAY PRIVACY SCREEN
+     ========================================= -->
+
+    <div
+      id="playerDisplayPrivacyOverlay"
+      class="player-display-privacy-overlay show"
+      role="status"
+      aria-live="polite"
+    >
+      <img
+        src="/assets/branding/enCounter-logo.png"
+        alt="enCounter"
+        class="player-display-privacy-logo"
+      />
+
+      <div class="player-display-privacy-text">STAND BY</div>
+    </div>
 
     <!-- =========================================
          PLAYER DISPLAY
@@ -52,15 +70,24 @@
             <h1 id="displayEncounterName">New Encounter</h1>
 
             <span id="displaySystem" class="system-pill"> Generic TTRPG </span>
-            <span id="playerAppVersion" class="player-app-version">ALPHA · v0.1.0-alpha.1</span>
+            <span id="playerAppVersion" class="player-app-version"
+              >ALPHA · v0.1.0-alpha.1</span
+            >
             <span
               id="displayConnectionStatus"
               class="display-connection-status connecting"
               role="status"
               aria-live="polite"
               title="Player Display sync requires the DM Console in the same browser profile."
-            >DM SYNC: CONNECTING…</span>
-            <a class="player-legal-link" href="/docs/LEGAL.html" target="_blank" rel="noopener">MIT · License &amp; Notices</a>
+              >DM SYNC: CONNECTING…</span
+            >
+            <a
+              class="player-legal-link"
+              href="/docs/LEGAL.html"
+              target="_blank"
+              rel="noopener"
+              >MIT · License &amp; Notices</a
+            >
           </div>
         </div>
 
