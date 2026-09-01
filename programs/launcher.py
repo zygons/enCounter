@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-# Copyright (C) 2026 enCounter contributors
+# Copyright (C) 2026 Zygons
 # SPDX-License-Identifier: MIT
 # This file is part of enCounter. See LICENSE for the full license terms.
 

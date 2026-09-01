@@ -1,5 +1,5 @@
 @echo off
-REM Copyright (C) 2026 enCounter contributors
+REM Copyright (C) 2026 Zygons
 REM SPDX-License-Identifier: MIT
 REM This file is part of enCounter. See LICENSE for the full license terms.
 

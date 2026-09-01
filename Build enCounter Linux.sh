@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Copyright (C) 2026 enCounter contributors
+# Copyright (C) 2026 Zygons
 # SPDX-License-Identifier: MIT
 # See LICENSE for the full license terms.
 
