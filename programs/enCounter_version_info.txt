@@ -1,4 +1,4 @@
-# Copyright (C) 2026 enCounter contributors
+# Copyright (C) 2026 Zygons
 # SPDX-License-Identifier: MIT
 # This file is part of enCounter. See LICENSE for the full license terms.
 
@@ -18,14 +18,14 @@ VSVersionInfo(
       StringTable(
         u'040904B0',
         [
-          StringStruct(u'CompanyName', u'enCounter contributors'),
+          StringStruct(u'CompanyName', u'Zygons'),
           StringStruct(u'FileDescription', u'enCounter TTRPG Encounter Console'),
           StringStruct(u'FileVersion', u'0.1.0-alpha.1'),
           StringStruct(u'InternalName', u'enCounter'),
           StringStruct(u'OriginalFilename', u'enCounter.exe'),
           StringStruct(u'ProductName', u'enCounter'),
           StringStruct(u'ProductVersion', u'0.1.0-alpha.1'),
-          StringStruct(u'LegalCopyright', u'Copyright (C) 2026 enCounter contributors'),
+          StringStruct(u'LegalCopyright', u'Copyright (C) 2026 Zygons'),
           StringStruct(u'Comments', u'Open-source software licensed under the MIT License')
         ]
       )
