@@ -1,14 +1,64 @@
 # enCounter
 
-enCounter is a local-first TTRPG encounter and initiative manager with separate DM and Player Displays, reusable player/NPC/enemy/creature libraries, encounter controls, asset support, and local backup/export features.
+**enCounter** is a free, open-source, local-first TTRPG encounter and initiative manager with separate DM and Player Displays, reusable player/NPC/enemy/creature libraries, encounter controls, asset support, and local backup/export features.
 
 **Current release:** `0.1.0-alpha.1`  
 **Status:** Alpha / pre-release  
-**License:** MIT
+**License:** MIT  
+**Platforms:** Windows and Linux
+
+## Get enCounter
+
+- **Download:** See the latest GitHub Release
+- **Documentation:** See the enCounter User Guide in the `docs/` folder
+- **Report a bug:** Open a GitHub Issue
+- **Request a feature:** Open a GitHub Issue
+- **Questions / setup help:** Use GitHub Discussions
+
+> **Alpha software:** enCounter is currently under active development. Back up important Library and encounter data before upgrading between Alpha versions.
+
+## Features
+
+- Separate **DM Console** and **Player Display**
+- One-button Player Display control:
+  - **Start Player Display**
+  - **Hide Player Display**
+  - **Show Player Display**
+- Private DM editing while the Player Display shows **STAND BY**
+- Initiative and turn management
+- HP, status, condition, and combatant controls
+- Hidden enemies with **Hide from Players / Reveal to Players**
+- Reusable Player, NPC, Enemy, and Creature Library
+- Portrait and encounter-background support
+- Generic TTRPG, SWSE, D&D 5E, and Custom system profiles
+- Local autosave and recovery snapshots
+- Backup, export, and import tools
+- Windows and Linux portable builds
+- Runs locally without requiring a cloud account
+
+## Screenshots
+
+### DM Console
+
+![enCounter DM Console](docs/images/enCounter_Library.png)
+![enCounter DM Console](docs/images/enCounter_Library2.png)
+![enCounter DM Console](docs/images/enCounter_Game.png)
+![enCounter DM Console](docs/images/enCounter_Settings.png)
+
+### Player Display
+
+![enCounter Player Display](docs/images/enCounter_Awaiting.png)
+![enCounter Player Display](docs/images/enCounter-Game2.png)
+
+### Player Display — Stand By
+
+![enCounter Player Display Stand By](docs/images/enCounter-Standby.png)
 
 ## Alpha notice
 
-This is pre-release software. Features, storage structures, and behavior may change before version 1.0. Export important Library and encounter data before testing a new Alpha build.
+This is pre-release software. Features, storage structures, and behavior may change before version 1.0.
+
+Use **Export Everything** before upgrading between Alpha builds when the stored Library or encounter data is important.
 
 ## AI assistance disclosure
 
@@ -23,12 +73,13 @@ See [`AI_ASSISTANCE.md`](AI_ASSISTANCE.md) for the full disclosure.
 ### Windows portable
 
 1. Download the Windows portable ZIP from the matching GitHub Release.
-2. Extract the complete folder.
-3. Extract it to a normal writable folder such as Documents or Desktop (not a protected system folder such as `Program Files`).
-4. Double-click `enCounter.exe`.
-5. enCounter opens in your default browser.
-6. Use **Player Display** for a second monitor or TV.
-7. When finished, use **Exit enCounter** in the DM Console so the local background server closes cleanly.
+2. Extract the complete ZIP to a normal writable folder such as Documents or Desktop. Do not run enCounter directly from inside the ZIP or from a protected system folder such as `Program Files`.
+3. Double-click `enCounter.exe`.
+4. enCounter opens in your default browser.
+5. Click **Start Player Display** to open the player-facing display on a second monitor or TV.
+6. Use **Hide Player Display** when you need to make private encounter or initiative changes.
+7. Click **Show Player Display** when you are ready for players to see the updated encounter.
+8. When finished, use **Exit enCounter** in the DM Console so the local background server closes cleanly.
 
 Python is **not** required on the target computer when using the packaged Windows build.
 
@@ -37,10 +88,10 @@ The Alpha Windows executable is currently unsigned. Windows SmartScreen may ther
 ### Linux portable
 
 1. Download the Linux `tar.gz` from the matching GitHub Release.
-2. Extract the complete folder.
-3. Extract it to a normal writable user folder.
-4. Run `./enCounter` from the extracted folder, or double-click it if your desktop environment permits executable files.
-5. enCounter opens in your default browser.
+2. Extract it to a normal writable user folder.
+3. Run `./enCounter` from the extracted folder, or double-click it if your desktop environment permits executable files.
+4. enCounter opens in your default browser.
+5. Click **Start Player Display** to open the player-facing display.
 6. When finished, use **Exit enCounter** in the DM Console so the local background server closes cleanly.
 
 Python is **not** required on the target computer when using the packaged Linux build.
@@ -89,13 +140,53 @@ PyInstaller builds are platform-specific. Build the Windows package on Windows a
 
 The repository also includes `.github/workflows/build-portable.yml`. After the repository is uploaded to GitHub, you can run **Actions → Build portable packages → Run workflow** to let GitHub build both Windows and Linux packages on the appropriate operating systems. The workflow also runs automatically when a version tag beginning with `v` is pushed.
 
-## Intended display workflow
+## DM and Player Display workflow
 
-Use **one DM Console tab/window at a time** for an encounter. Open the Player Display from that DM Console and keep both windows in the same browser profile. The Player Display now shows a **DM Sync** connection indicator; a different browser, browser profile, or private/incognito session will not share the local synchronization channel.
+Use **one DM Console tab/window at a time** for an encounter.
 
-Opening multiple DM Console windows against the same browser database is not supported in the current Alpha and can result in last-write-wins overwrites.
+The Player Display should normally be opened from the DM Console using the same browser profile.
 
-When a combatant is marked **Hide from Players**, it remains fully visible in the DM Console but is completely omitted from the Player Display, including the initiative track and current/next-turn names. Use **Reveal to Players** to insert it back into the Player Display at its normal initiative position.
+The Player Display button changes automatically depending on its current state:
+
+| Button | Meaning |
+| --- | --- |
+| **Start Player Display** | Opens the Player Display |
+| **Hide Player Display** | Replaces encounter information with a STAND BY screen |
+| **Show Player Display** | Restores the Player Display using the latest encounter state |
+
+### Making private DM changes
+
+When **Hide Player Display** is selected, the player-facing screen displays a **STAND BY** screen.
+
+The DM Console remains fully functional. The DM can privately:
+
+- change initiative values
+- add or remove combatants
+- advance or correct turns
+- change HP or status information
+- add reinforcements
+- hide or reveal enemies
+- make other encounter adjustments
+
+The Player Display continues receiving the latest encounter information internally but does not display those changes while hidden.
+
+When the DM selects **Show Player Display**, the current encounter state is displayed immediately.
+
+If the Player Display window is closed, the DM control returns to **Start Player Display**.
+
+### Hidden combatants
+
+When a combatant is marked **Hide from Players**, it remains fully visible in the DM Console but is completely omitted from the Player Display, including the initiative track and current/next-turn names.
+
+Use **Reveal to Players** to return that combatant to the Player Display at its normal initiative position.
+
+### Display synchronization
+
+The Player Display includes a **DM Sync** connection indicator.
+
+DM Console and Player Display windows must currently use the same browser profile. A different browser, different browser profile, or private/incognito session will not share the local synchronization channel.
+
+Opening multiple DM Console windows against the same browser database is not supported in the current Alpha and may result in last-write-wins overwrites.
 
 ## Automated core tests
 
@@ -126,6 +217,42 @@ The GitHub repository contains source code and build files. Compiled Windows and
 enCounter is released under the **MIT License**. See [`LICENSE`](LICENSE).
 
 The MIT License permits use, modification, redistribution, sublicensing, and commercial use, provided the required copyright and license notice is retained. enCounter is provided without warranty as described in the license.
+
+Copyright © 2026 **Zygons**.
+
+## Bugs, feature requests, and support
+
+enCounter is currently in Alpha and user feedback is welcome.
+
+### Report a bug
+
+Use **GitHub Issues → Bug Report** for reproducible problems with enCounter.
+
+Please include, when possible:
+
+- enCounter version
+- operating system
+- browser
+- steps to reproduce the problem
+- what you expected to happen
+- what actually happened
+- screenshots or error messages
+
+### Request a feature
+
+Use **GitHub Issues → Feature Request** for proposed improvements or new functionality.
+
+### Questions and setup help
+
+Use **GitHub Discussions** for:
+
+- installation questions
+- setup help
+- usage questions
+- general ideas
+- workflows you want to discuss before requesting a feature
+
+Please do not publish suspected security vulnerabilities as normal public Issues. See [`SECURITY.md`](SECURITY.md) for security reporting guidance.
 
 ## Contributing
 
