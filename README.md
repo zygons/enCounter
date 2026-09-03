@@ -29,7 +29,7 @@
 - HP, status, condition, and combatant controls
 - Hidden enemies with **Hide from Players / Reveal to Players**
 - Reusable Player, NPC, Enemy, and Creature Library
-- Portrait and encounter-background support
+- Portrait and encounter background support
 - Generic TTRPG, SWSE, D&D 5E, and Custom system profiles
 - Local autosave and recovery snapshots
 - Backup, export, and import tools
@@ -64,7 +64,7 @@ Use **Export Everything** before upgrading between Alpha builds when the stored 
 
 enCounter has been developed with assistance from generative AI tools for coding, debugging, documentation, project organization, testing suggestions, and release preparation. AI-assisted material is reviewed and maintained by the project maintainer before release.
 
-The current application does **not** include generative-AI functionality and does not intentionally send encounter, Library, or campaign data to an AI service.
+The current application does **not** include generative-AI functionality and does not intentionally send encounter, library, or campaign data to an AI service.
 
 See [`AI_ASSISTANCE.md`](AI_ASSISTANCE.md) for the full disclosure.
 
@@ -134,7 +134,7 @@ Build a clean Linux portable release on Linux (the archive name records the mach
 ./Build\ enCounter\ Linux.sh
 ```
 
-PyInstaller builds are platform-specific. Build the Windows package on Windows and the Linux package on Linux. The build scripts intentionally exclude previous backups, imports, exports, campaign images, and browser Library data.
+PyInstaller builds are platform-specific. Build the Windows package on Windows and the Linux package on Linux. The build scripts intentionally exclude previous backups, imports, exports, campaign images, and browser library data.
 
 ### Optional GitHub Actions builds
 
