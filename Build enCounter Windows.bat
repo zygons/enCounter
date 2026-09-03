@@ -122,6 +122,7 @@ copy /Y "README.md" "%RELEASE_DIR%\README.md" >nul
 copy /Y "AI_ASSISTANCE.md" "%RELEASE_DIR%\AI_ASSISTANCE.md" >nul
 copy /Y "PRIVACY.md" "%RELEASE_DIR%\PRIVACY.md" >nul
 copy /Y "THIRD_PARTY_NOTICES.md" "%RELEASE_DIR%\THIRD_PARTY_NOTICES.md" >nul
+copy /Y "enCounter User Guide.pdf" "%RELEASE_DIR%\enCounter User Guide.pdf" >nul
 
 REM Defensive cleanup: no prior user data may ship.
 del /q "%RELEASE_DIR%\data\backups\*" >nul 2>nul
