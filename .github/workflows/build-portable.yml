@@ -36,7 +36,6 @@ jobs:
       - name: Run core JavaScript tests
         run: node --test tests/*.test.js
 
-
   # ============================================================
   # Build Windows portable package
   #
@@ -99,7 +98,6 @@ jobs:
           if-no-files-found: error
           retention-days: 14
 
-
   # ============================================================
   # Build Linux portable package
   #
@@ -160,11 +158,11 @@ jobs:
           if-no-files-found: error
           retention-days: 14
 
-
   # ============================================================
   # Publish GitHub Release
   #
   # Runs ONLY when a version tag beginning with "v" is pushed.
+  #
   # Example:
   #
   #   v0.1.0-alpha.1
@@ -196,13 +194,25 @@ jobs:
           path: release-assets
           merge-multiple: true
 
+      - name: Verify User Guide
+        run: |
+          echo "Checking for User Guide..."
+
+          if [ ! -f "docs/enCounter User Guide.pdf" ]; then
+            echo "ERROR: docs/enCounter User Guide.pdf was not found."
+            exit 1
+          fi
+
+          echo "User Guide found:"
+          ls -lh "docs/enCounter User Guide.pdf"
+
       - name: Display release assets
         run: |
           echo "Release assets:"
           find release-assets -maxdepth 2 -type f -print
 
           echo "Documentation:"
-          find docs -maxdepth 1 -type f -print || true
+          find docs -maxdepth 1 -type f -print
 
       - name: Create GitHub prerelease
         env:
@@ -210,7 +220,7 @@ jobs:
         run: |
           gh release create "${GITHUB_REF_NAME}" \
             release-assets/* \
-            docs/enCounter_User_Guide_*.pdf \
+            "docs/enCounter User Guide.pdf" \
             --verify-tag \
             --prerelease \
             --generate-notes \
