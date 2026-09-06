@@ -10,6 +10,8 @@ ENC.app = {
   playerDisplayConnected: false,
   playerDisplayWindow: null,
   playerDisplayWatchTimer: null,
+  timerPreviewRenderer: null,
+  timerController: null,
 
   toast(message) {
     const toast = document.getElementById("toast");
@@ -28,11 +30,55 @@ ENC.app = {
   announceDmPresence(includeEncounter = false) {
     ENC.sync.broadcast("dm-presence", {
       sentAt: Date.now(),
+
       playerDisplayPaused: this.playerDisplayPaused,
+
       encounter:
         includeEncounter && ENC.combat?.encounter
           ? ENC.deepClone(ENC.combat.encounter)
           : null,
+
+      /*
+       * Include the current timer state so a
+       * Player Display opened after the timer
+       * has already started immediately joins
+       * at the correct point.
+       */
+      timer: this.getTimerSyncState(),
+    });
+  },
+
+  getTimerSyncState() {
+    if (!this.timerController) {
+      return null;
+    }
+
+    const state = this.timerController.getState();
+
+    if (!state) {
+      return null;
+    }
+
+    /*
+     * Timer state only contains plain data,
+     * but clone it so the synchronization
+     * layer never shares a mutable reference
+     * with the DM timer controller.
+     */
+    return ENC.deepClone(state);
+  },
+
+  broadcastTimerState(timerState = null) {
+    const state = timerState || this.getTimerSyncState();
+
+    if (!state) {
+      return;
+    }
+
+    ENC.sync.broadcast("timer-state", {
+      sentAt: Date.now(),
+
+      timer: ENC.deepClone(state),
     });
   },
 
@@ -81,6 +127,432 @@ ENC.app = {
         this.updatePlayerDisplayButton();
       }
     }, 1000);
+  },
+
+  // ========================================
+  // VISUAL TIMER
+  // ========================================
+
+  getTimerDurationFromInputs() {
+    const minutesInput = document.getElementById("timerMinutes");
+    const secondsInput = document.getElementById("timerSeconds");
+
+    if (!minutesInput || !secondsInput) {
+      return 0;
+    }
+
+    const rawMinutes = Number(minutesInput.value);
+    const rawSeconds = Number(secondsInput.value);
+
+    const minutes = Number.isFinite(rawMinutes)
+      ? Math.max(0, Math.floor(rawMinutes))
+      : 0;
+
+    const seconds = Number.isFinite(rawSeconds)
+      ? Math.min(59, Math.max(0, Math.floor(rawSeconds)))
+      : 0;
+
+    minutesInput.value = String(minutes);
+    secondsInput.value = String(seconds);
+
+    return (minutes * 60 + seconds) * 1000;
+  },
+
+  setTimerDurationInputs(milliseconds) {
+    const minutesInput = document.getElementById("timerMinutes");
+    const secondsInput = document.getElementById("timerSeconds");
+
+    if (!minutesInput || !secondsInput) {
+      return;
+    }
+
+    const totalSeconds = Math.max(
+      0,
+      Math.ceil(Number(milliseconds || 0) / 1000),
+    );
+
+    const minutes = Math.floor(totalSeconds / 60);
+    const seconds = totalSeconds % 60;
+
+    minutesInput.value = String(minutes);
+    secondsInput.value = String(seconds);
+  },
+
+  formatTimerStatus(state) {
+    if (!state) {
+      return "Unavailable";
+    }
+
+    if (state.status === "running") {
+      return "Running";
+    }
+
+    if (state.status === "paused") {
+      return "Paused";
+    }
+
+    if (state.status === "complete") {
+      return "Complete";
+    }
+
+    if (state.status === "idle" && state.remainingMs < state.durationMs) {
+      return "Stopped";
+    }
+
+    return "Ready";
+  },
+
+  updateTimerUI() {
+    if (!this.timerController) {
+      return;
+    }
+
+    const state = this.timerController.getState();
+
+    if (!state) {
+      return;
+    }
+
+    const activeName = document.getElementById("timerActiveName");
+    const statusText = document.getElementById("timerStatusText");
+
+    if (activeName) {
+      activeName.textContent = state.name || "Countdown";
+    }
+
+    if (statusText) {
+      statusText.textContent = this.formatTimerStatus(state);
+    }
+
+    const startButton = document.getElementById("timerStartBtn");
+    const pauseButton = document.getElementById("timerPauseBtn");
+    const resumeButton = document.getElementById("timerResumeBtn");
+    const resetButton = document.getElementById("timerResetBtn");
+    const stopButton = document.getElementById("timerStopBtn");
+
+    if (startButton) {
+      startButton.disabled =
+        state.status === "running" || state.status === "paused";
+    }
+
+    if (pauseButton) {
+      pauseButton.disabled = state.status !== "running";
+    }
+
+    if (resumeButton) {
+      resumeButton.disabled = state.status !== "paused";
+    }
+
+    if (resetButton) {
+      resetButton.disabled = false;
+    }
+
+    if (stopButton) {
+      stopButton.disabled =
+        state.status === "idle" || state.status === "complete";
+    }
+
+    const durationLocked =
+      state.status === "running" || state.status === "paused";
+
+    const minutesInput = document.getElementById("timerMinutes");
+    const secondsInput = document.getElementById("timerSeconds");
+
+    if (minutesInput) {
+      minutesInput.disabled = durationLocked;
+    }
+
+    if (secondsInput) {
+      secondsInput.disabled = durationLocked;
+    }
+
+    /*
+     * Keep the configured duration fields aligned with the timer
+     * engine. Adding time can expand durationMs when the new
+     * remaining time exceeds the original configured duration.
+     */
+    if (!durationLocked) {
+      this.setTimerDurationInputs(state.durationMs);
+    }
+  },
+
+  initializeTimer() {
+    if (!ENC.timerRenderer || typeof ENC.timerRenderer.create !== "function") {
+      throw new Error(
+        "Timer renderer did not load. Check js/modules/timer-renderer.js.",
+      );
+    }
+
+    if (!ENC.timer || typeof ENC.timer.create !== "function") {
+      throw new Error("Timer engine did not load. Check js/modules/timer.js.");
+    }
+
+    const previewContainer = document.getElementById("timerPreview");
+
+    if (!previewContainer) {
+      throw new Error("Timer preview container was not found.");
+    }
+
+    const initialDuration =
+      this.getTimerDurationFromInputs() ||
+      ENC.timer.DEFAULT_DURATION_MS ||
+      300000;
+
+    this.timerPreviewRenderer = ENC.timerRenderer.create(previewContainer);
+
+    this.timerController = ENC.timer.create({
+      renderer: this.timerPreviewRenderer,
+      audience: "dm",
+
+      initialState: {
+        id: "primary-timer",
+        name: document.getElementById("timerName")?.value.trim() || "Countdown",
+        mode: "countdown",
+        skin: document.getElementById("timerSkin")?.value || "hourglass",
+        durationMs: initialDuration,
+        remainingMs: initialDuration,
+        status: "idle",
+        visibleToPlayers:
+          document.getElementById("timerShowPlayers")?.checked === true,
+        showNumericToDM:
+          document.getElementById("timerShowNumericDM")?.checked !== false,
+        showNumericToPlayers:
+          document.getElementById("timerShowNumericPlayers")?.checked === true,
+        displayMode:
+          document.getElementById("timerDisplayMode")?.value || "overlay",
+      },
+
+      onStateChange: (timerState, reason) => {
+        /*
+         * Keep the DM controls/status synchronized
+         * with the timer controller.
+         */
+        this.updateTimerUI();
+
+        /*
+         * Send state changes to the Player Display.
+         *
+         * We do NOT transmit animation frames.
+         * The Player Display animates independently
+         * using the shared endAt timestamp.
+         */
+        this.broadcastTimerState(timerState);
+
+        console.debug("Timer state changed:", reason, timerState);
+      },
+
+      onComplete: (timerState) => {
+        this.updateTimerUI();
+
+        /*
+         * Ensure the Player Display receives the
+         * final completed state immediately.
+         */
+        this.broadcastTimerState(timerState);
+
+        this.toast("Timer complete.");
+      },
+    });
+
+    this.updateTimerUI();
+  },
+
+  bindTimerControls() {
+    if (!this.timerController) {
+      return;
+    }
+
+    const timerName = document.getElementById("timerName");
+    const timerSkin = document.getElementById("timerSkin");
+    const timerDisplayMode = document.getElementById("timerDisplayMode");
+
+    const showPlayers = document.getElementById("timerShowPlayers");
+    const showNumericPlayers = document.getElementById(
+      "timerShowNumericPlayers",
+    );
+    const showNumericDM = document.getElementById("timerShowNumericDM");
+
+    const minutesInput = document.getElementById("timerMinutes");
+    const secondsInput = document.getElementById("timerSeconds");
+
+    const startButton = document.getElementById("timerStartBtn");
+    const pauseButton = document.getElementById("timerPauseBtn");
+    const resumeButton = document.getElementById("timerResumeBtn");
+    const resetButton = document.getElementById("timerResetBtn");
+    const stopButton = document.getElementById("timerStopBtn");
+
+    const subtractMinuteButton = document.getElementById(
+      "timerSubtractMinuteBtn",
+    );
+    const subtractTenButton = document.getElementById("timerSubtractTenBtn");
+    const addTenButton = document.getElementById("timerAddTenBtn");
+    const addMinuteButton = document.getElementById("timerAddMinuteBtn");
+
+    const applyDurationIfEditable = () => {
+      const state = this.timerController.getState();
+
+      if (!state) {
+        return false;
+      }
+
+      if (state.status === "running" || state.status === "paused") {
+        return false;
+      }
+
+      const durationMs = this.getTimerDurationFromInputs();
+
+      if (durationMs <= 0) {
+        this.toast("Timer duration must be greater than zero.");
+        this.setTimerDurationInputs(state.durationMs);
+        return false;
+      }
+
+      if (durationMs !== state.durationMs) {
+        this.timerController.setDuration(durationMs);
+      }
+
+      return true;
+    };
+
+    if (timerName) {
+      timerName.addEventListener("input", () => {
+        this.timerController.setName(timerName.value);
+      });
+    }
+
+    if (timerSkin) {
+      timerSkin.addEventListener("change", () => {
+        this.timerController.setSkin(timerSkin.value);
+      });
+    }
+
+    if (timerDisplayMode) {
+      timerDisplayMode.addEventListener("change", () => {
+        this.timerController.setDisplayMode(timerDisplayMode.value);
+      });
+    }
+
+    if (showPlayers) {
+      showPlayers.addEventListener("change", () => {
+        this.timerController.setVisibleToPlayers(showPlayers.checked);
+      });
+    }
+
+    if (showNumericPlayers) {
+      showNumericPlayers.addEventListener("change", () => {
+        this.timerController.setShowNumericToPlayers(
+          showNumericPlayers.checked,
+        );
+      });
+    }
+
+    if (showNumericDM) {
+      showNumericDM.addEventListener("change", () => {
+        this.timerController.setShowNumericToDM(showNumericDM.checked);
+      });
+    }
+
+    if (minutesInput) {
+      minutesInput.addEventListener("change", applyDurationIfEditable);
+    }
+
+    if (secondsInput) {
+      secondsInput.addEventListener("change", applyDurationIfEditable);
+    }
+
+    if (startButton) {
+      startButton.addEventListener("click", () => {
+        const state = this.timerController.getState();
+
+        if (!state) {
+          return;
+        }
+
+        if (state.status === "paused") {
+          return;
+        }
+
+        /*
+         * If the configured duration fields changed while the
+         * timer was idle/complete, apply them before starting.
+         *
+         * A stopped timer preserves its remaining time when the
+         * duration fields still match the configured duration.
+         */
+        const requestedDuration = this.getTimerDurationFromInputs();
+
+        if (requestedDuration <= 0) {
+          this.toast("Timer duration must be greater than zero.");
+          return;
+        }
+
+        if (
+          state.status === "complete" ||
+          requestedDuration !== state.durationMs
+        ) {
+          this.timerController.setDuration(requestedDuration);
+        }
+
+        this.timerController.start();
+        this.updateTimerUI();
+      });
+    }
+
+    if (pauseButton) {
+      pauseButton.addEventListener("click", () => {
+        this.timerController.pause();
+        this.updateTimerUI();
+      });
+    }
+
+    if (resumeButton) {
+      resumeButton.addEventListener("click", () => {
+        this.timerController.resume();
+        this.updateTimerUI();
+      });
+    }
+
+    if (resetButton) {
+      resetButton.addEventListener("click", () => {
+        this.timerController.reset();
+        this.updateTimerUI();
+      });
+    }
+
+    if (stopButton) {
+      stopButton.addEventListener("click", () => {
+        this.timerController.stop();
+        this.updateTimerUI();
+      });
+    }
+
+    if (subtractMinuteButton) {
+      subtractMinuteButton.addEventListener("click", () => {
+        this.timerController.subtractTime(60_000);
+        this.updateTimerUI();
+      });
+    }
+
+    if (subtractTenButton) {
+      subtractTenButton.addEventListener("click", () => {
+        this.timerController.subtractTime(10_000);
+        this.updateTimerUI();
+      });
+    }
+
+    if (addTenButton) {
+      addTenButton.addEventListener("click", () => {
+        this.timerController.addTime(10_000);
+        this.updateTimerUI();
+      });
+    }
+
+    if (addMinuteButton) {
+      addMinuteButton.addEventListener("click", () => {
+        this.timerController.addTime(60_000);
+        this.updateTimerUI();
+      });
+    }
   },
 
   bindAppControls() {
@@ -137,6 +609,8 @@ ENC.app = {
           encounter: ENC.combat?.encounter
             ? ENC.deepClone(ENC.combat.encounter)
             : null,
+
+          timer: this.getTimerSyncState(),
         });
 
         this.updatePlayerDisplayButton();
@@ -619,6 +1093,10 @@ ENC.app = {
     await ENC.combat.load();
 
     this.bindNavigation();
+
+    this.initializeTimer();
+
+    this.bindTimerControls();
 
     this.bindAppControls();
 

@@ -1,0 +1,1717 @@
+/*
+ * Copyright (C) 2026 Zygons
+ * SPDX-License-Identifier: MIT
+ * This file is part of enCounter. See LICENSE for the full license terms.
+ */
+
+/* ============================================================
+   enCounter Visual Timer System
+   ============================================================
+
+   Timer state is controlled by JavaScript.
+
+   Expected CSS custom properties:
+
+   --timer-remaining
+       1.0 = full time remaining
+       0.0 = complete
+
+   --timer-elapsed
+       0.0 = just started
+       1.0 = complete
+
+   JavaScript is responsible for accurate timing.
+   CSS is responsible only for presentation and decorative
+   animation.
+
+   ============================================================ */
+
+/* ============================================================
+   SHARED TIMER VARIABLES
+   ============================================================ */
+
+:root {
+  --timer-remaining: 1;
+  --timer-elapsed: 0;
+
+  --timer-width: 260px;
+  --timer-height: 320px;
+
+  --timer-text: #d7e7ee;
+  --timer-muted: #7895a3;
+
+  --timer-panel-bg: rgba(3, 10, 14, 0.94);
+  --timer-panel-border: rgba(83, 151, 180, 0.45);
+
+  --timer-warning: #d7a447;
+  --timer-critical: #c85259;
+}
+
+/* ============================================================
+   SHARED TIMER CONTAINER
+   ============================================================ */
+
+.timer-display {
+  position: relative;
+
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+
+  width: var(--timer-width);
+  min-width: 180px;
+  max-width: 100%;
+
+  min-height: var(--timer-height);
+
+  color: var(--timer-text);
+
+  user-select: none;
+  pointer-events: none;
+}
+
+/* ============================================================
+   TIMER VISIBILITY
+   ============================================================ */
+
+.timer-display.timer-hidden {
+  display: none;
+}
+
+.timer-display.timer-visible {
+  display: flex;
+}
+
+/* ============================================================
+   TIMER LABEL
+   ============================================================ */
+
+.timer-label {
+  position: relative;
+  z-index: 20;
+
+  max-width: 100%;
+
+  margin-bottom: 14px;
+
+  color: var(--timer-text);
+
+  font-size: clamp(14px, 1.5vw, 22px);
+  font-weight: 800;
+
+  letter-spacing: 0.08em;
+  text-align: center;
+  text-transform: uppercase;
+
+  text-shadow:
+    0 2px 5px rgba(0, 0, 0, 0.9),
+    0 0 12px rgba(0, 0, 0, 0.5);
+
+  overflow-wrap: anywhere;
+}
+
+/* ============================================================
+   OPTIONAL NUMERIC TIME
+   ============================================================ */
+
+.timer-numeric {
+  position: relative;
+  z-index: 20;
+
+  margin-top: 12px;
+
+  color: var(--timer-text);
+
+  font-size: clamp(22px, 3vw, 42px);
+  font-weight: 900;
+
+  font-variant-numeric: tabular-nums;
+
+  letter-spacing: 0.08em;
+  text-align: center;
+
+  text-shadow:
+    0 2px 4px rgba(0, 0, 0, 0.95),
+    0 0 14px rgba(60, 160, 200, 0.28);
+}
+
+.timer-numeric.timer-numeric-hidden {
+  display: none;
+}
+
+/* ============================================================
+   TIMER STATUS STATES
+   ============================================================ */
+
+.timer-display.timer-paused {
+  opacity: 0.78;
+}
+
+.timer-display.timer-paused::after {
+  content: "PAUSED";
+
+  position: absolute;
+  z-index: 100;
+
+  left: 50%;
+  bottom: 8px;
+
+  transform: translateX(-50%);
+
+  padding: 4px 9px;
+
+  border: 1px solid rgba(170, 190, 200, 0.45);
+  border-radius: 999px;
+
+  color: #c1d0d7;
+  background: rgba(0, 0, 0, 0.7);
+
+  font-size: 9px;
+  font-weight: 900;
+
+  letter-spacing: 0.16em;
+}
+
+.timer-display.timer-complete {
+  --timer-remaining: 0;
+  --timer-elapsed: 1;
+}
+
+/* ============================================================
+   TIMER WARNING STATES
+   ============================================================ */
+
+.timer-display.timer-warning .timer-label,
+.timer-display.timer-warning .timer-numeric {
+  color: #f0d193;
+}
+
+.timer-display.timer-critical .timer-label,
+.timer-display.timer-critical .timer-numeric {
+  color: #ffd1d4;
+}
+
+.timer-display.timer-critical {
+  animation: timer-critical-pulse 0.75s ease-in-out infinite alternate;
+}
+
+@keyframes timer-critical-pulse {
+  from {
+    filter: brightness(1);
+  }
+
+  to {
+    filter: brightness(1.2);
+  }
+}
+
+/* ============================================================
+   PLAYER DISPLAY TIMER OVERLAY
+   ============================================================ */
+
+.player-timer-overlay {
+  position: absolute;
+  z-index: 50;
+
+  top: 90px;
+  left: 50%;
+
+  transform: translateX(-50%);
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  max-width: calc(100% - 40px);
+
+  pointer-events: none;
+}
+
+.player-timer-overlay.timer-overlay-hidden {
+  display: none;
+}
+
+/* ============================================================
+   FEATURED TIMER MODE
+   ============================================================ */
+
+.player-timer-overlay.timer-mode-featured {
+  top: 105px;
+
+  padding: 18px 30px;
+
+  border: 1px solid rgba(105, 165, 190, 0.35);
+  border-radius: 18px;
+
+  background: rgba(2, 8, 12, 0.72);
+
+  backdrop-filter: blur(7px);
+}
+
+/* ============================================================
+   FOCUS TIMER MODE
+   ============================================================ */
+
+.player-timer-focus {
+  position: absolute;
+  inset: 0;
+
+  z-index: 60;
+
+  display: none;
+
+  align-items: center;
+  justify-content: center;
+
+  background: radial-gradient(
+    circle at center,
+    rgba(8, 21, 28, 0.86),
+    rgba(1, 4, 6, 0.98)
+  );
+
+  pointer-events: none;
+}
+
+.player-timer-focus.show {
+  display: flex;
+}
+
+.player-timer-focus .timer-display {
+  --timer-width: min(60vw, 520px);
+  --timer-height: min(70vh, 620px);
+}
+
+/* ============================================================
+   FANTASY HOURGLASS
+   ============================================================ */
+
+.timer-hourglass {
+  position: relative;
+
+  width: 200px;
+  height: 250px;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  filter: drop-shadow(0 10px 14px rgba(0, 0, 0, 0.58))
+    drop-shadow(0 0 10px rgba(184, 133, 55, 0.15));
+}
+
+/* ------------------------------------------------------------
+   Wooden side supports
+   ------------------------------------------------------------ */
+
+.timer-hourglass::before,
+.timer-hourglass::after {
+  content: "";
+
+  position: absolute;
+
+  top: 29px;
+  bottom: 29px;
+
+  width: 13px;
+
+  z-index: 10;
+
+  border-radius: 7px;
+
+  background: linear-gradient(
+    to right,
+    #392313 0%,
+    #6c4825 28%,
+    #a2753e 52%,
+    #69451f 76%,
+    #392313 100%
+  );
+
+  box-shadow:
+    inset 2px 0 2px rgba(255, 224, 159, 0.18),
+    inset -3px 0 3px rgba(0, 0, 0, 0.5),
+    0 3px 5px rgba(0, 0, 0, 0.5);
+}
+
+.timer-hourglass::before {
+  left: 21px;
+  transform: rotate(2deg);
+}
+
+.timer-hourglass::after {
+  right: 21px;
+  transform: rotate(-2deg);
+}
+
+/* ------------------------------------------------------------
+   Top and bottom wooden rails
+   ------------------------------------------------------------ */
+
+.timer-hourglass-frame {
+  position: absolute;
+
+  inset: 0;
+
+  z-index: 12;
+
+  pointer-events: none;
+}
+
+.timer-hourglass-frame::before,
+.timer-hourglass-frame::after {
+  content: "";
+
+  position: absolute;
+
+  left: 10px;
+
+  width: 180px;
+  height: 20px;
+
+  border-radius: 10px;
+
+  background: linear-gradient(
+    to bottom,
+    #a77c43 0%,
+    #795027 28%,
+    #503017 70%,
+    #2e1a0d 100%
+  );
+
+  border: 1px solid rgba(198, 151, 82, 0.28);
+
+  box-shadow:
+    inset 0 3px 2px rgba(255, 222, 156, 0.15),
+    inset 0 -4px 4px rgba(0, 0, 0, 0.48),
+    0 5px 8px rgba(0, 0, 0, 0.52);
+}
+
+.timer-hourglass-frame::before {
+  top: 12px;
+}
+
+.timer-hourglass-frame::after {
+  bottom: 12px;
+}
+
+/* ------------------------------------------------------------
+   Glass body
+   ------------------------------------------------------------ */
+
+.timer-hourglass-glass {
+  position: absolute;
+
+  left: 44px;
+  top: 34px;
+
+  width: 112px;
+  height: 182px;
+
+  z-index: 5;
+
+  overflow: hidden;
+
+  /*
+   * Single continuous hourglass silhouette.
+   *
+   * Unlike the previous polygon, this shape does not cross over
+   * itself in the center.
+   */
+  clip-path: polygon(
+    8% 0%,
+    92% 0%,
+
+    80% 24%,
+    64% 42%,
+    54% 49%,
+
+    54% 51%,
+    64% 58%,
+    80% 76%,
+
+    92% 100%,
+    8% 100%,
+
+    20% 76%,
+    36% 58%,
+    46% 51%,
+
+    46% 49%,
+    36% 42%,
+    20% 24%
+  );
+
+  background: linear-gradient(
+    to right,
+    rgba(126, 183, 194, 0.08) 0%,
+    rgba(220, 245, 247, 0.21) 18%,
+    rgba(156, 210, 218, 0.08) 38%,
+    rgba(238, 251, 252, 0.17) 53%,
+    rgba(118, 181, 192, 0.09) 76%,
+    rgba(215, 241, 244, 0.16) 100%
+  );
+
+  box-shadow:
+    inset 0 0 9px rgba(213, 244, 247, 0.24),
+    inset 0 0 18px rgba(79, 130, 140, 0.12);
+}
+
+/* ------------------------------------------------------------
+   Glass highlight
+   ------------------------------------------------------------ */
+
+.timer-hourglass-glass::after {
+  content: "";
+
+  position: absolute;
+
+  top: 7px;
+  bottom: 7px;
+  left: 17px;
+
+  width: 9px;
+
+  z-index: 8;
+
+  border-radius: 50%;
+
+  background: linear-gradient(
+    to bottom,
+    rgba(255, 255, 255, 0.08),
+    rgba(255, 255, 255, 0.36),
+    rgba(255, 255, 255, 0.05)
+  );
+
+  opacity: 0.55;
+
+  pointer-events: none;
+}
+
+/* ------------------------------------------------------------
+   Upper sand
+
+   IMPORTANT:
+   The bottom edge stays near the neck of the hourglass.
+
+   As --timer-remaining decreases, the TOP surface moves downward.
+   This makes the sand look as though it is actually draining.
+   ------------------------------------------------------------ */
+
+.timer-hourglass-sand-top {
+  position: absolute;
+
+  left: 16px;
+  bottom: 93px;
+
+  width: 80px;
+
+  height: calc(72px * var(--timer-remaining));
+
+  max-height: 72px;
+
+  z-index: 3;
+
+  border-radius: 50% 50% 8px 8px / 6px 6px 4px 4px;
+
+  background: linear-gradient(
+    to bottom,
+    #efd88e 0%,
+    #dcb863 34%,
+    #c4923c 72%,
+    #986622 100%
+  );
+
+  box-shadow:
+    inset 0 4px 5px rgba(255, 242, 189, 0.2),
+    inset 0 -5px 7px rgba(113, 68, 17, 0.34);
+
+  transform-origin: bottom;
+
+  transition: height 0.06s linear;
+}
+
+/* ------------------------------------------------------------
+   Slight surface highlight on upper sand
+   ------------------------------------------------------------ */
+
+.timer-hourglass-sand-top::before {
+  content: "";
+
+  position: absolute;
+
+  top: 0;
+  left: 7%;
+
+  width: 86%;
+  height: 5px;
+
+  border-radius: 50%;
+
+  background: rgba(255, 229, 151, 0.42);
+}
+
+/* ------------------------------------------------------------
+   Lower accumulated sand
+
+   This grows upward from the bottom as time elapses.
+   ------------------------------------------------------------ */
+
+.timer-hourglass-sand-bottom {
+  position: absolute;
+
+  left: 10px;
+  bottom: 8px;
+
+  width: 92px;
+
+  height: calc(74px * var(--timer-elapsed));
+
+  max-height: 74px;
+
+  z-index: 3;
+
+  border-radius: 50% 50% 8px 8px / 10px 10px 4px 4px;
+
+  background: linear-gradient(
+    to top,
+    #996622 0%,
+    #bd8934 42%,
+    #deb55c 78%,
+    #efd28a 100%
+  );
+
+  box-shadow:
+    inset 0 5px 7px rgba(255, 230, 160, 0.21),
+    inset 0 -3px 5px rgba(99, 58, 15, 0.3);
+
+  transform-origin: bottom;
+
+  transition: height 0.06s linear;
+}
+
+/* ------------------------------------------------------------
+   Sand mound surface
+   ------------------------------------------------------------ */
+
+.timer-hourglass-sand-bottom::before {
+  content: "";
+
+  position: absolute;
+
+  top: -3px;
+  left: 8%;
+
+  width: 84%;
+  height: 9px;
+
+  border-radius: 50%;
+
+  background: radial-gradient(
+    ellipse at center,
+    #e9c978 0%,
+    #d6a84e 55%,
+    rgba(188, 132, 45, 0) 75%
+  );
+}
+
+/* ------------------------------------------------------------
+   Falling sand stream
+   ------------------------------------------------------------ */
+
+.timer-hourglass-stream {
+  position: absolute;
+
+  left: 54px;
+  top: 87px;
+
+  width: 4px;
+  height: 29px;
+
+  z-index: 6;
+
+  border-radius: 3px;
+
+  background: repeating-linear-gradient(
+    to bottom,
+    #f0d17d 0px,
+    #f0d17d 3px,
+    #bd8530 4px,
+    #bd8530 6px
+  );
+
+  background-size: 100% 12px;
+
+  box-shadow: 0 0 4px rgba(225, 183, 85, 0.38);
+
+  animation: timer-sand-stream 0.28s linear infinite;
+
+  opacity: 0.92;
+}
+
+/* ------------------------------------------------------------
+   Stop the falling stream when appropriate
+   ------------------------------------------------------------ */
+
+.timer-hourglass.timer-idle .timer-hourglass-stream,
+.timer-hourglass.timer-paused .timer-hourglass-stream,
+.timer-hourglass.timer-complete .timer-hourglass-stream {
+  animation-play-state: paused;
+  opacity: 0;
+}
+
+/* ------------------------------------------------------------
+   Falling grain animation
+   ------------------------------------------------------------ */
+
+@keyframes timer-sand-stream {
+  from {
+    background-position-y: 0;
+  }
+
+  to {
+    background-position-y: 12px;
+  }
+}
+
+/* ------------------------------------------------------------
+   Individual decorative grains
+   ------------------------------------------------------------ */
+
+.timer-hourglass-particles {
+  position: absolute;
+
+  left: 0;
+  top: 0;
+
+  width: 100%;
+  height: 100%;
+
+  z-index: 7;
+
+  pointer-events: none;
+}
+
+.timer-hourglass-particle {
+  position: absolute;
+
+  width: 3px;
+  height: 3px;
+
+  border-radius: 50%;
+
+  background: #e6c36b;
+
+  box-shadow: 0 0 3px rgba(226, 183, 84, 0.5);
+
+  opacity: 0;
+
+  animation: timer-sand-particle 0.75s linear infinite;
+}
+
+.timer-hourglass-particle:nth-child(1) {
+  left: 51px;
+  top: 94px;
+
+  animation-delay: 0s;
+}
+
+.timer-hourglass-particle:nth-child(2) {
+  left: 58px;
+  top: 97px;
+
+  animation-delay: 0.22s;
+}
+
+.timer-hourglass-particle:nth-child(3) {
+  left: 54px;
+  top: 101px;
+
+  animation-delay: 0.46s;
+}
+
+@keyframes timer-sand-particle {
+  0% {
+    transform: translateY(-5px);
+    opacity: 0;
+  }
+
+  15% {
+    opacity: 0.8;
+  }
+
+  80% {
+    opacity: 0.55;
+  }
+
+  100% {
+    transform: translateY(24px);
+    opacity: 0;
+  }
+}
+
+/* ------------------------------------------------------------
+   Pause decorative particles
+   ------------------------------------------------------------ */
+
+.timer-hourglass.timer-idle .timer-hourglass-particle,
+.timer-hourglass.timer-paused .timer-hourglass-particle,
+.timer-hourglass.timer-complete .timer-hourglass-particle {
+  animation-play-state: paused;
+  opacity: 0;
+}
+
+/* ------------------------------------------------------------
+   Critical-time subtle shake
+   ------------------------------------------------------------ */
+
+.timer-display.timer-critical .timer-hourglass {
+  animation: timer-hourglass-critical 0.24s ease-in-out infinite alternate;
+}
+
+@keyframes timer-hourglass-critical {
+  from {
+    transform: rotate(-0.35deg);
+  }
+
+  to {
+    transform: rotate(0.35deg);
+  }
+}
+
+/* ------------------------------------------------------------
+   Completed hourglass
+   ------------------------------------------------------------ */
+
+.timer-display.timer-complete .timer-hourglass-sand-top {
+  height: 0;
+}
+
+.timer-display.timer-complete .timer-hourglass-sand-bottom {
+  height: 74px;
+}
+
+/* ------------------------------------------------------------
+   Paused hourglass
+   ------------------------------------------------------------ */
+
+.timer-display.timer-paused .timer-hourglass-stream,
+.timer-display.timer-paused .timer-hourglass-particle {
+  animation-play-state: paused;
+}
+
+/* ============================================================
+   FANTASY / HORROR CANDLE
+   ============================================================ */
+
+.timer-candle {
+  position: relative;
+
+  width: 180px;
+  height: 245px;
+
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+}
+
+/* ------------------------------------------------------------
+   Candle base
+   ------------------------------------------------------------ */
+
+.timer-candle-base {
+  position: absolute;
+
+  left: 35px;
+  bottom: 8px;
+
+  width: 110px;
+  height: 14px;
+
+  border-radius: 50%;
+
+  background: linear-gradient(to bottom, #776449, #3d3325);
+
+  box-shadow:
+    0 5px 12px rgba(0, 0, 0, 0.65),
+    inset 0 2px 2px rgba(255, 230, 190, 0.2);
+}
+
+/* ------------------------------------------------------------
+   Wax body
+   ------------------------------------------------------------ */
+
+.timer-candle-body {
+  position: absolute;
+
+  left: 59px;
+  bottom: 18px;
+
+  width: 62px;
+
+  height: calc(160px * var(--timer-remaining));
+
+  min-height: 7px;
+  max-height: 160px;
+
+  border-radius: 7px 7px 4px 4px;
+
+  background: linear-gradient(
+    to right,
+    #bba87b,
+    #e1d3aa 32%,
+    #c2ad7e 68%,
+    #927c57
+  );
+
+  box-shadow:
+    inset 6px 0 8px rgba(255, 245, 215, 0.18),
+    inset -6px 0 9px rgba(79, 59, 30, 0.28),
+    0 0 13px rgba(232, 189, 92, 0.15);
+
+  transition: height 0.08s linear;
+}
+
+/* ------------------------------------------------------------
+   Wax drip details
+   ------------------------------------------------------------ */
+
+.timer-candle-body::before,
+.timer-candle-body::after {
+  content: "";
+
+  position: absolute;
+
+  top: 2px;
+
+  width: 9px;
+
+  border-radius: 0 0 8px 8px;
+
+  background: rgba(224, 208, 166, 0.86);
+}
+
+.timer-candle-body::before {
+  left: 8px;
+  height: 19px;
+}
+
+.timer-candle-body::after {
+  right: 12px;
+  height: 12px;
+}
+
+/* ------------------------------------------------------------
+   Wick
+   ------------------------------------------------------------ */
+
+.timer-candle-wick {
+  position: absolute;
+
+  left: 50%;
+  top: -13px;
+
+  width: 3px;
+  height: 16px;
+
+  transform: translateX(-50%);
+
+  border-radius: 4px;
+
+  background: #29221b;
+}
+
+/* ------------------------------------------------------------
+   Flame container
+   ------------------------------------------------------------ */
+
+.timer-candle-flame-wrap {
+  position: absolute;
+
+  left: 50%;
+  top: -60px;
+
+  width: 42px;
+  height: 58px;
+
+  transform: translateX(-50%);
+}
+
+/* ------------------------------------------------------------
+   Outer flame
+   ------------------------------------------------------------ */
+
+.timer-candle-flame {
+  position: absolute;
+
+  left: 7px;
+  bottom: 0;
+
+  width: 28px;
+  height: 50px;
+
+  border-radius: 50% 50% 46% 46% / 65% 65% 35% 35%;
+
+  background: radial-gradient(
+    ellipse at center bottom,
+    #fff4b5 0%,
+    #f4c05c 35%,
+    #c86b27 65%,
+    rgba(170, 60, 20, 0) 78%
+  );
+
+  transform-origin: center bottom;
+
+  filter: drop-shadow(0 0 8px rgba(245, 176, 63, 0.85))
+    drop-shadow(0 0 20px rgba(226, 115, 35, 0.45));
+
+  animation: timer-flame-flicker 0.17s ease-in-out infinite alternate;
+}
+
+/* ------------------------------------------------------------
+   Inner flame
+   ------------------------------------------------------------ */
+
+.timer-candle-flame::after {
+  content: "";
+
+  position: absolute;
+
+  left: 8px;
+  bottom: 5px;
+
+  width: 12px;
+  height: 25px;
+
+  border-radius: 50%;
+
+  background: linear-gradient(
+    to top,
+    #fffbd0,
+    #ffe784 65%,
+    rgba(255, 220, 80, 0)
+  );
+}
+
+@keyframes timer-flame-flicker {
+  0% {
+    transform: rotate(-2deg) scaleX(0.94) scaleY(1);
+  }
+
+  50% {
+    transform: rotate(2deg) scaleX(1.04) scaleY(0.96);
+  }
+
+  100% {
+    transform: rotate(-1deg) scaleX(0.98) scaleY(1.05);
+  }
+}
+
+/* ------------------------------------------------------------
+   Candle glow
+   ------------------------------------------------------------ */
+
+.timer-candle-glow {
+  position: absolute;
+
+  left: 50%;
+  top: -92px;
+
+  width: 120px;
+  height: 120px;
+
+  transform: translateX(-50%);
+
+  border-radius: 50%;
+
+  background: radial-gradient(
+    circle,
+    rgba(246, 185, 73, 0.21),
+    rgba(246, 185, 73, 0.08) 42%,
+    rgba(246, 185, 73, 0) 72%
+  );
+
+  animation: timer-candle-glow-pulse 1.3s ease-in-out infinite alternate;
+}
+
+@keyframes timer-candle-glow-pulse {
+  from {
+    opacity: 0.7;
+    transform: translateX(-50%) scale(0.93);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateX(-50%) scale(1.06);
+  }
+}
+
+/* ------------------------------------------------------------
+   Paused candle
+   ------------------------------------------------------------ */
+
+.timer-display.timer-paused .timer-candle-flame,
+.timer-display.timer-paused .timer-candle-glow {
+  animation-play-state: paused;
+}
+
+/* ------------------------------------------------------------
+   Completed candle
+   ------------------------------------------------------------ */
+
+.timer-display.timer-complete .timer-candle-flame,
+.timer-display.timer-complete .timer-candle-glow {
+  display: none;
+}
+
+/* ------------------------------------------------------------
+   Smoke
+   ------------------------------------------------------------ */
+
+.timer-candle-smoke {
+  position: absolute;
+
+  left: 50%;
+  top: -39px;
+
+  width: 8px;
+  height: 45px;
+
+  transform: translateX(-50%);
+
+  opacity: 0;
+}
+
+.timer-display.timer-complete .timer-candle-smoke {
+  opacity: 1;
+}
+
+.timer-candle-smoke::before,
+.timer-candle-smoke::after {
+  content: "";
+
+  position: absolute;
+
+  width: 10px;
+  height: 28px;
+
+  border-radius: 50%;
+
+  border-left: 2px solid rgba(180, 190, 195, 0.5);
+
+  animation: timer-smoke-rise 2s ease-out infinite;
+}
+
+.timer-candle-smoke::after {
+  left: 5px;
+  animation-delay: 0.8s;
+}
+
+@keyframes timer-smoke-rise {
+  from {
+    transform: translateY(10px) translateX(0) scale(0.8);
+    opacity: 0.55;
+  }
+
+  to {
+    transform: translateY(-30px) translateX(12px) scale(1.3);
+    opacity: 0;
+  }
+}
+
+/* ============================================================
+   ORIGINAL SCI-FI PIXEL DEPLETION TIMER
+   ============================================================ */
+
+.timer-scifi {
+  position: relative;
+
+  width: 250px;
+  min-height: 220px;
+
+  padding: 20px;
+
+  border: 2px solid rgba(79, 181, 195, 0.62);
+
+  clip-path: polygon(
+    12px 0,
+    calc(100% - 12px) 0,
+    100% 12px,
+    100% calc(100% - 12px),
+    calc(100% - 12px) 100%,
+    12px 100%,
+    0 calc(100% - 12px),
+    0 12px
+  );
+
+  background: linear-gradient(
+    135deg,
+    rgba(7, 23, 27, 0.96),
+    rgba(2, 8, 11, 0.98)
+  );
+
+  box-shadow:
+    inset 0 0 18px rgba(59, 194, 212, 0.12),
+    0 0 20px rgba(30, 145, 165, 0.12);
+}
+
+/* ------------------------------------------------------------
+   Sci-fi decorative corners
+   ------------------------------------------------------------ */
+
+.timer-scifi::before,
+.timer-scifi::after {
+  content: "";
+
+  position: absolute;
+
+  width: 36px;
+  height: 3px;
+
+  background: rgba(88, 205, 216, 0.72);
+
+  box-shadow: 0 0 8px rgba(88, 205, 216, 0.36);
+}
+
+.timer-scifi::before {
+  top: 8px;
+  left: 14px;
+}
+
+.timer-scifi::after {
+  right: 14px;
+  bottom: 8px;
+}
+
+/* ------------------------------------------------------------
+   Sci-fi status heading
+   ------------------------------------------------------------ */
+
+.timer-scifi-heading {
+  margin-bottom: 13px;
+
+  color: #91d4da;
+
+  font-size: 9px;
+  font-weight: 900;
+
+  letter-spacing: 0.28em;
+  text-align: center;
+  text-transform: uppercase;
+
+  opacity: 0.82;
+}
+
+/* ------------------------------------------------------------
+   Pixel grid
+   ------------------------------------------------------------ */
+
+.timer-scifi-grid {
+  display: grid;
+
+  grid-template-columns: repeat(8, 1fr);
+
+  gap: 7px;
+
+  width: 100%;
+
+  padding: 10px;
+
+  border: 1px solid rgba(89, 193, 203, 0.24);
+
+  background: linear-gradient(rgba(11, 31, 36, 0.65), rgba(3, 11, 14, 0.74));
+}
+
+/* ------------------------------------------------------------
+   Individual pixels
+   ------------------------------------------------------------ */
+
+.timer-scifi-pixel {
+  aspect-ratio: 1;
+
+  border-radius: 2px;
+
+  border: 1px solid rgba(117, 230, 230, 0.35);
+
+  background: linear-gradient(135deg, #91e0df, #3fadb2 70%, #24666c);
+
+  box-shadow:
+    0 0 5px rgba(95, 218, 220, 0.55),
+    inset 0 0 4px rgba(225, 255, 255, 0.25);
+
+  opacity: 1;
+
+  transition:
+    opacity 0.16s linear,
+    transform 0.16s ease,
+    filter 0.16s ease;
+}
+
+.timer-scifi-pixel.off {
+  opacity: 0.06;
+
+  transform: scale(0.78);
+
+  filter: grayscale(1);
+
+  box-shadow: none;
+
+  background: #102326;
+}
+
+/* ------------------------------------------------------------
+   Pixels being removed
+   ------------------------------------------------------------ */
+
+.timer-scifi-pixel.decaying {
+  animation: timer-pixel-decay 0.28s ease-out;
+}
+
+@keyframes timer-pixel-decay {
+  0% {
+    opacity: 1;
+    transform: scale(1);
+    filter: brightness(1);
+  }
+
+  45% {
+    opacity: 1;
+    transform: scale(1.3);
+    filter: brightness(2.4);
+  }
+
+  100% {
+    opacity: 0.06;
+    transform: scale(0.78);
+    filter: brightness(0.5);
+  }
+}
+
+/* ------------------------------------------------------------
+   Sci-fi scan line
+   ------------------------------------------------------------ */
+
+.timer-scifi-scan {
+  position: absolute;
+
+  left: 7px;
+  right: 7px;
+  top: 0;
+
+  height: 2px;
+
+  background: linear-gradient(
+    to right,
+    transparent,
+    rgba(117, 230, 230, 0.85),
+    transparent
+  );
+
+  opacity: 0.55;
+
+  animation: timer-scifi-scan 2.7s linear infinite;
+}
+
+@keyframes timer-scifi-scan {
+  from {
+    top: 5%;
+  }
+
+  to {
+    top: 94%;
+  }
+}
+
+/* ------------------------------------------------------------
+   Sci-fi decorative microtext
+   ------------------------------------------------------------ */
+
+.timer-scifi-footer {
+  display: flex;
+
+  justify-content: space-between;
+
+  gap: 8px;
+
+  margin-top: 11px;
+
+  color: #568b90;
+
+  font-size: 7px;
+  font-weight: 800;
+
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+
+/* ------------------------------------------------------------
+   Sci-fi warning state
+   ------------------------------------------------------------ */
+
+.timer-display.timer-warning .timer-scifi {
+  border-color: rgba(213, 169, 73, 0.68);
+
+  box-shadow:
+    inset 0 0 18px rgba(205, 148, 54, 0.12),
+    0 0 20px rgba(205, 148, 54, 0.16);
+}
+
+.timer-display.timer-warning .timer-scifi-pixel:not(.off) {
+  background: linear-gradient(135deg, #e0c276, #aa782f);
+
+  border-color: rgba(235, 197, 104, 0.42);
+
+  box-shadow: 0 0 5px rgba(225, 174, 65, 0.55);
+}
+
+/* ------------------------------------------------------------
+   Sci-fi critical state
+   ------------------------------------------------------------ */
+
+.timer-display.timer-critical .timer-scifi {
+  border-color: rgba(206, 70, 78, 0.82);
+
+  box-shadow:
+    inset 0 0 20px rgba(195, 59, 68, 0.18),
+    0 0 23px rgba(195, 59, 68, 0.22);
+
+  animation: timer-scifi-critical-frame 0.38s steps(2) infinite;
+}
+
+.timer-display.timer-critical .timer-scifi-pixel:not(.off) {
+  background: linear-gradient(135deg, #ef858a, #a42e37);
+
+  border-color: rgba(255, 151, 157, 0.55);
+
+  box-shadow: 0 0 7px rgba(220, 68, 76, 0.72);
+}
+
+@keyframes timer-scifi-critical-frame {
+  0% {
+    filter: brightness(0.88);
+  }
+
+  50% {
+    filter: brightness(1.25);
+  }
+
+  100% {
+    filter: brightness(0.92);
+  }
+}
+
+/* ------------------------------------------------------------
+   Sci-fi complete state
+   ------------------------------------------------------------ */
+
+.timer-display.timer-complete .timer-scifi {
+  border-color: rgba(170, 48, 55, 0.38);
+
+  box-shadow: inset 0 0 18px rgba(160, 40, 47, 0.08);
+
+  filter: brightness(0.55);
+}
+
+.timer-display.timer-complete .timer-scifi-pixel {
+  opacity: 0.04;
+
+  transform: scale(0.72);
+
+  background: #1b1516;
+
+  box-shadow: none;
+}
+
+/* ------------------------------------------------------------
+   Paused sci-fi decorative animation
+   ------------------------------------------------------------ */
+
+.timer-display.timer-paused .timer-scifi-scan,
+.timer-display.timer-paused .timer-scifi,
+.timer-display.timer-paused .timer-scifi-pixel {
+  animation-play-state: paused;
+}
+
+/* ============================================================
+   GENERIC TIMER PROGRESS RING
+   Optional future skin / fallback
+   ============================================================ */
+
+.timer-progress-ring {
+  position: relative;
+
+  width: 180px;
+  height: 180px;
+
+  border-radius: 50%;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  background: conic-gradient(
+    #6bb5c8 calc(var(--timer-remaining) * 360deg),
+    rgba(91, 126, 139, 0.16) 0
+  );
+
+  box-shadow: 0 0 20px rgba(70, 160, 185, 0.2);
+}
+
+.timer-progress-ring::before {
+  content: "";
+
+  position: absolute;
+
+  inset: 15px;
+
+  border-radius: 50%;
+
+  background: #071117;
+
+  border: 1px solid rgba(93, 144, 163, 0.34);
+}
+
+/* ============================================================
+   TIMER PANEL - DM CONSOLE
+   ============================================================ */
+
+.timer-panel {
+  display: grid;
+
+  grid-template-columns:
+    minmax(280px, 0.8fr)
+    minmax(320px, 1.2fr);
+
+  gap: 22px;
+
+  align-items: start;
+}
+
+.timer-controls,
+.timer-preview-panel {
+  min-width: 0;
+}
+
+/* ============================================================
+   TIMER PREVIEW
+   ============================================================ */
+
+.timer-preview-panel {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  min-height: 430px;
+
+  padding: 24px;
+
+  border: 1px solid var(--timer-panel-border);
+  border-radius: 14px;
+
+  background: linear-gradient(
+    145deg,
+    rgba(8, 20, 27, 0.92),
+    rgba(3, 9, 13, 0.96)
+  );
+}
+
+/* ============================================================
+   TIMER CONTROL GROUPS
+   ============================================================ */
+
+.timer-control-group {
+  margin-bottom: 18px;
+}
+
+.timer-control-group label {
+  display: block;
+
+  margin-bottom: 6px;
+
+  color: #a8c1cd;
+
+  font-size: 10px;
+  font-weight: 800;
+
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.timer-duration-row {
+  display: grid;
+
+  grid-template-columns:
+    minmax(0, 1fr)
+    minmax(0, 1fr);
+
+  gap: 12px;
+}
+
+.timer-duration-field {
+  min-width: 0;
+}
+
+.timer-duration-field input {
+  width: 100%;
+}
+
+/* ============================================================
+   TIMER ACTION BUTTONS
+   ============================================================ */
+
+.timer-actions {
+  display: flex;
+  flex-wrap: wrap;
+
+  gap: 9px;
+
+  margin-top: 18px;
+}
+
+.timer-adjust-actions {
+  display: flex;
+  flex-wrap: wrap;
+
+  gap: 7px;
+
+  margin-top: 12px;
+}
+
+/* ============================================================
+   TIMER ACTIVE SUMMARY
+   ============================================================ */
+
+.timer-active-summary {
+  margin-top: 18px;
+
+  padding: 12px 14px;
+
+  border: 1px solid rgba(86, 136, 154, 0.34);
+  border-radius: 10px;
+
+  background: rgba(4, 13, 18, 0.65);
+}
+
+.timer-active-summary-title {
+  color: #d0e2e8;
+
+  font-size: 14px;
+  font-weight: 800;
+}
+
+.timer-active-summary-state {
+  margin-top: 5px;
+
+  color: #849da8;
+
+  font-size: 10px;
+
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+/* ============================================================
+   REDUCED MOTION
+   ============================================================ */
+
+@media (prefers-reduced-motion: reduce) {
+  .timer-critical,
+  .timer-hourglass-stream,
+  .timer-hourglass-particle,
+  .timer-candle-flame,
+  .timer-candle-glow,
+  .timer-candle-smoke::before,
+  .timer-candle-smoke::after,
+  .timer-scifi-scan,
+  .timer-scifi,
+  .timer-scifi-pixel {
+    animation: none !important;
+  }
+
+  .timer-hourglass-sand-top,
+  .timer-hourglass-sand-bottom,
+  .timer-candle-body,
+  .timer-scifi-pixel {
+    transition: none !important;
+  }
+}
+
+/* ============================================================
+   RESPONSIVE TIMER UI
+   ============================================================ */
+
+@media (max-width: 900px) {
+  .timer-panel {
+    grid-template-columns: 1fr;
+  }
+
+  .timer-preview-panel {
+    min-height: 350px;
+  }
+
+  .player-timer-overlay {
+    top: 78px;
+  }
+}
+
+@media (max-width: 600px) {
+  .timer-display {
+    --timer-width: 210px;
+    --timer-height: 270px;
+  }
+
+  .timer-hourglass {
+    transform: scale(0.82);
+  }
+
+  .timer-candle {
+    transform: scale(0.82);
+  }
+
+  .timer-scifi {
+    width: 215px;
+  }
+
+  .timer-scifi-grid {
+    gap: 5px;
+  }
+
+  .timer-duration-row {
+    grid-template-columns: 1fr;
+  }
+
+  .player-timer-overlay {
+    top: 68px;
+
+    max-width: calc(100% - 16px);
+  }
+}
+
+/* ============================================================
+   PLAYER DISPLAY TIMER POSITIONING
+   ============================================================ */
+
+/*
+ * Keep the normal overlay timer comfortably below
+ * the Player Display header.
+ */
+.player-timer-overlay {
+  top: 155px;
+  right: 36px;
+}
+
+/*
+ * Featured mode can sit slightly lower because
+ * the timer is intentionally larger.
+ */
+.player-timer-overlay.timer-mode-featured {
+  top: 175px;
+}
+/* ============================================================
+   PLAYER DISPLAY TIMER CLEANUP
+   ============================================================ */
+
+/* Hide the timer name/label on the Player Display */
+#playerTimerLayer .timer-label {
+  display: none;
+}

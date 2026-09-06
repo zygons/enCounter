@@ -3,16 +3,26 @@
   SPDX-License-Identifier: MIT
   This file is part of enCounter. See LICENSE for the full license terms.
 -->
+
 <!doctype html>
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
     <title>enCounter — DM Console</title>
+
     <link rel="icon" type="image/png" href="/assets/branding/favicon.png" />
+
     <link rel="stylesheet" href="css/base.css" />
+    <link rel="stylesheet" href="css/timer.css" />
   </head>
+
   <body class="dm-body">
+    <!-- =========================================================
+         APPLICATION HEADER
+         ========================================================= -->
+
     <header class="app-header">
       <div class="brand-block">
         <img
@@ -24,24 +34,30 @@
         <div class="brand-meta">
           <div class="eyebrow">TTRPG ENCOUNTER CONSOLE</div>
 
-          <span id="appVersion" class="version">ALPHA · v0.1.0-alpha.1</span>
+          <span id="appVersion" class="version"> ALPHA · v0.1.0-alpha.1 </span>
+
           <a
             class="legal-link"
             href="/docs/LEGAL.html"
             target="_blank"
             rel="noopener"
-            >Open source · MIT</a
           >
+            Open source · MIT
+          </a>
         </div>
       </div>
+
+      <!-- Encounter Header Controls -->
 
       <div class="encounter-head-controls">
         <label>
           <span>Encounter</span>
           <input id="encounterName" type="text" value="New Encounter" />
         </label>
+
         <label>
           <span>System</span>
+
           <select id="encounterSystem">
             <option value="generic">Generic TTRPG</option>
             <option value="swse">Star Wars Saga Edition</option>
@@ -49,126 +65,198 @@
             <option value="custom">Custom</option>
           </select>
         </label>
+
         <div class="round-chip">
-          <span>ROUND</span><strong id="roundNumber">1</strong>
+          <span>ROUND</span>
+          <strong id="roundNumber">1</strong>
         </div>
+
         <div id="saveIndicator" class="save-indicator">✓ SAVED</div>
       </div>
 
+      <!-- Header Actions -->
+
       <div class="header-actions">
-        <button id="previousTurnBtn">◀ Previous</button>
-        <button id="nextTurnBtn" class="primary">Next Turn ▶</button>
+        <button id="previousTurnBtn" type="button">◀ Previous</button>
+
+        <button id="nextTurnBtn" class="primary" type="button">
+          Next Turn ▶
+        </button>
+
         <button id="openDisplayBtn" type="button">Start Player Display</button>
+
         <button id="exitAppBtn" class="danger-outline" type="button">
           Exit enCounter
         </button>
       </div>
     </header>
 
+    <!-- =========================================================
+         MAIN NAVIGATION
+         ========================================================= -->
+
     <nav class="main-nav">
-      <button class="nav-button active" data-section="encounterSection">
+      <button
+        class="nav-button active"
+        data-section="encounterSection"
+        type="button"
+      >
         Encounter
       </button>
-      <button class="nav-button" data-section="librarySection">Library</button>
-      <button class="nav-button" data-section="assetsSection">Assets</button>
-      <button class="nav-button" data-section="dataSection">Data</button>
-      <button class="nav-button" data-section="settingsSection">
+
+      <button class="nav-button" data-section="librarySection" type="button">
+        Library
+      </button>
+
+      <button class="nav-button" data-section="assetsSection" type="button">
+        Assets
+      </button>
+
+      <button class="nav-button" data-section="timerSection" type="button">
+        Timer
+      </button>
+
+      <button class="nav-button" data-section="dataSection" type="button">
+        Data
+      </button>
+
+      <button class="nav-button" data-section="settingsSection" type="button">
         Settings
       </button>
     </nav>
 
+    <!-- =========================================================
+         MAIN APPLICATION
+         ========================================================= -->
+
     <main class="main-shell">
+      <!-- =======================================================
+           ENCOUNTER SECTION
+           ======================================================= -->
+
       <section id="encounterSection" class="app-section active-section">
         <div class="panel encounter-tools">
           <div class="section-heading">
             <div>
               <div class="eyebrow">ENCOUNTER TOOLS</div>
+
               <h2>Run Combat</h2>
             </div>
+
             <div class="button-row">
-              <button id="newEncounterBtn" class="danger-outline">
+              <button id="newEncounterBtn" class="danger-outline" type="button">
                 New Encounter
               </button>
-              <button id="savePresetBtn">Save Preset</button>
+
+              <button id="savePresetBtn" type="button">Save Preset</button>
+
               <select id="presetSelect">
                 <option value="">Load preset…</option>
               </select>
-              <button id="loadPresetBtn">Load</button>
+
+              <button id="loadPresetBtn" type="button">Load</button>
             </div>
           </div>
 
+          <!-- Background Controls -->
+
           <div id="backgroundControls" class="tool-grid">
-            <label
-              ><span>Background</span
-              ><select id="backgroundSelect">
+            <label>
+              <span>Background</span>
+
+              <select id="backgroundSelect">
                 <option value="">— None —</option>
-              </select></label
-            >
-            <label
-              ><span>Import Background</span
-              ><input
+              </select>
+            </label>
+
+            <label>
+              <span>Import Background</span>
+
+              <input
                 id="backgroundUpload"
                 type="file"
                 accept="image/png,image/jpeg,image/webp"
-            /></label>
-            <button id="uploadBackgroundBtn">Import</button>
+              />
+            </label>
+
+            <button id="uploadBackgroundBtn" type="button">Import</button>
           </div>
 
+          <!-- Quick Add Controls -->
+
           <div class="tool-grid quick-add-grid">
-            <label
-              ><span>Add From Library</span
-              ><select id="encounterLibrarySelect">
+            <label>
+              <span>Add From Library</span>
+
+              <select id="encounterLibrarySelect">
                 <option value="">Choose saved character…</option>
-              </select></label
-            >
-            <label
-              ><span>Initiative</span
-              ><input id="libraryInitiative" type="number" value="10"
-            /></label>
-            <button id="addLibraryCombatantBtn" class="primary">
+              </select>
+            </label>
+
+            <label>
+              <span>Initiative</span>
+
+              <input id="libraryInitiative" type="number" value="10" />
+            </label>
+
+            <button id="addLibraryCombatantBtn" class="primary" type="button">
               + Add Saved
             </button>
 
-            <label
-              ><span>Quick Name</span
-              ><input id="quickName" type="text" placeholder="Goblin 1"
-            /></label>
-            <label
-              ><span>Type</span
-              ><select id="quickType">
+            <label>
+              <span>Quick Name</span>
+
+              <input id="quickName" type="text" placeholder="Goblin 1" />
+            </label>
+
+            <label>
+              <span>Type</span>
+
+              <select id="quickType">
                 <option value="enemy">Enemy</option>
                 <option value="npc">NPC</option>
                 <option value="player">Player</option>
                 <option value="creature">Creature</option>
-              </select></label
-            >
-            <label
-              ><span>Initiative</span
-              ><input id="quickInitiative" type="number" value="10"
-            /></label>
-            <button id="quickAddBtn">+ Quick Add</button>
+              </select>
+            </label>
+
+            <label>
+              <span>Initiative</span>
+
+              <input id="quickInitiative" type="number" value="10" />
+            </label>
+
+            <button id="quickAddBtn" type="button">+ Quick Add</button>
           </div>
         </div>
 
         <div id="combatantList" class="combatant-list"></div>
+
         <div id="emptyEncounter" class="panel empty-state">
           No combatants yet. Add a saved character or use Quick Add.
         </div>
       </section>
+
+      <!-- =======================================================
+           LIBRARY SECTION
+           ======================================================= -->
 
       <section id="librarySection" class="app-section">
         <div class="panel">
           <div class="section-heading">
             <div>
               <div class="eyebrow">PERMANENT DATA</div>
+
               <h2>Library Management</h2>
             </div>
+
             <div class="button-row">
               <input
                 id="librarySearch"
                 type="search"
                 placeholder="Search library…"
               />
+
               <select id="libraryTypeFilter">
                 <option value="all">All Types</option>
                 <option value="player">Players</option>
@@ -176,6 +264,7 @@
                 <option value="enemy">Enemies</option>
                 <option value="creature">Creatures</option>
               </select>
+
               <select id="librarySystemFilter">
                 <option value="all">All Systems</option>
                 <option value="generic">Generic</option>
@@ -192,97 +281,133 @@
             <div class="section-heading">
               <div>
                 <div class="eyebrow">CREATE / EDIT</div>
+
                 <h2 id="libraryFormTitle">New Library Entry</h2>
               </div>
-              <button id="cancelLibraryEditBtn" class="secondary hidden">
+
+              <button
+                id="cancelLibraryEditBtn"
+                class="secondary hidden"
+                type="button"
+              >
                 Cancel Edit
               </button>
             </div>
+
             <form id="libraryForm">
               <input id="libraryEditId" type="hidden" />
+
               <div class="form-grid">
-                <label
-                  ><span>Name</span
-                  ><input id="libraryName" required type="text"
-                /></label>
-                <label
-                  ><span>Type</span
-                  ><select id="libraryType">
+                <label>
+                  <span>Name</span>
+
+                  <input id="libraryName" required type="text" />
+                </label>
+
+                <label>
+                  <span>Type</span>
+
+                  <select id="libraryType">
                     <option value="player">Player</option>
                     <option value="npc">NPC</option>
                     <option value="enemy">Enemy</option>
                     <option value="creature">Creature</option>
-                  </select></label
-                >
-                <label
-                  ><span>System</span
-                  ><select id="librarySystem">
+                  </select>
+                </label>
+
+                <label>
+                  <span>System</span>
+
+                  <select id="librarySystem">
                     <option value="generic">Generic TTRPG</option>
                     <option value="swse">Star Wars Saga Edition</option>
                     <option value="dnd5e">D&amp;D 5E</option>
                     <option value="custom">Custom</option>
-                  </select></label
-                >
-                <label
-                  ><span>Maximum HP</span
-                  ><input id="libraryMaxHp" type="number"
-                /></label>
+                  </select>
+                </label>
+
+                <label>
+                  <span>Maximum HP</span>
+
+                  <input id="libraryMaxHp" type="number" />
+                </label>
               </div>
 
               <h3>System Statistics</h3>
+
               <div id="libraryStatFields" class="form-grid stat-fields"></div>
 
               <h3>Portrait</h3>
+
               <div class="form-grid">
-                <label
-                  ><span>Existing Portrait</span
-                  ><select id="libraryPortraitSelect">
+                <label>
+                  <span>Existing Portrait</span>
+
+                  <select id="libraryPortraitSelect">
                     <option value="">— None —</option>
-                  </select></label
-                >
-                <label
-                  ><span>Import Portrait</span
-                  ><input
+                  </select>
+                </label>
+
+                <label>
+                  <span>Import Portrait</span>
+
+                  <input
                     id="libraryPortraitUpload"
                     type="file"
                     accept="image/png,image/jpeg,image/webp"
-                /></label>
+                  />
+                </label>
+
                 <button id="uploadLibraryPortraitBtn" type="button">
                   Import Portrait
                 </button>
               </div>
 
-              <label
-                ><span>Tags <small>(comma-separated)</small></span
-                ><input
+              <label>
+                <span>
+                  Tags
+                  <small>(comma-separated)</small>
+                </span>
+
+                <input
                   id="libraryTags"
                   type="text"
                   placeholder="boss, humanoid, recurring"
-              /></label>
-              <label
-                ><span>Private DM Notes</span
-                ><textarea id="libraryNotes" rows="3"></textarea>
+                />
               </label>
-              <label
-                ><span
-                  >Abilities
-                  <small>one per line: Name | Uses | Description</small></span
-                ><textarea
+
+              <label>
+                <span>Private DM Notes</span>
+
+                <textarea id="libraryNotes" rows="3"></textarea>
+              </label>
+
+              <label>
+                <span>
+                  Abilities
+                  <small> one per line: Name | Uses | Description </small>
+                </span>
+
+                <textarea
                   id="libraryAbilities"
                   rows="5"
-                  placeholder="Jetpack |  | Move vertically\nThermal Detonator | 1 | Area attack"
+                  placeholder="Jetpack |  | Move vertically&#10;Thermal Detonator | 1 | Area attack"
                 ></textarea>
               </label>
-              <label
-                ><span
-                  >Resources
-                  <small>one per line: Name | Current | Max</small></span
-                ><textarea
+
+              <label>
+                <span>
+                  Resources
+                  <small> one per line: Name | Current | Max </small>
+                </span>
+
+                <textarea
                   id="libraryResources"
                   rows="4"
                   placeholder="Force Points | 5 | 5"
                 ></textarea>
               </label>
+
               <button type="submit" class="primary large-button">
                 Save Library Entry
               </button>
@@ -291,6 +416,7 @@
 
           <div class="panel">
             <div id="libraryCards" class="library-cards"></div>
+
             <div id="emptyLibrary" class="empty-state">
               Your permanent character/NPC/enemy library is empty.
             </div>
@@ -298,158 +424,454 @@
         </div>
       </section>
 
+      <!-- =======================================================
+           ASSETS SECTION
+           ======================================================= -->
+
       <section id="assetsSection" class="app-section">
         <div class="panel">
           <div class="section-heading">
             <div>
               <div class="eyebrow">REUSABLE ART</div>
+
               <h2>Asset Library</h2>
             </div>
-            <button id="refreshAssetsBtn">Refresh</button>
+
+            <button id="refreshAssetsBtn" type="button">Refresh</button>
           </div>
+
           <div class="tool-grid">
-            <label
-              ><span>Show Category</span
-              ><select id="assetFilter">
+            <label>
+              <span>Show Category</span>
+
+              <select id="assetFilter">
                 <option value="">All Assets</option>
                 <option value="backgrounds/">Backgrounds</option>
                 <option value="portraits/">Portraits</option>
                 <option value="icons/">Icons</option>
                 <option value="tokens">Tokens</option>
-              </select></label
-            >
-            <label
-              ><span>Import To</span
-              ><select id="assetUploadCategory">
+              </select>
+            </label>
+
+            <label>
+              <span>Import To</span>
+
+              <select id="assetUploadCategory">
                 <option value="backgrounds/custom">Backgrounds / Custom</option>
+
                 <option value="portraits/players">Portraits / Players</option>
+
                 <option value="portraits/npcs">Portraits / NPCs</option>
+
                 <option value="portraits/enemies">Portraits / Enemies</option>
+
                 <option value="portraits/custom">Portraits / Custom</option>
+
                 <option value="tokens">Tokens</option>
+
                 <option value="icons/conditions">Icons / Conditions</option>
-              </select></label
-            >
-            <label
-              ><span>Choose Image</span
-              ><input
+              </select>
+            </label>
+
+            <label>
+              <span>Choose Image</span>
+
+              <input
                 id="assetUploadFile"
                 type="file"
                 accept="image/png,image/jpeg,image/webp"
-            /></label>
-            <button id="uploadAssetBtn" class="primary">Import Asset</button>
+              />
+            </label>
+
+            <button id="uploadAssetBtn" class="primary" type="button">
+              Import Asset
+            </button>
           </div>
+
           <p class="hint">
             You can also copy PNG/JPEG/WebP files directly into the folders
             under <code>assets/</code>, then click Refresh.
           </p>
+
           <div id="assetGrid" class="asset-grid"></div>
         </div>
       </section>
 
+      <!-- =======================================================
+           TIMER SECTION
+           ======================================================= -->
+
+      <section id="timerSection" class="app-section">
+        <div class="panel">
+          <div class="section-heading">
+            <div>
+              <div class="eyebrow">VISUAL COUNTDOWN</div>
+
+              <h2>Timer</h2>
+            </div>
+
+            <div class="timer-active-summary">
+              <div id="timerActiveName" class="timer-active-summary-title">
+                Countdown
+              </div>
+
+              <div id="timerStatusText" class="timer-active-summary-state">
+                Ready
+              </div>
+            </div>
+          </div>
+
+          <div class="timer-panel">
+            <!-- ===============================================
+                 TIMER CONTROLS
+                 =============================================== -->
+
+            <div class="timer-controls">
+              <!-- Timer Name -->
+
+              <div class="timer-control-group">
+                <label for="timerName"> Timer Name </label>
+
+                <input
+                  id="timerName"
+                  type="text"
+                  value="Countdown"
+                  maxlength="80"
+                  placeholder="Temple Collapse"
+                />
+              </div>
+
+              <!-- Duration -->
+
+              <div class="timer-control-group">
+                <label> Duration </label>
+
+                <div class="timer-duration-row">
+                  <div class="timer-duration-field">
+                    <label for="timerMinutes"> Minutes </label>
+
+                    <input
+                      id="timerMinutes"
+                      type="number"
+                      min="0"
+                      max="999"
+                      step="1"
+                      value="5"
+                      inputmode="numeric"
+                    />
+                  </div>
+
+                  <div class="timer-duration-field">
+                    <label for="timerSeconds"> Seconds </label>
+
+                    <input
+                      id="timerSeconds"
+                      type="number"
+                      min="0"
+                      max="59"
+                      step="1"
+                      value="0"
+                      inputmode="numeric"
+                    />
+                  </div>
+                </div>
+              </div>
+
+              <!-- Skin -->
+
+              <div class="timer-control-group">
+                <label for="timerSkin"> Visual Skin </label>
+
+                <select id="timerSkin">
+                  <option value="hourglass">Fantasy Hourglass</option>
+
+                  <option value="candle">Candle</option>
+
+                  <option value="scifi-pixels">Sci-Fi Pixel Sequence</option>
+                </select>
+              </div>
+
+              <!-- Display Mode -->
+
+              <div class="timer-control-group">
+                <label for="timerDisplayMode"> Player Display Mode </label>
+
+                <select id="timerDisplayMode">
+                  <option value="overlay">Overlay</option>
+
+                  <option value="featured">Featured</option>
+
+                  <option value="focus">Focus</option>
+                </select>
+              </div>
+
+              <!-- Player Display Options -->
+
+              <div class="timer-control-group">
+                <label> Player Display </label>
+
+                <label class="check-row">
+                  <input id="timerShowPlayers" type="checkbox" />
+
+                  Show timer to players
+                </label>
+
+                <label class="check-row">
+                  <input id="timerShowNumericPlayers" type="checkbox" />
+
+                  Show exact countdown to players
+                </label>
+
+                <label class="check-row">
+                  <input id="timerShowNumericDM" type="checkbox" checked />
+
+                  Show exact countdown in DM preview
+                </label>
+              </div>
+
+              <!-- Primary Timer Actions -->
+
+              <div class="timer-control-group">
+                <label> Timer Controls </label>
+
+                <div class="timer-actions">
+                  <button id="timerStartBtn" class="primary" type="button">
+                    Start
+                  </button>
+
+                  <button id="timerPauseBtn" type="button">Pause</button>
+
+                  <button id="timerResumeBtn" type="button">Resume</button>
+
+                  <button id="timerResetBtn" type="button">Reset</button>
+
+                  <button
+                    id="timerStopBtn"
+                    class="danger-outline"
+                    type="button"
+                  >
+                    Stop
+                  </button>
+                </div>
+              </div>
+
+              <!-- Adjust Time -->
+
+              <div class="timer-control-group">
+                <label> Adjust Time </label>
+
+                <div class="timer-adjust-actions">
+                  <button id="timerSubtractMinuteBtn" type="button">
+                    −1 min
+                  </button>
+
+                  <button id="timerSubtractTenBtn" type="button">
+                    −10 sec
+                  </button>
+
+                  <button id="timerAddTenBtn" type="button">+10 sec</button>
+
+                  <button id="timerAddMinuteBtn" type="button">+1 min</button>
+                </div>
+              </div>
+
+              <p class="hint">
+                The timer uses the system clock rather than counting browser
+                animation frames, so the visual countdown remains accurate even
+                if rendering is temporarily interrupted.
+              </p>
+
+              <p class="hint">
+                Player Display timer synchronization will be connected after the
+                DM timer controls and animations are tested.
+              </p>
+            </div>
+
+            <!-- ===============================================
+                 TIMER PREVIEW
+                 =============================================== -->
+
+            <div class="timer-preview-panel">
+              <div id="timerPreview" aria-label="Timer preview"></div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- =======================================================
+           DATA SECTION
+           ======================================================= -->
+
       <section id="dataSection" class="app-section">
         <div class="data-grid">
+          <!-- Export -->
+
           <div class="panel">
             <div class="eyebrow">EXPORT</div>
+
             <h2>Back Up Your Data</h2>
+
             <p>
               Library data, presets, settings, and the active encounter are
               saved in IndexedDB. Export creates an additional portable JSON
               backup.
             </p>
+
             <div class="stacked-buttons">
-              <button id="exportLibraryBtn">Export Library Only</button>
-              <button id="exportEverythingBtn" class="primary">
+              <button id="exportLibraryBtn" type="button">
+                Export Library Only
+              </button>
+
+              <button id="exportEverythingBtn" class="primary" type="button">
                 Export Everything
               </button>
             </div>
           </div>
+
+          <!-- Import -->
+
           <div class="panel">
             <div class="eyebrow">IMPORT / RECOVERY</div>
+
             <h2>Restore Data</h2>
-            <label
-              ><span>Backup File</span
-              ><input
+
+            <label>
+              <span>Backup File</span>
+
+              <input
                 id="importFile"
                 type="file"
                 accept="application/json,.json"
-            /></label>
-            <button id="importBackupBtn" class="danger-outline">
+              />
+            </label>
+
+            <button id="importBackupBtn" class="danger-outline" type="button">
               Import &amp; Replace Current Data
             </button>
+
             <hr />
-            <button id="restoreLatestBackupBtn">
+
+            <button id="restoreLatestBackupBtn" type="button">
               Restore Latest External Backup
             </button>
+
             <p class="hint">
-              External backups are written to <code>data/backups/</code> when
-              the local Python launcher is used.
+              External backups are written to
+              <code>data/backups/</code>
+              when the local Python launcher is used.
             </p>
           </div>
+
+          <!-- Browser Storage -->
+
           <div class="panel">
             <div class="eyebrow">BROWSER STORAGE</div>
+
             <h2>Storage Protection</h2>
+
             <div id="storageStatus">Checking storage…</div>
-            <button id="requestPersistenceBtn">
+
+            <button id="requestPersistenceBtn" type="button">
               Request Persistent Browser Storage
             </button>
+
             <h3>Recovery Snapshots</h3>
+
             <div id="snapshotList" class="snapshot-list"></div>
           </div>
         </div>
       </section>
 
+      <!-- =======================================================
+           SETTINGS SECTION
+           ======================================================= -->
+
       <section id="settingsSection" class="app-section">
         <div class="settings-grid">
+          <!-- Tracker Mode -->
+
           <div class="panel">
             <div class="eyebrow">TRACKER EXPERIENCE</div>
+
             <h2>Mode</h2>
-            <label
-              ><span>Preset</span
-              ><select id="settingsMode">
+
+            <label>
+              <span>Preset</span>
+
+              <select id="settingsMode">
                 <option value="simple">Simple</option>
                 <option value="standard">Standard</option>
                 <option value="advanced">Advanced</option>
                 <option value="custom">Custom</option>
-              </select></label
-            >
+              </select>
+            </label>
+
             <p class="hint">
               Changing individual modules automatically changes the mode to
               Custom.
             </p>
+
             <div id="moduleCheckboxes" class="module-list"></div>
           </div>
+
+          <!-- Backup Settings -->
+
           <div class="panel">
             <div class="eyebrow">DATA PROTECTION</div>
+
             <h2>Backup Settings</h2>
-            <label class="check-row"
-              ><input id="externalBackupEnabled" type="checkbox" /> Write
-              automatic external backups to <code>data/backups/</code></label
-            >
+
+            <label class="check-row">
+              <input id="externalBackupEnabled" type="checkbox" />
+
+              Write automatic external backups to
+              <code>data/backups/</code>
+            </label>
+
             <p class="hint">
               Browser storage remains the working database. The external file is
               an extra recovery layer.
             </p>
           </div>
+
+          <!-- Custom Ruleset -->
+
           <div class="panel">
             <div class="eyebrow">CUSTOM RULESET</div>
+
             <h2>Custom System</h2>
-            <label
-              ><span>Name</span><input id="customSystemName" type="text"
-            /></label>
-            <label
-              ><span>Stat 1</span><input id="customStat1" type="text"
-            /></label>
-            <label
-              ><span>Stat 2</span><input id="customStat2" type="text"
-            /></label>
-            <label
-              ><span>Stat 3</span><input id="customStat3" type="text"
-            /></label>
-            <label
-              ><span>Stat 4</span><input id="customStat4" type="text"
-            /></label>
-            <button id="saveCustomSystemBtn" class="primary">
+
+            <label>
+              <span>Name</span>
+
+              <input id="customSystemName" type="text" />
+            </label>
+
+            <label>
+              <span>Stat 1</span>
+
+              <input id="customStat1" type="text" />
+            </label>
+
+            <label>
+              <span>Stat 2</span>
+
+              <input id="customStat2" type="text" />
+            </label>
+
+            <label>
+              <span>Stat 3</span>
+
+              <input id="customStat3" type="text" />
+            </label>
+
+            <label>
+              <span>Stat 4</span>
+
+              <input id="customStat4" type="text" />
+            </label>
+
+            <button id="saveCustomSystemBtn" class="primary" type="button">
               Save Custom System
             </button>
           </div>
@@ -457,7 +879,15 @@
       </section>
     </main>
 
+    <!-- =========================================================
+         TOAST
+         ========================================================= -->
+
     <div id="toast" class="toast"></div>
+
+    <!-- =========================================================
+         STARTUP ENCOUNTER RECOVERY MODAL
+         ========================================================= -->
 
     <div
       id="startupEncounterModal"
@@ -468,13 +898,17 @@
     >
       <div class="startup-modal-card">
         <div class="eyebrow">ENCOUNTER RECOVERY</div>
+
         <h2 id="startupEncounterTitle">Resume Last Encounter?</h2>
+
         <p id="startupEncounterSummary" class="startup-encounter-summary"></p>
+
         <p class="hint">
           Resume where you left off, or begin with a clean encounter. Your
           permanent Library, assets, presets, settings, and recovery snapshots
           are not deleted when you choose New Encounter.
         </p>
+
         <div class="startup-modal-actions">
           <button
             id="startupNewEncounterBtn"
@@ -483,6 +917,7 @@
           >
             New Encounter
           </button>
+
           <button id="resumeEncounterBtn" class="primary" type="button">
             Resume Last Encounter
           </button>
@@ -490,14 +925,31 @@
       </div>
     </div>
 
+    <!-- =========================================================
+         JAVASCRIPT
+         ========================================================= -->
+
+    <!-- Core -->
+
     <script src="js/core/config.js"></script>
     <script src="js/core/db.js"></script>
     <script src="js/core/sync.js"></script>
+
+    <!-- Existing Modules -->
+
     <script src="js/modules/backup.js"></script>
     <script src="js/modules/assets.js"></script>
     <script src="js/modules/settings.js"></script>
     <script src="js/modules/library.js"></script>
     <script src="js/modules/combat.js"></script>
+
+    <!-- Visual Timer Modules -->
+
+    <script src="js/modules/timer-renderer.js"></script>
+    <script src="js/modules/timer.js"></script>
+
+    <!-- DM Console Controller -->
+
     <script src="js/main.js"></script>
   </body>
 </html>
