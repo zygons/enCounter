@@ -6,7 +6,8 @@
 
 ENC.app = {
   toastTimer: null,
-  playerDisplayPaused: false,
+  playerDisplayPaused: true,
+  playerDisplayMode: "standby",
   playerDisplayConnected: false,
   playerDisplayWindow: null,
   playerDisplayWatchTimer: null,
@@ -31,7 +32,8 @@ ENC.app = {
     ENC.sync.broadcast("dm-presence", {
       sentAt: Date.now(),
 
-      playerDisplayPaused: this.playerDisplayPaused,
+      playerDisplayPaused: this.playerDisplayMode === "standby",
+      playerDisplayMode: this.playerDisplayMode,
 
       encounter:
         includeEncounter && ENC.combat?.encounter
@@ -82,6 +84,42 @@ ENC.app = {
     });
   },
 
+  broadcastDisplayState() {
+    ENC.sync.broadcast("player-display-mode", {
+      sentAt: Date.now(),
+      mode: this.playerDisplayMode,
+      encounter: ENC.combat?.encounter ? ENC.deepClone(ENC.combat.encounter) : null,
+      timer: this.getTimerSyncState(),
+    });
+  },
+
+  setPlayerDisplayMode(mode) {
+    const next = ENC.PLAYER_DISPLAY_MODES.has(mode) ? mode : "standby";
+    this.playerDisplayMode = next;
+    this.playerDisplayPaused = next === "standby";
+    if (ENC.combat?.encounter) {
+      ENC.combat.encounter.playerDisplayMode = next;
+      ENC.db.saveActiveEncounter(ENC.combat.encounter).catch((error) => console.warn("Could not persist display mode", error));
+    }
+    this.broadcastDisplayState();
+    this.updatePlayerDisplayButton();
+    ENC.encounterUI?.renderPhase?.();
+  },
+
+  refreshEncounterMediaControls() {
+    if (!ENC.combat?.encounter) return;
+    ENC.assets.fillSelect(
+      document.getElementById("backgroundSelect"),
+      "backgrounds/",
+      ENC.combat.encounter.display?.combatImage || ENC.combat.encounter.background || "",
+    );
+    ENC.assets.fillSelect(
+      document.getElementById("sceneImageSelect"),
+      "backgrounds/",
+      ENC.combat.encounter.display?.sceneImage || ENC.combat.encounter.background || "",
+    );
+  },
+
   updatePlayerDisplayButton() {
     const button = document.getElementById("openDisplayBtn");
 
@@ -95,11 +133,9 @@ ENC.app = {
       return;
     }
 
-    if (this.playerDisplayPaused) {
+    if (this.playerDisplayMode === "standby") {
       button.textContent = "Show Player Display";
-
       button.classList.add("player-display-paused");
-
       return;
     }
 
@@ -122,7 +158,6 @@ ENC.app = {
         this.playerDisplayWatchTimer = null;
         this.playerDisplayWindow = null;
         this.playerDisplayConnected = false;
-        this.playerDisplayPaused = false;
 
         this.updatePlayerDisplayButton();
       }
@@ -571,8 +606,6 @@ ENC.app = {
         // ------------------------------------
 
         if (!this.playerDisplayConnected) {
-          this.playerDisplayPaused = false;
-
           const displayWindow = window.open(
             "/programs/app/display.html",
             "enCounterPlayerDisplay",
@@ -596,30 +629,17 @@ ENC.app = {
         }
 
         // ------------------------------------
-        // HIDE / SHOW EXISTING PLAYER DISPLAY
+        // HIDE / RESTORE EXISTING PLAYER DISPLAY
         // ------------------------------------
 
-        this.playerDisplayPaused = !this.playerDisplayPaused;
-
-        ENC.sync.broadcast("player-display-visibility", {
-          sentAt: Date.now(),
-
-          paused: this.playerDisplayPaused,
-
-          encounter: ENC.combat?.encounter
-            ? ENC.deepClone(ENC.combat.encounter)
-            : null,
-
-          timer: this.getTimerSyncState(),
-        });
-
-        this.updatePlayerDisplayButton();
-
-        this.toast(
-          this.playerDisplayPaused
-            ? "Player Display hidden. DM changes are private."
-            : "Player Display restored with the latest encounter.",
-        );
+        if (this.playerDisplayMode === "standby") {
+          const phase = ENC.combat?.encounter?.phase;
+          this.setPlayerDisplayMode(phase === "combat" ? "combat" : "scene");
+          this.toast("Player Display restored.");
+        } else {
+          this.setPlayerDisplayMode("standby");
+          this.toast("Player Display hidden. DM changes are private.");
+        }
       });
     }
 
@@ -972,7 +992,7 @@ ENC.app = {
         const category = document.getElementById("assetUploadCategory").value;
 
         if (!file) {
-          return this.toast("Choose an image first.");
+          return this.toast("Choose an asset first.");
         }
 
         try {
@@ -988,11 +1008,7 @@ ENC.app = {
   },
 
   refreshAssetUI() {
-    ENC.assets.fillSelect(
-      document.getElementById("backgroundSelect"),
-      "backgrounds/",
-      ENC.combat.encounter?.background || "",
-    );
+    this.refreshEncounterMediaControls();
 
     ENC.libraryUI.fillPortraitSelect(
       document.getElementById("libraryPortraitSelect").value,
@@ -1002,6 +1018,7 @@ ENC.app = {
       document.getElementById("assetGrid"),
       document.getElementById("assetFilter").value,
     );
+    ENC.soundscapeUI?.refreshAudioSelects?.();
   },
 
   bindCustomSystem() {
@@ -1049,11 +1066,20 @@ ENC.app = {
 
     await ENC.combat.load();
 
+    this.playerDisplayMode = ENC.PLAYER_DISPLAY_MODES.has(ENC.combat.encounter?.playerDisplayMode)
+      ? ENC.combat.encounter.playerDisplayMode
+      : "standby";
+    this.playerDisplayPaused = this.playerDisplayMode === "standby";
+    ENC.audio.setSoundscape(ENC.combat.encounter?.soundscape);
+
     ENC.combat.render();
 
     await ENC.assets.refresh();
 
     this.refreshAssetUI();
+    await ENC.encounterUI?.refreshSaved?.();
+    ENC.encounterUI?.renderPhase?.();
+    ENC.soundscapeUI.render();
 
     await this.renderSnapshots();
 
@@ -1092,6 +1118,12 @@ ENC.app = {
 
     await ENC.combat.load();
 
+    this.playerDisplayMode = ENC.PLAYER_DISPLAY_MODES.has(ENC.combat.encounter?.playerDisplayMode)
+      ? ENC.combat.encounter.playerDisplayMode
+      : "standby";
+    this.playerDisplayPaused = this.playerDisplayMode === "standby";
+    ENC.audio.setSoundscape(ENC.combat.encounter?.soundscape);
+
     this.bindNavigation();
 
     this.initializeTimer();
@@ -1109,6 +1141,9 @@ ENC.app = {
     this.bindAssetTools();
 
     this.bindCustomSystem();
+
+    await ENC.encounterUI.initialize();
+    ENC.soundscapeUI.initialize();
 
     ENC.libraryUI.resetForm();
 

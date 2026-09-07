@@ -116,6 +116,10 @@
         Timer
       </button>
 
+      <button class="nav-button" data-section="soundscapeSection" type="button">
+        Soundscape
+      </button>
+
       <button class="nav-button" data-section="dataSection" type="button">
         Data
       </button>
@@ -138,9 +142,9 @@
         <div class="panel encounter-tools">
           <div class="section-heading">
             <div>
-              <div class="eyebrow">ENCOUNTER TOOLS</div>
+              <div class="eyebrow">ENCOUNTER CONTROL</div>
 
-              <h2>Run Combat</h2>
+              <h2>Prepare &amp; Run Encounter</h2>
             </div>
 
             <div class="button-row">
@@ -158,13 +162,68 @@
             </div>
           </div>
 
+          <!-- Saved Encounter Library -->
+
+          <div class="encounter-library-bar">
+            <div>
+              <strong>Saved Encounter</strong>
+              <div id="loadedEncounterSource" class="hint">Unsaved working encounter</div>
+            </div>
+            <select id="savedEncounterSelect">
+              <option value="">Load saved encounter…</option>
+            </select>
+            <button id="loadSavedEncounterBtn" type="button">Load</button>
+            <button id="saveEncounterLibraryBtn" class="primary" type="button">Save</button>
+            <button id="saveEncounterAsBtn" type="button">Save As…</button>
+            <button id="duplicateSavedEncounterBtn" type="button">Duplicate</button>
+            <button id="deleteSavedEncounterBtn" class="danger-outline" type="button">Delete</button>
+          </div>
+
+          <!-- Live Scene / Combat Controls -->
+
+          <div class="encounter-live-bar">
+            <div class="encounter-phase-block">
+              <span class="eyebrow">PHASE</span>
+              <strong id="encounterPhaseStatus">PREPARED</strong>
+            </div>
+            <button id="showSceneBtn" type="button">Show Scene</button>
+            <button id="startSceneAudioBtn" type="button">▶ Scene Audio</button>
+            <button id="startCombatBtn" class="primary" type="button">⚔ Start Combat</button>
+            <button id="endCombatBtn" type="button">End Combat</button>
+            <button id="hideEncounterDisplayBtn" type="button">Hide Player Display</button>
+            <button id="stopEncounterAudioBtn" class="danger-outline" type="button">■ Stop Audio</button>
+            <span id="encounterAudioStatus" class="soundscape-status">AUDIO STOPPED</span>
+          </div>
+
+          <!-- Live Prepared Sound Cues -->
+
+          <div class="encounter-cue-panel">
+            <div class="encounter-cue-heading">
+              <div>
+                <span class="eyebrow">LIVE SOUND EFFECTS</span>
+                <strong>Prepared Cues</strong>
+              </div>
+              <span class="hint">Cues saved with this encounter can be triggered during Scene or Combat.</span>
+            </div>
+            <div id="encounterCueButtons" class="encounter-cue-buttons">
+              <span class="hint">No prepared sound cues for this encounter.</span>
+            </div>
+          </div>
+
           <!-- Background Controls -->
 
           <div id="backgroundControls" class="tool-grid">
             <label>
-              <span>Background</span>
+              <span>Combat Background</span>
 
               <select id="backgroundSelect">
+                <option value="">— None —</option>
+              </select>
+            </label>
+
+            <label>
+              <span>Scene Image</span>
+              <select id="sceneImageSelect">
                 <option value="">— None —</option>
               </select>
             </label>
@@ -450,6 +509,7 @@
                 <option value="portraits/">Portraits</option>
                 <option value="icons/">Icons</option>
                 <option value="tokens">Tokens</option>
+                <option value="sounds/">Audio</option>
               </select>
             </label>
 
@@ -468,18 +528,22 @@
                 <option value="portraits/custom">Portraits / Custom</option>
 
                 <option value="tokens">Tokens</option>
-
                 <option value="icons/conditions">Icons / Conditions</option>
+
+                <option value="sounds/music">Audio / Music</option>
+                <option value="sounds/ambience">Audio / Ambience</option>
+                <option value="sounds/sfx">Audio / Sound Effects</option>
+                <option value="sounds/custom">Audio / Custom</option>
               </select>
             </label>
 
             <label>
-              <span>Choose Image</span>
+              <span>Choose Asset File</span>
 
               <input
                 id="assetUploadFile"
                 type="file"
-                accept="image/png,image/jpeg,image/webp"
+                accept="image/png,image/jpeg,image/webp,audio/mpeg,audio/ogg,audio/wav,audio/flac"
               />
             </label>
 
@@ -695,6 +759,72 @@
               <div id="timerPreview" aria-label="Timer preview"></div>
             </div>
           </div>
+        </div>
+      </section>
+
+      <!-- =======================================================
+           SOUNDSCAPE SECTION
+           ======================================================= -->
+
+      <section id="soundscapeSection" class="app-section">
+        <div class="panel">
+          <div class="section-heading">
+            <div>
+              <div class="eyebrow">ENCOUNTER AUDIO</div>
+              <h2>Soundscape</h2>
+              <p class="hint">Prepare scene ambience, combat audio, and one-shot cues for the currently loaded encounter. The Soundscape is saved with the encounter and loads automatically when that Saved Encounter is loaded. Audio plays from the DM computer; the Player Display remains visual-only.</p>
+            </div>
+            <div class="button-row">
+              <span id="soundscapeStatus" class="soundscape-status">AUDIO STOPPED</span>
+              <button id="previewSceneAudioBtn" type="button">▶ Scene</button>
+              <button id="previewCombatAudioBtn" type="button">⚔ Combat</button>
+              <button id="stopSoundscapeBtn" class="danger-outline" type="button">■ Stop</button>
+              <button id="saveSoundscapeBtn" class="primary" type="button">Apply to Encounter</button>
+            </div>
+          </div>
+
+          <div class="soundscape-settings-grid">
+            <label><span>Master Volume</span><input id="soundscapeMasterVolume" type="range" min="0" max="100" value="80" /></label>
+            <label><span>Fade (seconds)</span><input id="soundscapeFadeSeconds" type="number" min="0" max="15" step="0.5" value="2.5" /></label>
+            <label class="check-row"><input id="soundscapeAutoCombat" type="checkbox" checked /> Switch to combat audio when combat starts</label>
+            <label class="check-row"><input id="soundscapeReturnScene" type="checkbox" checked /> Return to scene audio when combat ends</label>
+          </div>
+        </div>
+
+        <div class="soundscape-columns">
+          <div class="panel">
+            <div class="eyebrow">ROLEPLAY / EXPLORATION</div>
+            <h2>Scene Audio</h2>
+            <div class="audio-track-row"><label><span>Scene Music</span><select id="sceneMusicAsset" data-audio-select data-audio-prefix="sounds/music"><option value="">— None —</option></select></label><label><span>Volume %</span><input id="sceneMusicVolume" type="number" min="0" max="100" value="35" /></label></div>
+            <h3>Ambient Layers</h3>
+            <p class="hint">Each layer can stop, continue, or duck when combat begins.</p>
+            <div class="audio-track-row audio-track-wide"><label><span>Ambience 1</span><select id="sceneAmb1Asset" data-audio-select data-audio-prefix="sounds/ambience"><option value="">— None —</option></select></label><label><span>Scene %</span><input id="sceneAmb1Volume" type="number" min="0" max="100" value="40" /></label><label><span>During Combat</span><select id="sceneAmb1Behavior"><option value="duck">Lower Volume</option><option value="continue">Continue</option><option value="stop">Stop</option></select></label><label><span>Combat %</span><input id="sceneAmb1CombatVolume" type="number" min="0" max="100" value="15" /></label></div><div class="audio-track-row audio-track-wide"><label><span>Ambience 2</span><select id="sceneAmb2Asset" data-audio-select data-audio-prefix="sounds/ambience"><option value="">— None —</option></select></label><label><span>Scene %</span><input id="sceneAmb2Volume" type="number" min="0" max="100" value="40" /></label><label><span>During Combat</span><select id="sceneAmb2Behavior"><option value="duck">Lower Volume</option><option value="continue">Continue</option><option value="stop">Stop</option></select></label><label><span>Combat %</span><input id="sceneAmb2CombatVolume" type="number" min="0" max="100" value="15" /></label></div><div class="audio-track-row audio-track-wide"><label><span>Ambience 3</span><select id="sceneAmb3Asset" data-audio-select data-audio-prefix="sounds/ambience"><option value="">— None —</option></select></label><label><span>Scene %</span><input id="sceneAmb3Volume" type="number" min="0" max="100" value="40" /></label><label><span>During Combat</span><select id="sceneAmb3Behavior"><option value="duck">Lower Volume</option><option value="continue">Continue</option><option value="stop">Stop</option></select></label><label><span>Combat %</span><input id="sceneAmb3CombatVolume" type="number" min="0" max="100" value="15" /></label></div>
+          </div>
+
+          <div class="panel">
+            <div class="eyebrow">INITIATIVE / BATTLE</div>
+            <h2>Combat Audio</h2>
+            <div class="audio-track-row"><label><span>Combat Music</span><select id="combatMusicAsset" data-audio-select data-audio-prefix="sounds/music"><option value="">— None —</option></select></label><label><span>Volume %</span><input id="combatMusicVolume" type="number" min="0" max="100" value="65" /></label></div>
+            <h3>Combat Ambience</h3>
+            <div class="audio-track-row"><label><span>Combat Ambience 1</span><select id="combatAmb1Asset" data-audio-select data-audio-prefix="sounds/ambience"><option value="">— None —</option></select></label><label><span>Volume %</span><input id="combatAmb1Volume" type="number" min="0" max="100" value="35" /></label></div><div class="audio-track-row"><label><span>Combat Ambience 2</span><select id="combatAmb2Asset" data-audio-select data-audio-prefix="sounds/ambience"><option value="">— None —</option></select></label><label><span>Volume %</span><input id="combatAmb2Volume" type="number" min="0" max="100" value="35" /></label></div>
+          </div>
+        </div>
+
+        <div class="panel">
+          <div class="section-heading"><div><div class="eyebrow">ONE-SHOT SOUNDS</div><h2>Prepared Cues</h2></div></div>
+          <div class="cue-grid">
+            <div class="cue-row"><input id="cue1Name" type="text" value="Cue 1" placeholder="Alarm" /><select id="cue1Asset" data-audio-select data-audio-prefix="sounds/"><option value="">— None —</option></select><input id="cue1Volume" type="number" min="0" max="100" value="80" title="Volume percent" /><button id="playCue1Btn" type="button">▶ Play</button></div><div class="cue-row"><input id="cue2Name" type="text" value="Cue 2" placeholder="Alarm" /><select id="cue2Asset" data-audio-select data-audio-prefix="sounds/"><option value="">— None —</option></select><input id="cue2Volume" type="number" min="0" max="100" value="80" title="Volume percent" /><button id="playCue2Btn" type="button">▶ Play</button></div><div class="cue-row"><input id="cue3Name" type="text" value="Cue 3" placeholder="Alarm" /><select id="cue3Asset" data-audio-select data-audio-prefix="sounds/"><option value="">— None —</option></select><input id="cue3Volume" type="number" min="0" max="100" value="80" title="Volume percent" /><button id="playCue3Btn" type="button">▶ Play</button></div>
+          </div>
+        </div>
+
+        <div class="panel">
+          <div class="section-heading"><div><div class="eyebrow">AUDIO LIBRARY</div><h2>Import Audio</h2></div></div>
+          <div class="tool-grid">
+            <label><span>Category</span><select id="audioUploadCategory"><option value="sounds/music">Music</option><option value="sounds/ambience">Ambience</option><option value="sounds/sfx">Sound Effects</option><option value="sounds/custom">Custom</option></select></label>
+            <label><span>Audio File</span><input id="audioUploadFile" type="file" accept="audio/mpeg,audio/ogg,audio/wav,audio/flac" /></label>
+            <button id="uploadAudioBtn" class="primary" type="button">Import Audio</button>
+          </div>
+          <p class="hint">Supported: MP3, OGG, WAV, FLAC. Long music/ambience files are best stored as MP3 or OGG.</p>
         </div>
       </section>
 
@@ -942,6 +1072,9 @@
     <script src="js/modules/settings.js"></script>
     <script src="js/modules/library.js"></script>
     <script src="js/modules/combat.js"></script>
+    <script src="js/modules/audio.js"></script>
+    <script src="js/modules/encounters.js"></script>
+    <script src="js/modules/soundscape.js"></script>
 
     <!-- Visual Timer Modules -->
 

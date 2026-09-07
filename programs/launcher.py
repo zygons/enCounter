@@ -53,9 +53,14 @@ ALLOWED_ASSET_CATEGORIES = {
     "icons/combat",
     "icons/systems",
     "tokens",
+    "sounds/music",
+    "sounds/ambience",
+    "sounds/sfx",
+    "sounds/custom",
 }
 ALLOWED_IMAGE_EXTENSIONS = {".png", ".jpg", ".jpeg", ".webp"}
-PUBLIC_ASSET_EXTENSIONS = ALLOWED_IMAGE_EXTENSIONS | {".ico", ".wav", ".mp3", ".ogg", ".flac"}
+ALLOWED_AUDIO_EXTENSIONS = {".wav", ".mp3", ".ogg", ".flac"}
+PUBLIC_ASSET_EXTENSIONS = ALLOWED_IMAGE_EXTENSIONS | ALLOWED_AUDIO_EXTENSIONS | {".ico"}
 APP_FILE_EXTENSIONS = {".html", ".css", ".js", ".map"}
 DOC_FILE_EXTENSIONS = {".html", ".md", ".txt"}
 PUBLIC_ROOT_FILES = {
@@ -66,7 +71,7 @@ PUBLIC_ROOT_FILES = {
     "/THIRD_PARTY_NOTICES.md",
     "/CHANGELOG.md",
 }
-MAX_UPLOAD_BYTES = 10 * 1024 * 1024
+MAX_UPLOAD_BYTES = 50 * 1024 * 1024
 MAX_BACKUP_BYTES = 50 * 1024 * 1024
 
 for path in [BACKUP_DIR, EXPORT_DIR, IMPORT_DIR]:
@@ -114,6 +119,21 @@ def detect_image_type(data: bytes) -> str | None:
         return "image/jpeg"
     if len(data) >= 12 and data[:4] == b"RIFF" and data[8:12] == b"WEBP":
         return "image/webp"
+    return None
+
+
+def detect_audio_type(data: bytes) -> str | None:
+    """Return a normalized MIME type for supported audio signatures, or None."""
+    if data.startswith(b"ID3"):
+        return "audio/mpeg"
+    if len(data) >= 2 and data[0] == 0xFF and (data[1] & 0xE0) == 0xE0:
+        return "audio/mpeg"
+    if data.startswith(b"OggS"):
+        return "audio/ogg"
+    if len(data) >= 12 and data[:4] == b"RIFF" and data[8:12] == b"WAVE":
+        return "audio/wav"
+    if data.startswith(b"fLaC"):
+        return "audio/flac"
     return None
 
 
@@ -273,7 +293,9 @@ class EnCounterHandler(http.server.SimpleHTTPRequestHandler):
                 if relative.startswith("branding/"):
                     continue
 
-                if file_path.suffix.lower() not in ALLOWED_IMAGE_EXTENSIONS:
+                if file_path.suffix.lower() not in PUBLIC_ASSET_EXTENSIONS:
+                    continue
+                if file_path.suffix.lower() == ".ico":
                     continue
 
                 category = Path(relative).parent.as_posix()
@@ -328,27 +350,53 @@ class EnCounterHandler(http.server.SimpleHTTPRequestHandler):
 
             content_length = self._read_content_length(MAX_UPLOAD_BYTES)
             if content_length is None:
-                return self.send_text("Image must be between 1 byte and 10 MB.", 400)
+                return self.send_text("Asset must be between 1 byte and 50 MB.", 400)
 
             filename = safe_name(requested_name)
             extension = Path(filename).suffix.lower()
-            if extension not in ALLOWED_IMAGE_EXTENSIONS:
-                return self.send_text("Only PNG, JPEG, and WebP images are allowed.", 400)
+            is_audio = category.startswith("sounds/")
+            allowed_extensions = ALLOWED_AUDIO_EXTENSIONS if is_audio else ALLOWED_IMAGE_EXTENSIONS
+            if extension not in allowed_extensions:
+                return self.send_text(
+                    "Only MP3, OGG, WAV, and FLAC audio files are allowed."
+                    if is_audio
+                    else "Only PNG, JPEG, and WebP images are allowed.",
+                    400,
+                )
 
             content_type = self.headers.get("Content-Type", "").split(";", 1)[0].lower()
-            expected_mime = {
-                ".png": "image/png",
-                ".jpg": "image/jpeg",
-                ".jpeg": "image/jpeg",
-                ".webp": "image/webp",
-            }[extension]
-            if content_type != expected_mime:
-                return self.send_text("The file extension does not match its image type.", 400)
-
-            data = self.rfile.read(content_length)
-            detected_mime = detect_image_type(data)
-            if detected_mime != expected_mime:
-                return self.send_text("The uploaded file is not a valid supported image.", 400)
+            if is_audio:
+                allowed_mimes = {
+                    ".mp3": {"audio/mpeg", "audio/mp3"},
+                    ".ogg": {"audio/ogg", "application/ogg"},
+                    ".wav": {"audio/wav", "audio/x-wav", "audio/wave"},
+                    ".flac": {"audio/flac", "audio/x-flac"},
+                }
+                if content_type not in allowed_mimes[extension]:
+                    return self.send_text("The file extension does not match its audio type.", 400)
+                data = self.rfile.read(content_length)
+                detected_audio = detect_audio_type(data)
+                normalized_expected = {
+                    ".mp3": "audio/mpeg",
+                    ".ogg": "audio/ogg",
+                    ".wav": "audio/wav",
+                    ".flac": "audio/flac",
+                }[extension]
+                if detected_audio != normalized_expected:
+                    return self.send_text("The uploaded file is not valid supported audio.", 400)
+            else:
+                expected_mime = {
+                    ".png": "image/png",
+                    ".jpg": "image/jpeg",
+                    ".jpeg": "image/jpeg",
+                    ".webp": "image/webp",
+                }[extension]
+                if content_type != expected_mime:
+                    return self.send_text("The file extension does not match its image type.", 400)
+                data = self.rfile.read(content_length)
+                detected_mime = detect_image_type(data)
+                if detected_mime != expected_mime:
+                    return self.send_text("The uploaded file is not a valid supported image.", 400)
 
             folder = ROOT / "assets" / category
             folder.mkdir(parents=True, exist_ok=True)

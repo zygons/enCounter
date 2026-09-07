@@ -2,6 +2,24 @@
 
 All notable changes to enCounter will be documented here.
 
+## Unreleased
+
+### Added
+- Saved Encounter Library workflow with Save, Save As, Load, Duplicate, and Delete while keeping the loaded encounter as a working copy.
+- Encounter phases for prepared, scene/roleplay, combat, and complete states.
+- Player Display Scene mode that shows encounter artwork without initiative/combat information while still allowing visual timers.
+- Encounter Soundscape system with scene music, layered ambience, combat music/ambience, fade transitions, master volume, prepared one-shot cues, and scene-to-combat switching.
+- Audio asset folders and import support for MP3, OGG, WAV, and FLAC files.
+- Separate Scene Image and Combat Background selections for prepared encounters.
+- Live Prepared Cue buttons on the Encounter tab, populated automatically from the loaded encounter's Soundscape and usable during both Scene and Combat phases.
+
+### Changed
+- Player Display presentation is now modeled as Stand By, Scene, or Combat instead of only visible/hidden.
+- Start Combat can automatically transition scene audio to combat audio; End Combat can restore prior scene audio when appropriate.
+- Encounter data normalization now preserves soundscape, display, phase, and saved-template metadata.
+- Soundscape editor wording now makes clear that Soundscapes are encounter-bound and load automatically with Saved Encounters.
+
+
 ## 0.1.0-alpha.1 - 2026-08-20
 
 ### Added

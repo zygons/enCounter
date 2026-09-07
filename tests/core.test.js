@@ -194,3 +194,52 @@ test("player display next-turn helper can advance from a hidden current combatan
   const next = ENC.findNextPlayerVisibleEligibleCombatant(combatants, "hidden");
   assert.equal(next?.id, "c");
 });
+
+test("sanitizeAudioUrl accepts only local supported sound assets", () => {
+  assert.equal(
+    ENC.sanitizeAudioUrl("/assets/sounds/ambience/forest.mp3"),
+    "/assets/sounds/ambience/forest.mp3",
+  );
+  assert.equal(ENC.sanitizeAudioUrl("https://example.com/forest.mp3"), "");
+  assert.equal(ENC.sanitizeAudioUrl("/assets/backgrounds/forest.mp3"), "");
+});
+
+test("normalizeEncounter preserves scene/combat display modes and soundscape", () => {
+  const encounter = ENC.normalizeEncounter({
+    kind: "saved",
+    phase: "scene",
+    playerDisplayMode: "scene",
+    display: {
+      sceneImage: "/assets/backgrounds/fantasy/market.png",
+      combatImage: "/assets/backgrounds/fantasy/battle.png",
+    },
+    soundscape: {
+      masterVolume: 0.75,
+      scene: {
+        ambience: [
+          {
+            name: "Market",
+            asset: "/assets/sounds/ambience/market.mp3",
+            volume: 0.5,
+            combatBehavior: "duck",
+            combatVolume: 0.2,
+          },
+        ],
+      },
+      combat: {
+        music: {
+          name: "Battle",
+          asset: "/assets/sounds/music/battle.mp3",
+          volume: 0.6,
+        },
+      },
+    },
+  });
+
+  assert.equal(encounter.kind, "saved");
+  assert.equal(encounter.phase, "scene");
+  assert.equal(encounter.playerDisplayMode, "scene");
+  assert.equal(encounter.display.sceneImage, "/assets/backgrounds/fantasy/market.png");
+  assert.equal(encounter.soundscape.scene.ambience[0].combatBehavior, "duck");
+  assert.equal(encounter.soundscape.combat.music.asset, "/assets/sounds/music/battle.mp3");
+});

@@ -109,7 +109,10 @@ for %%D in (
     "icons\combat"
     "icons\systems"
     "tokens"
-    "sounds"
+    "sounds\music"
+    "sounds\ambience"
+    "sounds\sfx"
+    "sounds\custom"
 ) do mkdir "%RELEASE_DIR%\assets\%%~D" >nul 2>nul
 
 mkdir "%RELEASE_DIR%\data\backups" >nul 2>nul

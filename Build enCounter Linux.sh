@@ -75,7 +75,10 @@ for dir in \
   icons/combat \
   icons/systems \
   tokens \
-  sounds; do
+  sounds/music \
+  sounds/ambience \
+  sounds/sfx \
+  sounds/custom; do
   mkdir -p "${RELEASE_DIR}/assets/${dir}"
 done
 

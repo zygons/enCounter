@@ -189,6 +189,100 @@ ENC.sanitizeAssetUrl = function (value) {
   }
 };
 
+
+ENC.sanitizeAudioUrl = function (value) {
+  const text = String(value || "").trim();
+  if (!text) return "";
+
+  try {
+    const url = new URL(text, window.location.origin);
+    if (url.origin !== window.location.origin) return "";
+    if (!url.pathname.startsWith("/assets/sounds/")) return "";
+    if (!/\.(mp3|ogg|wav|flac)$/i.test(url.pathname)) return "";
+    return url.pathname;
+  } catch {
+    return "";
+  }
+};
+
+ENC.ENCOUNTER_PHASES = new Set(["prepared", "scene", "combat", "complete"]);
+ENC.PLAYER_DISPLAY_MODES = new Set(["standby", "scene", "combat"]);
+
+ENC.normalizeAudioTrack = function (track = {}, defaults = {}) {
+  const source = track && typeof track === "object" ? track : {};
+  const defaultVolume = ENC.finiteNumber(defaults.volume, 0.5);
+  const volume = Math.min(1, Math.max(0, ENC.finiteNumber(source.volume, defaultVolume)));
+  const combatBehavior = ["stop", "continue", "duck"].includes(source.combatBehavior)
+    ? source.combatBehavior
+    : String(defaults.combatBehavior || "stop");
+  const combatVolume = Math.min(1, Math.max(0, ENC.finiteNumber(source.combatVolume, 0.15)));
+
+  return {
+    id: String(source.id || ENC.makeId("audio")),
+    name: String(source.name || defaults.name || "Audio Track").trim() || "Audio Track",
+    asset: ENC.sanitizeAudioUrl(source.asset),
+    volume,
+    loop: source.loop !== false,
+    combatBehavior,
+    combatVolume,
+  };
+};
+
+ENC.createDefaultSoundscape = function () {
+  return {
+    enabled: true,
+    masterVolume: 0.8,
+    fadeMs: 2500,
+    autoSwitchToCombat: true,
+    returnToSceneAfterCombat: true,
+    scene: {
+      music: ENC.normalizeAudioTrack({ name: "Scene Music", loop: true, volume: 0.35 }),
+      ambience: [],
+    },
+    combat: {
+      music: ENC.normalizeAudioTrack({ name: "Combat Music", loop: true, volume: 0.65 }),
+      ambience: [],
+    },
+    cues: [],
+  };
+};
+
+ENC.normalizeSoundscape = function (soundscape = {}) {
+  const source = soundscape && typeof soundscape === "object" ? soundscape : {};
+  const defaults = ENC.createDefaultSoundscape();
+  const scene = source.scene && typeof source.scene === "object" ? source.scene : {};
+  const combat = source.combat && typeof source.combat === "object" ? source.combat : {};
+
+  const normalizeList = (items, defaultBehavior = "stop") =>
+    (Array.isArray(items) ? items : [])
+      .slice(0, 8)
+      .map((item, index) => ENC.normalizeAudioTrack(item, {
+        name: `Ambience ${index + 1}`,
+        volume: 0.4,
+        combatBehavior: defaultBehavior,
+      }));
+
+  return {
+    enabled: source.enabled !== false,
+    masterVolume: Math.min(1, Math.max(0, ENC.finiteNumber(source.masterVolume, defaults.masterVolume))),
+    fadeMs: Math.min(15000, Math.max(0, Math.trunc(ENC.finiteNumber(source.fadeMs, defaults.fadeMs)))),
+    autoSwitchToCombat: source.autoSwitchToCombat !== false,
+    returnToSceneAfterCombat: source.returnToSceneAfterCombat !== false,
+    scene: {
+      music: ENC.normalizeAudioTrack(scene.music || {}, { name: "Scene Music", volume: 0.35, combatBehavior: "stop" }),
+      ambience: normalizeList(scene.ambience, "duck"),
+    },
+    combat: {
+      music: ENC.normalizeAudioTrack(combat.music || {}, { name: "Combat Music", volume: 0.65, combatBehavior: "continue" }),
+      ambience: normalizeList(combat.ambience, "continue"),
+    },
+    cues: (Array.isArray(source.cues) ? source.cues : []).slice(0, 20).map((cue, index) => {
+      const normalized = ENC.normalizeAudioTrack(cue, { name: `Cue ${index + 1}`, volume: 0.8 });
+      return { ...normalized, loop: false };
+    }),
+  };
+};
+
 ENC.normalizeSettings = function (settings = {}) {
   const source = settings && typeof settings === "object" ? settings : {};
   const validModes = new Set(["simple", "standard", "advanced", "custom"]);
@@ -226,12 +320,20 @@ ENC.createDefaultEncounter = function () {
   return {
     id: "active",
     kind: "active",
+    sourceEncounterId: null,
     name: "New Encounter",
     systemId: "generic",
     customProfile: ENC.deepClone(ENC.DEFAULT_SETTINGS.customProfile),
+    phase: "prepared",
+    playerDisplayMode: "standby",
     round: 1,
     currentId: null,
     background: "",
+    display: {
+      sceneImage: "",
+      combatImage: "",
+    },
+    soundscape: ENC.createDefaultSoundscape(),
     combatants: [],
     updatedAt: new Date().toISOString(),
   };
@@ -244,6 +346,11 @@ ENC.isMeaningfulEncounter = function (encounter) {
       Number(encounter.round || 1) > 1 ||
       Boolean(encounter.currentId) ||
       Boolean(encounter.background) ||
+      Boolean(encounter.display?.sceneImage) ||
+      Boolean(encounter.display?.combatImage) ||
+      Boolean(encounter.soundscape?.scene?.music?.asset) ||
+      Boolean(encounter.soundscape?.combat?.music?.asset) ||
+      Boolean(encounter.soundscape?.scene?.ambience?.some?.((track) => track.asset)) ||
       String(encounter.name || "").trim().toLowerCase() !== "new encounter",
   );
 };
@@ -378,7 +485,7 @@ ENC.normalizeCombatant = function (
 
 ENC.normalizeEncounter = function (encounter = {}) {
   const source = encounter && typeof encounter === "object" ? encounter : {};
-  const kind = source.kind === "preset" ? "preset" : "active";
+  const kind = ["active", "preset", "saved"].includes(source.kind) ? source.kind : "active";
   const systemId = ENC.normalizeSystemId(source.systemId || "generic");
   const customProfile = ENC.normalizeCustomProfile(source.customProfile);
   const combatants = Array.isArray(source.combatants)
@@ -394,15 +501,32 @@ ENC.normalizeEncounter = function (encounter = {}) {
     : null;
   const rawRound = Number(source.round);
 
+  const legacyBackground = ENC.sanitizeAssetUrl(source.background);
+  const displaySource = source.display && typeof source.display === "object" ? source.display : {};
+  const combatImage = ENC.sanitizeAssetUrl(displaySource.combatImage || legacyBackground);
+  const sceneImage = ENC.sanitizeAssetUrl(displaySource.sceneImage || legacyBackground);
+  const phase = ENC.ENCOUNTER_PHASES.has(source.phase) ? source.phase : "prepared";
+  const playerDisplayMode = ENC.PLAYER_DISPLAY_MODES.has(source.playerDisplayMode)
+    ? source.playerDisplayMode
+    : "standby";
+
   return {
-    id: String(source.id || (kind === "active" ? "active" : ENC.makeId("preset"))),
+    id: String(source.id || (kind === "active" ? "active" : ENC.makeId(kind === "saved" ? "enc" : "preset"))),
     kind,
-    name: String(source.name || (kind === "active" ? "New Encounter" : "Encounter Preset")).trim() || "Encounter",
+    sourceEncounterId: source.sourceEncounterId ? String(source.sourceEncounterId) : null,
+    name: String(source.name || (kind === "active" ? "New Encounter" : "Saved Encounter")).trim() || "Encounter",
     systemId,
     customProfile,
+    phase,
+    playerDisplayMode,
     round: Number.isFinite(rawRound) ? Math.max(1, Math.trunc(rawRound)) : 1,
     currentId,
-    background: ENC.sanitizeAssetUrl(source.background),
+    background: combatImage,
+    display: {
+      sceneImage,
+      combatImage,
+    },
+    soundscape: ENC.normalizeSoundscape(source.soundscape),
     combatants,
     updatedAt: String(source.updatedAt || new Date().toISOString()),
   };

@@ -30,6 +30,10 @@
 - Hidden enemies with **Hide from Players / Reveal to Players**
 - Reusable Player, NPC, Enemy, and Creature Library
 - Portrait and encounter background support
+- Saved Encounter Library with reusable prepared encounters and working-copy loading
+- Scene / roleplay Player Display mode with full-screen encounter artwork and optional visual timers
+- Encounter Soundscapes with scene ambience, combat music, transitions, and prepared sound cues
+- Separate scene and combat artwork per encounter
 - Generic TTRPG, SWSE, D&D 5E, and Custom system profiles
 - Local autosave and recovery snapshots
 - Backup, export, and import tools
@@ -53,6 +57,11 @@
 ### Player Display — Stand By
 
 ![enCounter Player Display Stand By](docs/images/enCounter-Standby.png)
+
+
+### Encounter Soundscape live cues
+
+Soundscapes are saved as part of Saved Encounters. Loading an encounter automatically restores its scene audio, combat audio, and prepared sound cues. Configured cues are available as live buttons on the Encounter tab during both Scene and Combat phases.
 
 ## Alpha notice
 

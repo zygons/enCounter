@@ -13,8 +13,9 @@ ENC.display = {
   timerRenderer: null,
   timerController: null,
 
-  // Player Display privacy state
-  paused: false,
+  // Player Display presentation state
+  displayMode: "standby",
+  paused: true,
   awaitingDmState: true,
 
   /* ========================================
@@ -68,8 +69,23 @@ ENC.display = {
        PLAYER DISPLAY PRIVACY
     ======================================== */
 
+  setDisplayMode(mode) {
+    this.displayMode = ENC.PLAYER_DISPLAY_MODES.has(mode) ? mode : "standby";
+    this.paused = this.displayMode === "standby";
+    document.body.dataset.displayMode = this.displayMode;
+
+    const overlay = document.getElementById("playerDisplayPrivacyOverlay");
+    if (overlay) overlay.classList.toggle("show", this.paused || this.awaitingDmState);
+
+    this.updateTimerLayer();
+    if (!this.paused && !this.awaitingDmState) this.render();
+  },
+
   setPaused(paused) {
     this.paused = Boolean(paused);
+    if (this.paused) this.displayMode = "standby";
+    else if (this.displayMode === "standby") this.displayMode = this.encounter?.phase === "combat" ? "combat" : "scene";
+    document.body.dataset.displayMode = this.displayMode;
 
     const overlay = document.getElementById("playerDisplayPrivacyOverlay");
 
@@ -348,6 +364,25 @@ ENC.display = {
   },
 
   /* ========================================
+       SCENE / ROLEPLAY DISPLAY
+    ======================================== */
+
+  renderScene() {
+    if (!this.encounter) {
+      this.renderStandby();
+      return;
+    }
+
+    document.body.dataset.displayMode = "scene";
+    const background = document.getElementById("displayBackground");
+    const sceneImage = this.encounter.display?.sceneImage || this.encounter.background || "";
+    if (background) background.style.backgroundImage = sceneImage ? `url("${sceneImage}")` : "";
+    const name = document.getElementById("displayEncounterName");
+    if (name) name.textContent = this.encounter.name || "Scene";
+    this.updateIdleLogo(Boolean(sceneImage));
+  },
+
+  /* ========================================
        MAIN RENDER
     ======================================== */
 
@@ -359,6 +394,13 @@ ENC.display = {
     if (this.paused || this.awaitingDmState) {
       return;
     }
+
+    if (this.displayMode === "scene") {
+      this.renderScene();
+      return;
+    }
+
+    document.body.dataset.displayMode = "combat";
 
     /* ----------------------------------------
        No active encounter
@@ -417,8 +459,9 @@ ENC.display = {
 
     const background = document.getElementById("displayBackground");
 
-    if (this.encounter.background) {
-      background.style.backgroundImage = `url("${this.encounter.background}")`;
+    const combatImage = this.encounter.display?.combatImage || this.encounter.background || "";
+    if (combatImage) {
+      background.style.backgroundImage = `url("${combatImage}")`;
     } else {
       background.style.backgroundImage = "";
     }
@@ -655,7 +698,14 @@ ENC.display = {
           this.encounter = ENC.normalizeEncounter(message.encounter);
         }
 
-        this.setPaused(Boolean(message.playerDisplayPaused));
+        this.setDisplayMode(
+          message.playerDisplayMode ||
+            (message.playerDisplayPaused
+              ? "standby"
+              : this.encounter?.phase === "combat"
+                ? "combat"
+                : "scene"),
+        );
 
         /*
          * main.js will include the current
@@ -677,7 +727,20 @@ ENC.display = {
       }
 
       // =====================================
-      // HIDE / SHOW PLAYER DISPLAY
+      // PLAYER DISPLAY MODE
+      // =====================================
+
+      if (message.type === "player-display-mode") {
+        this.markDmSeen();
+        this.awaitingDmState = false;
+        if (message.encounter) this.encounter = ENC.normalizeEncounter(message.encounter);
+        if (message.timer) this.applyTimerState(message.timer);
+        this.setDisplayMode(message.mode || "standby");
+        return;
+      }
+
+      // =====================================
+      // HIDE / SHOW PLAYER DISPLAY (LEGACY)
       // =====================================
 
       if (message.type === "player-display-visibility") {
@@ -786,6 +849,7 @@ document.addEventListener("DOMContentLoaded", async () => {
   }
 
   await ENC.db.open();
+  document.body.dataset.displayMode = "standby";
 
   /*
    * Timer modules must already be loaded by

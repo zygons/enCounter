@@ -540,6 +540,7 @@ ENC.combat = {
       .classList.toggle("hidden", this.encounter.combatants.length > 0);
     this.renderLibrarySelect();
     this.renderPresetControls();
+    ENC.encounterUI?.renderPhase?.();
   },
 
   renderLibrarySelect() {
@@ -626,11 +627,8 @@ ENC.combat = {
     );
     await this.save("preset loaded");
     this.render();
-    ENC.assets.fillSelect(
-      document.getElementById("backgroundSelect"),
-      "backgrounds/",
-      this.encounter.background,
-    );
+    ENC.app?.refreshEncounterMediaControls?.();
+    ENC.soundscapeUI?.render?.();
   },
 
   async newEncounter() {
@@ -660,19 +658,22 @@ ENC.combat = {
         ENC.DEFAULT_SETTINGS.customProfile,
     );
 
+    ENC.audio?.stopAll(250);
     this.encounter = ENC.createDefaultEncounter();
     this.encounter.systemId = systemId;
     this.encounter.customProfile = customProfile;
+    this.encounter.phase = "prepared";
+    this.encounter.playerDisplayMode = "standby";
+    ENC.app.playerDisplayMode = "standby";
+    ENC.app.playerDisplayPaused = true;
 
     await this.save();
     ENC.app?.renderSnapshots?.();
 
     this.render();
-    ENC.assets.fillSelect(
-      document.getElementById("backgroundSelect"),
-      "backgrounds/",
-      "",
-    );
+    ENC.app?.refreshEncounterMediaControls?.();
+    ENC.soundscapeUI?.render?.();
+    ENC.app?.broadcastDisplayState?.();
     ENC.app?.toast("New encounter ready.");
   },
 
@@ -727,6 +728,16 @@ ENC.combat = {
       .getElementById("backgroundSelect")
       .addEventListener("change", async (event) => {
         this.encounter.background = event.target.value;
+        this.encounter.display = this.encounter.display || {};
+        this.encounter.display.combatImage = event.target.value;
+        await this.save();
+        this.render();
+      });
+    document
+      .getElementById("sceneImageSelect")
+      ?.addEventListener("change", async (event) => {
+        this.encounter.display = this.encounter.display || {};
+        this.encounter.display.sceneImage = event.target.value;
         await this.save();
         this.render();
       });
@@ -738,11 +749,9 @@ ENC.combat = {
         try {
           const result = await ENC.assets.upload(file, "backgrounds/custom");
           this.encounter.background = result.url;
-          ENC.assets.fillSelect(
-            document.getElementById("backgroundSelect"),
-            "backgrounds/",
-            result.url,
-          );
+          this.encounter.display = this.encounter.display || {};
+          this.encounter.display.combatImage = result.url;
+          ENC.app?.refreshEncounterMediaControls?.();
           await this.save();
           this.render();
           ENC.app.toast("Background imported.");

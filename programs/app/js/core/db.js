@@ -137,6 +137,84 @@ ENC.db = {
     return this.put("encounters", ENC.deepClone(normalized));
   },
 
+  async saveEncounterTemplate(encounter, name = null, existingId = null) {
+    const source = ENC.normalizeEncounter(ENC.deepClone(encounter));
+    const templateId = existingId || source.sourceEncounterId || ENC.makeId("enc");
+    const template = ENC.normalizeEncounter({
+      ...source,
+      id: templateId,
+      kind: "saved",
+      sourceEncounterId: null,
+      name: String(name || source.name || "Saved Encounter").trim() || "Saved Encounter",
+      phase: "prepared",
+      playerDisplayMode: "standby",
+      currentId: null,
+      round: 1,
+      combatants: (source.combatants || []).map((combatant) => ({
+        ...combatant,
+        hp: combatant.maxHp ?? combatant.hp ?? "",
+        conditionTrack: "Normal",
+        visibleStatus: "",
+        combatState: "active",
+        delayed: false,
+        ready: false,
+      })),
+      updatedAt: new Date().toISOString(),
+    });
+    template.id = templateId;
+    template.kind = "saved";
+    template.sourceEncounterId = null;
+    await this.put("encounters", template);
+    return template;
+  },
+
+  async getSavedEncounters() {
+    const all = await this.getAll("encounters");
+    return all
+      .filter((item) => item?.kind === "saved")
+      .map((item) => ENC.normalizeEncounter(item))
+      .sort((a, b) => String(a.name).localeCompare(String(b.name)));
+  },
+
+  async loadSavedEncounter(id) {
+    const saved = await this.get("encounters", id);
+    if (!saved || saved.kind !== "saved") return null;
+
+    const working = ENC.normalizeEncounter({
+      ...ENC.deepClone(saved),
+      id: "active",
+      kind: "active",
+      sourceEncounterId: saved.id,
+      phase: "prepared",
+      playerDisplayMode: "standby",
+      currentId: null,
+      round: 1,
+      combatants: (saved.combatants || []).map((combatant) => ({
+        ...combatant,
+        id: ENC.makeId("cmb"),
+        hp: combatant.maxHp ?? combatant.hp ?? "",
+        conditionTrack: "Normal",
+        visibleStatus: "",
+        combatState: "active",
+        hidden: Boolean(combatant.hidden),
+        delayed: false,
+        ready: false,
+        createdOrder: Date.now() + Math.random(),
+      })),
+    });
+    working.id = "active";
+    working.kind = "active";
+    working.sourceEncounterId = saved.id;
+    await this.saveActiveEncounter(working);
+    return working;
+  },
+
+  async duplicateSavedEncounter(id) {
+    const saved = await this.get("encounters", id);
+    if (!saved || saved.kind !== "saved") return null;
+    return this.saveEncounterTemplate(saved, `${saved.name} Copy`, null);
+  },
+
   async savePreset(encounter, name) {
     const preset = ENC.normalizeEncounter({
       ...ENC.deepClone(encounter),

@@ -27,7 +27,9 @@ assets/backgrounds/**/*
 assets/portraits/**/*
 assets/icons/**/*
 assets/tokens/*
-assets/sounds/*
+assets/sounds/**/*
+!assets/sounds/**/
+!assets/sounds/**/.gitkeep
 !assets/**/.gitkeep
 
 # Keep application branding
