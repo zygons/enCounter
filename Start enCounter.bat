@@ -6,7 +6,7 @@ REM This file is part of enCounter. See LICENSE for the full license terms.
 setlocal EnableDelayedExpansion
 cd /d "%~dp0"
 
-title enCounter 0.1.0-alpha.1
+title enCounter 0.2.0-alpha.1
 
 REM ============================================================
 REM Verify launcher exists

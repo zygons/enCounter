@@ -105,6 +105,22 @@ ENC.combat = {
     );
   },
 
+  followCurrentTurn() {
+    requestAnimationFrame(() => {
+      const currentCard = document.querySelector(
+        "#combatantList .combatant-card.current",
+      );
+
+      if (!currentCard) return;
+
+      currentCard.scrollIntoView({
+        behavior: "smooth",
+        block: "center",
+        inline: "nearest",
+      });
+    });
+  },
+
   async moveTurn(direction) {
     const all = this.encounter.combatants;
     if (!all.length) return;
@@ -130,7 +146,9 @@ ENC.combat = {
     await this.save(
       hadCurrent ? (direction > 0 ? "next turn" : "previous turn") : "turn set",
     );
+
     this.render();
+    this.followCurrentTurn();
   },
 
   async changeHp(combatant, amount) {
@@ -170,11 +188,20 @@ ENC.combat = {
     combatant.combatState = "active";
     combatant.delayed = false;
     combatant.ready = false;
-    if (takeTurn) this.encounter.currentId = combatant.id;
+
+    if (takeTurn) {
+      this.encounter.currentId = combatant.id;
+    }
+
     await this.save(
       takeTurn ? "delayed/readied action triggered" : "combatant restored",
     );
+
     this.render();
+
+    if (takeTurn) {
+      this.followCurrentTurn();
+    }
   },
 
   statSummary(combatant) {

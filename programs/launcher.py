@@ -20,7 +20,7 @@ from pathlib import Path
 
 PORT = 5500
 APP_NAME = "enCounter"
-APP_VERSION = "0.1.0-alpha.1"
+APP_VERSION = "0.2.0-alpha.1"
 APP_STAGE = "Alpha"
 
 if getattr(sys, "frozen", False):

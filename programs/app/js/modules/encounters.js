@@ -8,7 +8,9 @@ ENC.encounterUI = {
   saved: [],
 
   getPreparedCues() {
-    const soundscape = ENC.normalizeSoundscape(ENC.combat?.encounter?.soundscape);
+    const soundscape = ENC.normalizeSoundscape(
+      ENC.combat?.encounter?.soundscape,
+    );
     return (soundscape.cues || []).filter((cue) => cue?.asset);
   },
 
@@ -67,7 +69,8 @@ ENC.encounterUI = {
       option.textContent = `${encounter.name} — ${ENC.getSystemLabel(encounter.systemId, encounter.customProfile)}`;
       select.appendChild(option);
     }
-    if (this.saved.some((item) => item.id === selected)) select.value = selected;
+    if (this.saved.some((item) => item.id === selected))
+      select.value = selected;
   },
 
   renderPhase() {
@@ -80,14 +83,20 @@ ENC.encounterUI = {
     const sceneButton = document.getElementById("showSceneBtn");
     const combatButton = document.getElementById("startCombatBtn");
     const endButton = document.getElementById("endCombatBtn");
-    if (sceneButton) sceneButton.disabled = phase === "scene" && encounter.playerDisplayMode === "scene";
+    if (sceneButton)
+      sceneButton.disabled =
+        phase === "scene" && encounter.playerDisplayMode === "scene";
     if (combatButton) combatButton.disabled = phase === "combat";
     if (endButton) endButton.disabled = phase !== "combat";
 
     const sourceText = document.getElementById("loadedEncounterSource");
     if (sourceText) {
-      const source = this.saved.find((item) => item.id === encounter.sourceEncounterId);
-      sourceText.textContent = source ? `Loaded from: ${source.name}` : "Unsaved working encounter";
+      const source = this.saved.find(
+        (item) => item.id === encounter.sourceEncounterId,
+      );
+      sourceText.textContent = source
+        ? `Loaded from: ${source.name}`
+        : "Unsaved working encounter";
     }
 
     this.renderCues();
@@ -103,18 +112,31 @@ ENC.encounterUI = {
       ENC.audio?.setSoundscape(encounter.soundscape);
     }
     if (saveAs || !existingId) {
-      const requested = prompt("Saved encounter name:", encounter.name || "Encounter");
+      const requested = prompt(
+        "Saved encounter name:",
+        encounter.name || "Encounter",
+      );
       if (!requested?.trim()) return;
       name = requested.trim();
     }
 
-    const saved = await ENC.db.saveEncounterTemplate(encounter, name, existingId);
+    const saved = await ENC.db.saveEncounterTemplate(
+      encounter,
+      name,
+      existingId,
+    );
     encounter.sourceEncounterId = saved.id;
     encounter.name = saved.name;
-    await ENC.combat.save(saveAs ? "encounter saved as" : "encounter template saved");
+    await ENC.combat.save(
+      saveAs ? "encounter saved as" : "encounter template saved",
+    );
     await this.refreshSaved();
     this.renderPhase();
-    ENC.app.toast(saveAs || !existingId ? "Encounter saved to Library." : "Saved encounter updated.");
+    ENC.app.toast(
+      saveAs || !existingId
+        ? "Encounter saved to Library."
+        : "Saved encounter updated.",
+    );
   },
 
   async loadSelected() {
@@ -123,7 +145,12 @@ ENC.encounterUI = {
     if (!id) return ENC.app.toast("Choose a saved encounter first.");
     const item = this.saved.find((entry) => entry.id === id);
     if (!item) return;
-    if (!confirm(`Load “${item.name}”? Your current working encounter will be replaced.`)) return;
+    if (
+      !confirm(
+        `Load “${item.name}”? Your current working encounter will be replaced.`,
+      )
+    )
+      return;
 
     ENC.audio?.stopAll(250);
     const loaded = await ENC.db.loadSavedEncounter(id);
@@ -156,7 +183,12 @@ ENC.encounterUI = {
     if (!id) return ENC.app.toast("Choose a saved encounter first.");
     const item = this.saved.find((entry) => entry.id === id);
     if (!item) return;
-    if (!confirm(`Delete saved encounter “${item.name}”? This does not delete the currently loaded working copy.`)) return;
+    if (
+      !confirm(
+        `Delete saved encounter “${item.name}”? This does not delete the currently loaded working copy.`,
+      )
+    )
+      return;
     await ENC.db.delete("encounters", id);
     if (ENC.combat.encounter?.sourceEncounterId === id) {
       ENC.combat.encounter.sourceEncounterId = null;
@@ -177,20 +209,39 @@ ENC.encounterUI = {
       encounter.round = Math.max(1, Number(encounter.round || 1));
       if (!encounter.currentId) {
         ENC.sortCombatants(encounter.combatants);
-        encounter.currentId = encounter.combatants.find(ENC.isTurnEligibleCombatant)?.id || null;
+        encounter.currentId =
+          encounter.combatants.find(ENC.isTurnEligibleCombatant)?.id || null;
       }
       if (encounter.soundscape?.autoSwitchToCombat) {
         ENC.audio?.setSoundscape(encounter.soundscape);
-        try { await ENC.audio?.playCombat(); } catch (error) { ENC.app.toast(error.message); }
+        try {
+          await ENC.audio?.playCombat();
+        } catch (error) {
+          ENC.app.toast(error.message);
+        }
       }
-    } else if (phase === "scene" && encounter.soundscape?.returnToSceneAfterCombat && ENC.audio?.mode === "combat") {
+    } else if (
+      phase === "scene" &&
+      encounter.soundscape?.returnToSceneAfterCombat &&
+      ENC.audio?.mode === "combat"
+    ) {
       ENC.audio?.setSoundscape(encounter.soundscape);
-      try { await ENC.audio?.returnToScene(); } catch (error) { ENC.app.toast(error.message); }
+      try {
+        await ENC.audio?.returnToScene();
+      } catch (error) {
+        ENC.app.toast(error.message);
+      }
     }
 
     await ENC.combat.save(`phase changed: ${phase}`);
     ENC.app.setPlayerDisplayMode?.(displayMode);
+
     ENC.combat.render();
+
+    if (phase === "combat") {
+      ENC.combat.followCurrentTurn();
+    }
+
     this.renderPhase();
   },
 
@@ -214,18 +265,42 @@ ENC.encounterUI = {
   },
 
   bind() {
-    document.getElementById("saveEncounterLibraryBtn")?.addEventListener("click", () => this.saveCurrent(false));
-    document.getElementById("saveEncounterAsBtn")?.addEventListener("click", () => this.saveCurrent(true));
-    document.getElementById("loadSavedEncounterBtn")?.addEventListener("click", () => this.loadSelected());
-    document.getElementById("duplicateSavedEncounterBtn")?.addEventListener("click", () => this.duplicateSelected());
-    document.getElementById("deleteSavedEncounterBtn")?.addEventListener("click", () => this.deleteSelected());
+    document
+      .getElementById("saveEncounterLibraryBtn")
+      ?.addEventListener("click", () => this.saveCurrent(false));
+    document
+      .getElementById("saveEncounterAsBtn")
+      ?.addEventListener("click", () => this.saveCurrent(true));
+    document
+      .getElementById("loadSavedEncounterBtn")
+      ?.addEventListener("click", () => this.loadSelected());
+    document
+      .getElementById("duplicateSavedEncounterBtn")
+      ?.addEventListener("click", () => this.duplicateSelected());
+    document
+      .getElementById("deleteSavedEncounterBtn")
+      ?.addEventListener("click", () => this.deleteSelected());
 
-    document.getElementById("showSceneBtn")?.addEventListener("click", () => this.setPhase("scene", "scene"));
-    document.getElementById("startCombatBtn")?.addEventListener("click", () => this.setPhase("combat", "combat"));
-    document.getElementById("endCombatBtn")?.addEventListener("click", () => this.setPhase("scene", "scene"));
-    document.getElementById("hideEncounterDisplayBtn")?.addEventListener("click", () => ENC.app.setPlayerDisplayMode?.("standby"));
-    document.getElementById("startSceneAudioBtn")?.addEventListener("click", () => this.startSceneAudio());
-    document.getElementById("stopEncounterAudioBtn")?.addEventListener("click", () => this.stopAudio());
+    document
+      .getElementById("showSceneBtn")
+      ?.addEventListener("click", () => this.setPhase("scene", "scene"));
+    document
+      .getElementById("startCombatBtn")
+      ?.addEventListener("click", () => this.setPhase("combat", "combat"));
+    document
+      .getElementById("endCombatBtn")
+      ?.addEventListener("click", () => this.setPhase("scene", "scene"));
+    document
+      .getElementById("hideEncounterDisplayBtn")
+      ?.addEventListener("click", () =>
+        ENC.app.setPlayerDisplayMode?.("standby"),
+      );
+    document
+      .getElementById("startSceneAudioBtn")
+      ?.addEventListener("click", () => this.startSceneAudio());
+    document
+      .getElementById("stopEncounterAudioBtn")
+      ?.addEventListener("click", () => this.stopAudio());
   },
 
   async initialize() {

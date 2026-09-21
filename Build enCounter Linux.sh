@@ -6,7 +6,7 @@
 set -euo pipefail
 cd "$(dirname "$0")"
 
-VERSION="0.1.0-alpha.1"
+VERSION="0.2.0-alpha.1"
 ARCH="$(uname -m)"
 case "${ARCH}" in
   amd64) ARCH="x86_64" ;;
