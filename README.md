@@ -1,8 +1,8 @@
 # enCounter
 
-**enCounter** is a free, open-source, local-first TTRPG encounter and initiative manager with separate DM and Player Displays, reusable player/NPC/enemy/creature libraries, encounter controls, asset support, and local backup/export features.
+**enCounter** is a free, open-source, local-first TTRPG encounter, initiative, scene-presentation, timer, and soundscape manager with separate DM and Player Displays, reusable player/NPC/enemy/creature libraries, Saved Encounters, local media assets, and backup/export features.
 
-**Current release:** `0.1.0-alpha.1`  
+**Current release:** `0.2.0-alpha.1`  
 **Status:** Alpha / pre-release  
 **License:** MIT  
 **Platforms:** Windows and Linux
@@ -24,28 +24,97 @@
   - **Start Player Display**
   - **Hide Player Display**
   - **Show Player Display**
+- Player Display presentation modes:
+  - **STAND BY**
+  - **Scene**
+  - **Combat**
 - Private DM editing while the Player Display shows **STAND BY**
-- Initiative and turn management
+- Initiative and turn management with synchronized DM and Player Display tracking
+- **DM Initiative Auto-Follow**
+  - follows the active combatant as turns advance
+  - clearly highlights who is currently acting
+  - automatically brings the current combatant into view
+  - does not interrupt unrelated HP, status, resource, or combatant edits
+- **Player Display initiative auto-centering**
+  - automatically centers the active visible combatant
+  - keeps the current turn visible during larger encounters
+- Automatic round advancement
+- Delay, Ready, Trigger / Resume, and Set Turn controls
 - HP, status, condition, and combatant controls
 - Hidden enemies with **Hide from Players / Reveal to Players**
 - Reusable Player, NPC, Enemy, and Creature Library
-- Portrait and encounter background support
+- Saved Encounter Library with:
+  - Save
+  - Save As
+  - Load
+  - Duplicate
+  - Delete
+  - working-copy loading for game-session changes
+- Encounter phases for:
+  - Prepared
+  - Scene / Roleplay
+  - Combat
+  - Complete
+- Separate **Scene Image** and **Combat Background** per encounter
+- Scene / roleplay Player Display mode with full-screen encounter artwork
+- Visual countdown timers for Scene and Combat
+- Timer controls for Start, Pause, Resume, Reset, Stop, and time adjustments
+- Visual timer skins including:
+  - Fantasy Hourglass
+  - Candle
+  - Sci-Fi Pixel Depletion
+- Optional Player Display numeric countdown
+- Encounter Soundscapes with:
+  - scene music
+  - layered scene ambience
+  - combat music
+  - combat ambience
+  - master volume
+  - fade transitions
+  - automatic Scene-to-Combat switching
+  - optional return to Scene audio after combat
+- Prepared one-shot audio cues
+- Live Prepared Cue buttons directly on the Encounter screen
+- Local audio import support for MP3, OGG, WAV, and FLAC
+- Portrait and encounter-background support
 - Generic TTRPG, SWSE, D&D 5E, and Custom system profiles
 - Local autosave and recovery snapshots
 - Backup, export, and import tools
 - Windows and Linux portable builds
 - Runs locally without requiring a cloud account
 
+## What's new in 0.2.0-alpha.1
+
+Version `0.2.0-alpha.1` is a major Alpha feature milestone focused on encounter presentation and live game management.
+
+Highlights include:
+
+- Visual Scene and Combat timers
+- Fantasy Hourglass, Candle, and Sci-Fi Pixel timer presentations
+- Encounter-bound Soundscapes
+- Scene and Combat music and ambience
+- Prepared one-shot audio cues
+- Live cue buttons on the Encounter screen
+- Saved Encounter audio and presentation configuration
+- Stand By, Scene, and Combat Player Display modes
+- Separate Scene and Combat artwork
+- Player Display initiative auto-centering
+- DM initiative Auto-Follow and current-turn tracking
+
 ## Screenshots
 
 ### DM Console
+
+The DM Console manages Saved Encounters, initiative, combatants, timers, scene/combat presentation, Soundscapes, and Prepared Cues.
 
 ![enCounter DM Console](docs/images/enCounter_Library.png)
 ![enCounter DM Console](docs/images/enCounter_Library2.png)
 ![enCounter DM Console](docs/images/enCounter_Game.png)
 ![enCounter DM Console](docs/images/enCounter_Settings.png)
 
-### Player Display
+### Player Display — Scene
+
+Scene mode displays encounter artwork and optional visual timers without revealing initiative or combat information.
 
 ![enCounter Player Display](docs/images/enCounter_Awaiting.png)
 ![enCounter Player Display](docs/images/enCounter-Game2.png)
@@ -53,6 +122,14 @@
 ### Player Display — Stand By
 
 ![enCounter Player Display Stand By](docs/images/enCounter-Standby.png)
+
+### Encounter Soundscape live cues
+
+Soundscapes are stored as part of Saved Encounters. Loading a Saved Encounter restores its Scene music, Scene ambience, Combat music, Combat ambience, transition settings, and Prepared Cue assignments.
+
+Configured one-shot cues appear as live buttons on the Encounter screen and can be triggered during either Scene or Combat play.
+
+Audio playback itself does not automatically begin when an encounter is loaded. The DM remains in control of when Scene or Combat audio starts.
 
 ## Alpha notice
 
@@ -148,11 +225,19 @@ The Player Display should normally be opened from the DM Console using the same 
 
 The Player Display button changes automatically depending on its current state:
 
-| Button | Meaning |
-| --- | --- |
-| **Start Player Display** | Opens the Player Display |
-| **Hide Player Display** | Replaces encounter information with a STAND BY screen |
-| **Show Player Display** | Restores the Player Display using the latest encounter state |
+| Button                   | Meaning                                                      |
+| ------------------------ | ------------------------------------------------------------ |
+| **Start Player Display** | Opens the Player Display                                     |
+| **Hide Player Display**  | Replaces encounter information with a STAND BY screen        |
+| **Show Player Display**  | Restores the Player Display using the latest encounter state |
+
+Player Display content is also controlled by the current encounter phase:
+
+| Encounter state | Player Display                                                         |
+| --------------- | ---------------------------------------------------------------------- |
+| **Stand By**    | Privacy screen; encounter information is hidden                        |
+| **Scene**       | Scene artwork and optional timers without initiative                   |
+| **Combat**      | Combat artwork, initiative order, current turn, and combat information |
 
 ### Making private DM changes
 
@@ -163,6 +248,8 @@ The DM Console remains fully functional. The DM can privately:
 - change initiative values
 - add or remove combatants
 - advance or correct turns
+- use Set Turn or Trigger / Resume
+- adjust initiative order
 - change HP or status information
 - add reinforcements
 - hide or reveal enemies
@@ -180,6 +267,24 @@ When a combatant is marked **Hide from Players**, it remains fully visible in th
 
 Use **Reveal to Players** to return that combatant to the Player Display at its normal initiative position.
 
+### Initiative tracking
+
+The DM Console and Player Display use the same active-turn state so both screens remain synchronized as initiative advances.
+
+On the **Player Display**, the current visible combatant is highlighted and automatically centered in the initiative track.
+
+On the **DM Console**, the current combatant is highlighted and the initiative list automatically follows that combatant when:
+
+- Combat starts
+- **Next Turn** is selected
+- **Previous Turn** is selected
+- **Set Turn** is used
+- A delayed or readied combatant resumes and takes the current turn
+
+DM Auto-Follow occurs only when the active turn changes.
+
+Editing HP, applying damage or healing, changing a status or condition, adjusting resources, hiding or revealing combatants, or making other non-turn changes does not force the DM screen back to the current combatant.
+
 ### Display synchronization
 
 The Player Display includes a **DM Sync** connection indicator.
@@ -190,7 +295,7 @@ Opening multiple DM Console windows against the same browser database is not sup
 
 ## Automated core tests
 
-The repository includes dependency-free Node tests for normalization, initiative sorting, asset sanitization, and turn-transition behavior. Node.js is only needed to run these development tests; packaged enCounter users do not need Node.js.
+The repository includes dependency-free Node tests for normalization, initiative sorting, asset sanitization, Player Display visibility, and turn-transition behavior. Node.js is only needed to run these development tests; packaged enCounter users do not need Node.js.
 
 Run them from the repository root with:
 
@@ -205,6 +310,8 @@ node --test tests/*.test.js
 - Exports/imports and user-supplied assets remain local unless the user moves or shares them.
 - The current Alpha binds its local web server to `127.0.0.1` and does not intentionally send encounter or Library data to an enCounter-operated cloud service.
 - The local server exposes only the application files, public notices, and supported asset files needed by enCounter; runtime `data/` files and source/build files are not served through the browser.
+- Imported audio files remain local under the enCounter `assets/sounds/` folders.
+- Soundscape configuration stores references to those local audio assets; audio files are not embedded directly into JSON encounter backups or exports.
 
 See [`PRIVACY.md`](PRIVACY.md).
 

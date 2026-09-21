@@ -479,3 +479,28 @@
   color: #d7e7ee;
   text-decoration: underline;
 }
+
+/* ========================================
+   SCENE / ROLEPLAY DISPLAY MODE
+======================================== */
+
+.player-body[data-display-mode="scene"] .player-shell {
+  display: none;
+}
+
+.player-body[data-display-mode="scene"] .display-shade {
+  background: linear-gradient(
+    to bottom,
+    rgba(0, 0, 0, 0.10),
+    rgba(0, 0, 0, 0.03) 55%,
+    rgba(0, 0, 0, 0.20)
+  );
+}
+
+.player-body[data-display-mode="scene"] .display-background {
+  transform: none;
+}
+
+.player-body[data-display-mode="combat"] .player-shell {
+  display: flex;
+}

@@ -680,3 +680,163 @@ hr {
   color: var(--text);
   text-decoration: underline;
 }
+
+/* ========================================
+   SAVED ENCOUNTERS / LIVE ENCOUNTER CONTROL
+======================================== */
+
+.encounter-library-bar,
+.encounter-live-bar {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  flex-wrap: wrap;
+  padding: 12px;
+  margin: 12px 0;
+  border: 1px solid var(--line);
+  border-radius: 9px;
+  background: rgba(7, 20, 28, 0.72);
+}
+
+.encounter-library-bar > select {
+  width: min(380px, 100%);
+}
+
+.encounter-phase-block {
+  min-width: 112px;
+  padding: 7px 10px;
+  border: 1px solid #345567;
+  border-radius: 7px;
+  background: #08141c;
+}
+
+.encounter-phase-block strong {
+  display: block;
+  margin-top: 3px;
+  color: #d7eef7;
+  letter-spacing: 0.08em;
+}
+
+.soundscape-status {
+  display: inline-block;
+  padding: 5px 9px;
+  border: 1px solid #3e6173;
+  border-radius: 999px;
+  color: #b9d3dd;
+  background: #0a1820;
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.8px;
+}
+
+.encounter-cue-panel {
+  display: grid;
+  gap: 10px;
+  padding: 12px;
+  margin: 12px 0;
+  border: 1px solid var(--line);
+  border-radius: 9px;
+  background: rgba(7, 20, 28, 0.72);
+}
+
+.encounter-cue-heading {
+  display: flex;
+  align-items: end;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.encounter-cue-heading strong {
+  display: block;
+  margin-top: 2px;
+  color: #d7eef7;
+  font-size: 14px;
+}
+
+.encounter-cue-buttons {
+  display: flex;
+  gap: 9px;
+  flex-wrap: wrap;
+  min-height: 34px;
+  align-items: center;
+}
+
+.encounter-cue-button {
+  min-width: 124px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+}
+
+.encounter-cue-button::before {
+  content: "▶";
+  font-size: 10px;
+}
+
+.encounter-cue-button.is-playing {
+  border-color: #6fc6e8;
+  box-shadow: 0 0 0 1px rgba(111, 198, 232, 0.24);
+}
+
+/* ========================================
+   SOUNDSCAPE EDITOR
+======================================== */
+
+.soundscape-settings-grid {
+  display: grid;
+  grid-template-columns: minmax(180px, 1fr) 150px minmax(240px, 1fr) minmax(240px, 1fr);
+  gap: 12px;
+  align-items: end;
+}
+
+.soundscape-columns {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+  margin-top: 16px;
+}
+
+.audio-track-row {
+  display: grid;
+  grid-template-columns: minmax(220px, 1fr) 105px;
+  gap: 10px;
+  align-items: end;
+  padding: 10px 0;
+  border-bottom: 1px solid rgba(55, 83, 99, 0.45);
+}
+
+.audio-track-row.audio-track-wide {
+  grid-template-columns: minmax(210px, 1fr) 90px 145px 90px;
+}
+
+.cue-grid {
+  display: grid;
+  gap: 8px;
+}
+
+.cue-row {
+  display: grid;
+  grid-template-columns: minmax(130px, 0.5fr) minmax(260px, 1.5fr) 90px auto;
+  gap: 9px;
+  align-items: center;
+}
+
+.asset-card audio {
+  width: 100%;
+  min-width: 180px;
+}
+
+@media (max-width: 1000px) {
+  .soundscape-columns,
+  .soundscape-settings-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .audio-track-row,
+  .audio-track-row.audio-track-wide,
+  .cue-row {
+    grid-template-columns: 1fr;
+  }
+}

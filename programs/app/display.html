@@ -3,6 +3,7 @@
   SPDX-License-Identifier: MIT
   This file is part of enCounter. See LICENSE for the full license terms.
 -->
+
 <!doctype html>
 <html lang="en">
   <head>
@@ -11,13 +12,17 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 
     <title>enCounter — Player Display</title>
+
     <link rel="icon" type="image/png" href="/assets/branding/favicon.png" />
 
     <!-- Main application styles -->
     <link rel="stylesheet" href="css/base.css" />
 
-    <!-- Player display styles -->
+    <!-- Player Display styles -->
     <link rel="stylesheet" href="css/display.css" />
+
+    <!-- Visual Timer styles -->
+    <link rel="stylesheet" href="css/timer.css" />
   </head>
 
   <body class="player-body">
@@ -29,9 +34,10 @@
 
     <!-- Dark overlay placed over encounter backgrounds -->
     <div class="display-shade"></div>
+
     <!-- =========================================
-     PLAYER DISPLAY PRIVACY SCREEN
-     ========================================= -->
+         PLAYER DISPLAY PRIVACY SCREEN
+         ========================================= -->
 
     <div
       id="playerDisplayPrivacyOverlay"
@@ -49,16 +55,46 @@
     </div>
 
     <!-- =========================================
+         VISUAL TIMER LAYER
+
+         JavaScript changes the class on this
+         container depending on the timer mode:
+
+         Overlay:
+           player-timer-overlay
+
+         Featured:
+           player-timer-overlay
+           timer-mode-featured
+
+         Focus:
+           player-timer-focus
+           show
+
+         The timer renderer mounts inside
+         #playerTimer.
+         ========================================= -->
+
+    <div
+      id="playerTimerLayer"
+      class="player-timer-overlay timer-overlay-hidden"
+      aria-hidden="true"
+    >
+      <div id="playerTimer" aria-label="Active encounter timer"></div>
+    </div>
+
+    <!-- =========================================
          PLAYER DISPLAY
          ========================================= -->
 
     <div class="player-shell">
-      <!-- =========================================
+      <!-- =======================================
            PLAYER HEADER
-           ========================================= -->
+           ======================================= -->
 
       <header class="player-header">
         <!-- enCounter branding + encounter information -->
+
         <div class="player-brand-area">
           <img
             src="/assets/branding/enCounter-logo.png"
@@ -70,28 +106,34 @@
             <h1 id="displayEncounterName">New Encounter</h1>
 
             <span id="displaySystem" class="system-pill"> Generic TTRPG </span>
-            <span id="playerAppVersion" class="player-app-version"
-              >ALPHA · v0.1.0-alpha.1</span
-            >
+
+            <span id="playerAppVersion" class="player-app-version">
+              ALPHA · v0.1.0-alpha.1
+            </span>
+
             <span
               id="displayConnectionStatus"
               class="display-connection-status connecting"
               role="status"
               aria-live="polite"
               title="Player Display sync requires the DM Console in the same browser profile."
-              >DM SYNC: CONNECTING…</span
             >
+              DM SYNC: CONNECTING…
+            </span>
+
             <a
               class="player-legal-link"
               href="/docs/LEGAL.html"
               target="_blank"
               rel="noopener"
-              >MIT · License &amp; Notices</a
             >
+              MIT · License &amp; Notices
+            </a>
           </div>
         </div>
 
         <!-- Round counter -->
+
         <div class="display-round">
           <span> ROUND </span>
 
@@ -99,22 +141,21 @@
         </div>
 
         <!-- Full screen button -->
+
         <button id="fullscreenBtn" type="button">Full Screen</button>
       </header>
 
-      <!-- =========================================
+      <!-- =======================================
            MAIN PLAYER DISPLAY AREA
-           ========================================= -->
+           ======================================= -->
 
       <main class="player-main">
-        <!-- =========================================
+        <!-- =====================================
              BETWEEN-ENCOUNTERS BACKGROUND LOGO
 
-             This large logo will be displayed when
-             there are no combatants in the encounter.
-             JavaScript will control whether the
-             "show" class is applied.
-             ========================================= -->
+             Displayed when there are no
+             combatants in the encounter.
+             ===================================== -->
 
         <div
           id="idleLogoBackdrop"
@@ -128,9 +169,9 @@
           />
         </div>
 
-        <!-- =========================================
+        <!-- =====================================
              CURRENT TURN
-             ========================================= -->
+             ===================================== -->
 
         <div class="current-turn">
           <div class="eyebrow">CURRENT TURN</div>
@@ -138,15 +179,15 @@
           <h2 id="currentName">Waiting for combat…</h2>
         </div>
 
-        <!-- =========================================
+        <!-- =====================================
              INITIATIVE TRACK
-             ========================================= -->
+             ===================================== -->
 
         <div id="initiativeTrack" class="initiative-track"></div>
 
-        <!-- =========================================
+        <!-- =====================================
              NEXT TURN
-             ========================================= -->
+             ===================================== -->
 
         <div class="next-turn">
           NEXT:
@@ -161,15 +202,27 @@
          ========================================= -->
 
     <!-- Shared configuration / system profiles -->
+
     <script src="js/core/config.js"></script>
 
     <!-- IndexedDB access -->
+
     <script src="js/core/db.js"></script>
 
     <!-- DM / Player Display synchronization -->
+
     <script src="js/core/sync.js"></script>
 
-    <!-- Player display rendering -->
+    <!-- Visual Timer Renderer -->
+
+    <script src="js/modules/timer-renderer.js"></script>
+
+    <!-- Visual Timer Engine -->
+
+    <script src="js/modules/timer.js"></script>
+
+    <!-- Player Display Controller -->
+
     <script src="js/display.js"></script>
   </body>
 </html>

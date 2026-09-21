@@ -1,5 +1,5 @@
 enCounter
-Version: 0.1.0-alpha.1
+Version: 0.2.0-alpha.1
 Release stage: Alpha
 License: MIT
 Platforms: Windows portable, Linux portable (architecture-specific)

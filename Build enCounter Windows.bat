@@ -6,9 +6,9 @@ REM See LICENSE for the full license terms.
 setlocal EnableExtensions
 cd /d "%~dp0"
 
-title enCounter 0.1.0-alpha.1 Windows Build
+title enCounter 0.2.0-alpha.1 Windows Build
 
-set "VERSION=0.1.0-alpha.1"
+set "VERSION=0.2.0-alpha.1"
 set "RELEASE_ROOT=release"
 set "RELEASE_NAME=enCounter-v%VERSION%-Windows-Portable"
 set "RELEASE_DIR=%RELEASE_ROOT%\%RELEASE_NAME%"
@@ -109,7 +109,10 @@ for %%D in (
     "icons\combat"
     "icons\systems"
     "tokens"
-    "sounds"
+    "sounds\music"
+    "sounds\ambience"
+    "sounds\sfx"
+    "sounds\custom"
 ) do mkdir "%RELEASE_DIR%\assets\%%~D" >nul 2>nul
 
 mkdir "%RELEASE_DIR%\data\backups" >nul 2>nul

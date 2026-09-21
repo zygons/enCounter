@@ -37,9 +37,17 @@ ENC.assets = {
 
     async upload(file, category) {
         if (!file) throw new Error("Choose a file first.");
-        const allowed = ["image/png", "image/jpeg", "image/webp"];
-        if (!allowed.includes(file.type)) throw new Error("Only PNG, JPEG, and WebP images are supported.");
-        if (file.size > 10 * 1024 * 1024) throw new Error("The image is larger than 10 MB.");
+        const isAudioCategory = String(category || "").startsWith("sounds/");
+        const imageTypes = ["image/png", "image/jpeg", "image/webp"];
+        const audioTypes = ["audio/mpeg", "audio/ogg", "audio/wav", "audio/x-wav", "audio/flac", "audio/x-flac"];
+        const allowed = isAudioCategory ? audioTypes : imageTypes;
+        if (!allowed.includes(file.type)) {
+            throw new Error(isAudioCategory
+                ? "Only MP3, OGG, WAV, and FLAC audio files are supported."
+                : "Only PNG, JPEG, and WebP images are supported.");
+        }
+        const maxBytes = isAudioCategory ? 50 * 1024 * 1024 : 10 * 1024 * 1024;
+        if (file.size > maxBytes) throw new Error(isAudioCategory ? "The audio file is larger than 50 MB." : "The image is larger than 10 MB.");
 
         const params = new URLSearchParams({ category, name: file.name });
         const response = await fetch(`/api/assets/upload?${params.toString()}`, {
@@ -67,11 +75,18 @@ ENC.assets = {
             const card = document.createElement("article");
             card.className = "asset-card";
             const isImage = /\.(png|jpe?g|webp)$/i.test(item.name);
+            const isAudio = /\.(mp3|ogg|wav|flac)$/i.test(item.name);
             if (isImage) {
                 const img = document.createElement("img");
                 img.src = item.url;
                 img.alt = "";
                 card.appendChild(img);
+            } else if (isAudio) {
+                const audio = document.createElement("audio");
+                audio.controls = true;
+                audio.preload = "metadata";
+                audio.src = item.url;
+                card.appendChild(audio);
             }
             const name = document.createElement("strong");
             name.textContent = item.name;

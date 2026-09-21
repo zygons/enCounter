@@ -105,6 +105,22 @@ ENC.combat = {
     );
   },
 
+  followCurrentTurn() {
+    requestAnimationFrame(() => {
+      const currentCard = document.querySelector(
+        "#combatantList .combatant-card.current",
+      );
+
+      if (!currentCard) return;
+
+      currentCard.scrollIntoView({
+        behavior: "smooth",
+        block: "center",
+        inline: "nearest",
+      });
+    });
+  },
+
   async moveTurn(direction) {
     const all = this.encounter.combatants;
     if (!all.length) return;
@@ -130,7 +146,9 @@ ENC.combat = {
     await this.save(
       hadCurrent ? (direction > 0 ? "next turn" : "previous turn") : "turn set",
     );
+
     this.render();
+    this.followCurrentTurn();
   },
 
   async changeHp(combatant, amount) {
@@ -170,11 +188,20 @@ ENC.combat = {
     combatant.combatState = "active";
     combatant.delayed = false;
     combatant.ready = false;
-    if (takeTurn) this.encounter.currentId = combatant.id;
+
+    if (takeTurn) {
+      this.encounter.currentId = combatant.id;
+    }
+
     await this.save(
       takeTurn ? "delayed/readied action triggered" : "combatant restored",
     );
+
     this.render();
+
+    if (takeTurn) {
+      this.followCurrentTurn();
+    }
   },
 
   statSummary(combatant) {
@@ -540,6 +567,7 @@ ENC.combat = {
       .classList.toggle("hidden", this.encounter.combatants.length > 0);
     this.renderLibrarySelect();
     this.renderPresetControls();
+    ENC.encounterUI?.renderPhase?.();
   },
 
   renderLibrarySelect() {
@@ -626,11 +654,8 @@ ENC.combat = {
     );
     await this.save("preset loaded");
     this.render();
-    ENC.assets.fillSelect(
-      document.getElementById("backgroundSelect"),
-      "backgrounds/",
-      this.encounter.background,
-    );
+    ENC.app?.refreshEncounterMediaControls?.();
+    ENC.soundscapeUI?.render?.();
   },
 
   async newEncounter() {
@@ -660,19 +685,22 @@ ENC.combat = {
         ENC.DEFAULT_SETTINGS.customProfile,
     );
 
+    ENC.audio?.stopAll(250);
     this.encounter = ENC.createDefaultEncounter();
     this.encounter.systemId = systemId;
     this.encounter.customProfile = customProfile;
+    this.encounter.phase = "prepared";
+    this.encounter.playerDisplayMode = "standby";
+    ENC.app.playerDisplayMode = "standby";
+    ENC.app.playerDisplayPaused = true;
 
     await this.save();
     ENC.app?.renderSnapshots?.();
 
     this.render();
-    ENC.assets.fillSelect(
-      document.getElementById("backgroundSelect"),
-      "backgrounds/",
-      "",
-    );
+    ENC.app?.refreshEncounterMediaControls?.();
+    ENC.soundscapeUI?.render?.();
+    ENC.app?.broadcastDisplayState?.();
     ENC.app?.toast("New encounter ready.");
   },
 
@@ -727,6 +755,16 @@ ENC.combat = {
       .getElementById("backgroundSelect")
       .addEventListener("change", async (event) => {
         this.encounter.background = event.target.value;
+        this.encounter.display = this.encounter.display || {};
+        this.encounter.display.combatImage = event.target.value;
+        await this.save();
+        this.render();
+      });
+    document
+      .getElementById("sceneImageSelect")
+      ?.addEventListener("change", async (event) => {
+        this.encounter.display = this.encounter.display || {};
+        this.encounter.display.sceneImage = event.target.value;
         await this.save();
         this.render();
       });
@@ -738,11 +776,9 @@ ENC.combat = {
         try {
           const result = await ENC.assets.upload(file, "backgrounds/custom");
           this.encounter.background = result.url;
-          ENC.assets.fillSelect(
-            document.getElementById("backgroundSelect"),
-            "backgrounds/",
-            result.url,
-          );
+          this.encounter.display = this.encounter.display || {};
+          this.encounter.display.combatImage = result.url;
+          ENC.app?.refreshEncounterMediaControls?.();
           await this.save();
           this.render();
           ENC.app.toast("Background imported.");
