@@ -75,7 +75,8 @@ ENC.display = {
     document.body.dataset.displayMode = this.displayMode;
 
     const overlay = document.getElementById("playerDisplayPrivacyOverlay");
-    if (overlay) overlay.classList.toggle("show", this.paused || this.awaitingDmState);
+    if (overlay)
+      overlay.classList.toggle("show", this.paused || this.awaitingDmState);
 
     this.updateTimerLayer();
     if (!this.paused && !this.awaitingDmState) this.render();
@@ -84,7 +85,9 @@ ENC.display = {
   setPaused(paused) {
     this.paused = Boolean(paused);
     if (this.paused) this.displayMode = "standby";
-    else if (this.displayMode === "standby") this.displayMode = this.encounter?.phase === "combat" ? "combat" : "scene";
+    else if (this.displayMode === "standby")
+      this.displayMode =
+        this.encounter?.phase === "combat" ? "combat" : "scene";
     document.body.dataset.displayMode = this.displayMode;
 
     const overlay = document.getElementById("playerDisplayPrivacyOverlay");
@@ -375,8 +378,12 @@ ENC.display = {
 
     document.body.dataset.displayMode = "scene";
     const background = document.getElementById("displayBackground");
-    const sceneImage = this.encounter.display?.sceneImage || this.encounter.background || "";
-    if (background) background.style.backgroundImage = sceneImage ? `url("${sceneImage}")` : "";
+    const sceneImage =
+      this.encounter.display?.sceneImage || this.encounter.background || "";
+    if (background)
+      background.style.backgroundImage = sceneImage
+        ? `url("${sceneImage}")`
+        : "";
     const name = document.getElementById("displayEncounterName");
     if (name) name.textContent = this.encounter.name || "Scene";
     this.updateIdleLogo(Boolean(sceneImage));
@@ -459,7 +466,8 @@ ENC.display = {
 
     const background = document.getElementById("displayBackground");
 
-    const combatImage = this.encounter.display?.combatImage || this.encounter.background || "";
+    const combatImage =
+      this.encounter.display?.combatImage || this.encounter.background || "";
     if (combatImage) {
       background.style.backgroundImage = `url("${combatImage}")`;
     } else {
@@ -583,6 +591,28 @@ ENC.display = {
       ) {
         badges.appendChild(
           this.badge(`CT ${combatant.conditionTrack}`, "condition"),
+        );
+      }
+
+      /* D&D 5E Conditions */
+
+      if (
+        combatant.systemId === "dnd5e" &&
+        Array.isArray(combatant.dnd5eConditions)
+      ) {
+        for (const condition of combatant.dnd5eConditions) {
+          badges.appendChild(this.badge(condition, "condition"));
+        }
+      }
+
+      /* D&D 5E Exhaustion */
+
+      if (
+        combatant.systemId === "dnd5e" &&
+        Number(combatant.dnd5eExhaustion) > 0
+      ) {
+        badges.appendChild(
+          this.badge(`Exhaustion ${combatant.dnd5eExhaustion}`, "exhaustion"),
         );
       }
 
@@ -733,7 +763,8 @@ ENC.display = {
       if (message.type === "player-display-mode") {
         this.markDmSeen();
         this.awaitingDmState = false;
-        if (message.encounter) this.encounter = ENC.normalizeEncounter(message.encounter);
+        if (message.encounter)
+          this.encounter = ENC.normalizeEncounter(message.encounter);
         if (message.timer) this.applyTimerState(message.timer);
         this.setDisplayMode(message.mode || "standby");
         return;

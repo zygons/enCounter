@@ -1,6 +1,6 @@
 # enCounter — Saved Encounters, Scene Display, Soundscapes, and Initiative Tracking
 
-This document describes the encounter presentation and live-session workflow for **enCounter v0.2.0-alpha.1**.
+This document describes the encounter presentation and live-session workflow for **enCounter v0.2.0-alpha.2**.
 
 A prepared encounter can move through Scene and Combat presentation while retaining its Saved Encounter configuration, visual timers, Soundscape, and initiative state.
 
@@ -173,3 +173,15 @@ A timer may be shown while the Player Display is in Scene mode, making it suitab
 Player-visible timers can also remain active during Combat mode.
 
 While the Player Display is on **STAND BY**, Player-visible timers remain hidden.
+### Saving and loading Timer configuration
+
+Saved Encounters store the Timer's prepared configuration:
+
+- Timer name.
+- Configured duration.
+- Visual skin.
+- Player Display mode.
+- Whether the timer is shown to players.
+- DM and Player numeric-countdown preferences.
+
+Loading a Saved Encounter restores those settings and creates a fresh **Ready** timer using the full configured duration. Live runtime state is intentionally not reusable encounter data: running/paused/completed state, remaining time, and the `endAt` timestamp are not restored from the previous session.

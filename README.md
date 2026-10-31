@@ -2,7 +2,7 @@
 
 **enCounter** is a free, open-source, local-first TTRPG encounter, initiative, scene-presentation, timer, and soundscape manager with separate DM and Player Displays, reusable player/NPC/enemy/creature libraries, Saved Encounters, local media assets, and backup/export features.
 
-**Current release:** `0.2.0-alpha.1`  
+**Current release:** `0.2.0-alpha.2`
 **Status:** Alpha / pre-release  
 **License:** MIT  
 **Platforms:** Windows and Linux
@@ -41,6 +41,7 @@
 - Automatic round advancement
 - Delay, Ready, Trigger / Resume, and Set Turn controls
 - HP, status, condition, and combatant controls
+- Structured D&D 5E conditions with multi-condition support and separate Exhaustion tracking
 - Hidden enemies with **Hide from Players / Reveal to Players**
 - Reusable Player, NPC, Enemy, and Creature Library
 - Saved Encounter Library with:
@@ -58,6 +59,7 @@
 - Separate **Scene Image** and **Combat Background** per encounter
 - Scene / roleplay Player Display mode with full-screen encounter artwork
 - Visual countdown timers for Scene and Combat
+- Prepared Timer configuration saved with Saved Encounters and restored in a fresh Ready state
 - Timer controls for Start, Pause, Resume, Reset, Stop, and time adjustments
 - Visual timer skins including:
   - Fantasy Hourglass
@@ -82,6 +84,19 @@
 - Backup, export, and import tools
 - Windows and Linux portable builds
 - Runs locally without requiring a cloud account
+
+## What's new in 0.2.0-alpha.2
+
+Version `0.2.0-alpha.2` is an Alpha 2 maintenance release focused on encounter-state reliability and D&D 5E combat tracking.
+
+Highlights include:
+
+- Structured D&D 5E conditions with multiple simultaneous conditions
+- D&D 5E Exhaustion tracking and Player Display badges
+- Saved Encounter Timer configuration that reloads in a fresh Ready state
+- Correct transient-condition reset behavior for Saved Encounters and presets
+- Improved Soundscape playback failure reporting
+- Release/build consistency fixes and additional regression tests
 
 ## What's new in 0.2.0-alpha.1
 

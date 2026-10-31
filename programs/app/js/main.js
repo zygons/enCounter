@@ -13,6 +13,8 @@ ENC.app = {
   playerDisplayWatchTimer: null,
   timerPreviewRenderer: null,
   timerController: null,
+  preparedTimerConfig: null,
+  timerConfigSaveTimer: null,
 
   toast(message) {
     const toast = document.getElementById("toast");
@@ -168,6 +170,99 @@ ENC.app = {
   // VISUAL TIMER
   // ========================================
 
+  setTimerConfigInputs(config) {
+    const normalized = ENC.normalizeTimerConfig(config);
+    const timerName = document.getElementById("timerName");
+    const timerSkin = document.getElementById("timerSkin");
+    const timerDisplayMode = document.getElementById("timerDisplayMode");
+    const showPlayers = document.getElementById("timerShowPlayers");
+    const showNumericPlayers = document.getElementById(
+      "timerShowNumericPlayers",
+    );
+    const showNumericDM = document.getElementById("timerShowNumericDM");
+
+    if (timerName) timerName.value = normalized.name;
+    if (timerSkin) timerSkin.value = normalized.skin;
+    if (timerDisplayMode) timerDisplayMode.value = normalized.displayMode;
+    if (showPlayers) showPlayers.checked = normalized.visibleToPlayers;
+    if (showNumericPlayers) {
+      showNumericPlayers.checked = normalized.showNumericToPlayers;
+    }
+    if (showNumericDM) showNumericDM.checked = normalized.showNumericToDM;
+    this.setTimerDurationInputs(normalized.durationMs);
+  },
+
+  getPreparedTimerConfig() {
+    if (this.preparedTimerConfig) {
+      return ENC.deepClone(this.preparedTimerConfig);
+    }
+
+    return ENC.normalizeTimerConfig(ENC.combat?.encounter?.timer);
+  },
+
+  queuePreparedTimerConfigSave(timerState) {
+    const normalized = ENC.normalizeTimerConfig(timerState);
+    this.preparedTimerConfig = ENC.deepClone(normalized);
+
+    if (ENC.combat?.encounter) {
+      ENC.combat.encounter.timer = ENC.deepClone(normalized);
+    }
+
+    clearTimeout(this.timerConfigSaveTimer);
+    this.timerConfigSaveTimer = setTimeout(() => {
+      this.timerConfigSaveTimer = null;
+      ENC.combat
+        ?.save?.()
+        .catch((error) => console.warn("Could not persist timer configuration", error));
+    }, 250);
+  },
+
+  applyPreparedTimerConfig(config, options = {}) {
+    const normalized = ENC.normalizeTimerConfig(config);
+    const shouldPersist = options.persist === true;
+    const shouldBroadcast = options.broadcast !== false;
+
+    clearTimeout(this.timerConfigSaveTimer);
+    this.timerConfigSaveTimer = null;
+    this.preparedTimerConfig = ENC.deepClone(normalized);
+
+    if (ENC.combat?.encounter) {
+      ENC.combat.encounter.timer = ENC.deepClone(normalized);
+    }
+
+    this.setTimerConfigInputs(normalized);
+
+    if (this.timerController) {
+      this.timerController.setState(
+        {
+          id: "primary-timer",
+          name: normalized.name,
+          mode: "countdown",
+          skin: normalized.skin,
+          durationMs: normalized.durationMs,
+          remainingMs: normalized.durationMs,
+          endAt: null,
+          status: "idle",
+          visibleToPlayers: normalized.visibleToPlayers,
+          showNumericToDM: normalized.showNumericToDM,
+          showNumericToPlayers: normalized.showNumericToPlayers,
+          displayMode: normalized.displayMode,
+        },
+        { notify: false },
+      );
+      this.updateTimerUI();
+      if (shouldBroadcast) this.broadcastTimerState();
+    }
+
+    if (shouldPersist) {
+      ENC.combat
+        ?.save?.()
+        .catch((error) => console.warn("Could not persist timer configuration", error));
+    }
+
+    return normalized;
+  },
+
   getTimerDurationFromInputs() {
     const minutesInput = document.getElementById("timerMinutes");
     const secondsInput = document.getElementById("timerSeconds");
@@ -180,7 +275,7 @@ ENC.app = {
     const rawSeconds = Number(secondsInput.value);
 
     const minutes = Number.isFinite(rawMinutes)
-      ? Math.max(0, Math.floor(rawMinutes))
+      ? Math.min(999, Math.max(0, Math.floor(rawMinutes)))
       : 0;
 
     const seconds = Number.isFinite(rawSeconds)
@@ -328,10 +423,9 @@ ENC.app = {
       throw new Error("Timer preview container was not found.");
     }
 
-    const initialDuration =
-      this.getTimerDurationFromInputs() ||
-      ENC.timer.DEFAULT_DURATION_MS ||
-      300000;
+    const prepared = ENC.normalizeTimerConfig(ENC.combat?.encounter?.timer);
+    this.preparedTimerConfig = ENC.deepClone(prepared);
+    this.setTimerConfigInputs(prepared);
 
     this.timerPreviewRenderer = ENC.timerRenderer.create(previewContainer);
 
@@ -341,20 +435,16 @@ ENC.app = {
 
       initialState: {
         id: "primary-timer",
-        name: document.getElementById("timerName")?.value.trim() || "Countdown",
+        name: prepared.name,
         mode: "countdown",
-        skin: document.getElementById("timerSkin")?.value || "hourglass",
-        durationMs: initialDuration,
-        remainingMs: initialDuration,
+        skin: prepared.skin,
+        durationMs: prepared.durationMs,
+        remainingMs: prepared.durationMs,
         status: "idle",
-        visibleToPlayers:
-          document.getElementById("timerShowPlayers")?.checked === true,
-        showNumericToDM:
-          document.getElementById("timerShowNumericDM")?.checked !== false,
-        showNumericToPlayers:
-          document.getElementById("timerShowNumericPlayers")?.checked === true,
-        displayMode:
-          document.getElementById("timerDisplayMode")?.value || "overlay",
+        visibleToPlayers: prepared.visibleToPlayers,
+        showNumericToDM: prepared.showNumericToDM,
+        showNumericToPlayers: prepared.showNumericToPlayers,
+        displayMode: prepared.displayMode,
       },
 
       onStateChange: (timerState, reason) => {
@@ -372,6 +462,20 @@ ENC.app = {
          * using the shared endAt timestamp.
          */
         this.broadcastTimerState(timerState);
+
+        if (
+          [
+            "duration",
+            "name",
+            "skin",
+            "visibility",
+            "player-numeric",
+            "dm-numeric",
+            "display-mode",
+          ].includes(reason)
+        ) {
+          this.queuePreparedTimerConfigSave(timerState);
+        }
 
         console.debug("Timer state changed:", reason, timerState);
       },
@@ -1071,6 +1175,7 @@ ENC.app = {
       : "standby";
     this.playerDisplayPaused = this.playerDisplayMode === "standby";
     ENC.audio.setSoundscape(ENC.combat.encounter?.soundscape);
+    this.applyPreparedTimerConfig(ENC.combat.encounter?.timer);
 
     ENC.combat.render();
 

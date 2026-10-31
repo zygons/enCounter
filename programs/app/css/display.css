@@ -418,6 +418,11 @@
   border-color: #af9140;
 }
 
+.display-badge.exhaustion {
+  background: #58374f;
+  border-color: #9a6888;
+}
+
 .display-badge.defeated {
   background: #6a252a;
   border-color: #b54c54;
@@ -491,9 +496,9 @@
 .player-body[data-display-mode="scene"] .display-shade {
   background: linear-gradient(
     to bottom,
-    rgba(0, 0, 0, 0.10),
+    rgba(0, 0, 0, 0.1),
     rgba(0, 0, 0, 0.03) 55%,
-    rgba(0, 0, 0, 0.20)
+    rgba(0, 0, 0, 0.2)
   );
 }
 

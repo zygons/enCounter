@@ -53,6 +53,8 @@ ENC.combat = {
         initiative,
         hp: entry.maxHp ?? "",
         conditionTrack: "Normal",
+        dnd5eConditions: [],
+        dnd5eExhaustion: 0,
         visibleStatus: "",
         combatState: "active",
         hidden: false,
@@ -437,6 +439,123 @@ ENC.combat = {
       label.append(span, select);
       fields.appendChild(label);
     }
+
+    if (modules.conditions && combatant.systemId === "dnd5e") {
+      const conditionControl = document.createElement("div");
+      conditionControl.className = "dnd5e-condition-control";
+
+      const conditionLabel = document.createElement("label");
+      conditionLabel.className = "compact-control";
+
+      const conditionLabelText = document.createElement("span");
+      conditionLabelText.textContent = "5E Conditions";
+
+      const conditionSelect = document.createElement("select");
+
+      const placeholder = document.createElement("option");
+      placeholder.value = "";
+      placeholder.textContent = "Add 5E Condition…";
+      conditionSelect.appendChild(placeholder);
+
+      const activeConditions = Array.isArray(combatant.dnd5eConditions)
+        ? combatant.dnd5eConditions
+        : [];
+
+      for (const condition of ENC.DND5E_CONDITIONS) {
+        if (activeConditions.includes(condition)) continue;
+
+        const option = document.createElement("option");
+        option.value = condition;
+        option.textContent = condition;
+        conditionSelect.appendChild(option);
+      }
+
+      conditionSelect.addEventListener("change", async () => {
+        const condition = conditionSelect.value;
+
+        if (!condition) return;
+
+        if (!Array.isArray(combatant.dnd5eConditions)) {
+          combatant.dnd5eConditions = [];
+        }
+
+        if (!combatant.dnd5eConditions.includes(condition)) {
+          combatant.dnd5eConditions.push(condition);
+        }
+
+        await this.save();
+        this.render();
+      });
+
+      conditionLabel.append(conditionLabelText, conditionSelect);
+
+      conditionControl.appendChild(conditionLabel);
+
+      const conditionTags = document.createElement("div");
+      conditionTags.className = "dnd5e-condition-tags";
+
+      for (const condition of activeConditions) {
+        const chip = document.createElement("button");
+        chip.type = "button";
+        chip.className = "dnd5e-condition-chip";
+        chip.textContent = `${condition} ×`;
+        chip.title = `Remove ${condition}`;
+
+        chip.addEventListener("click", async () => {
+          combatant.dnd5eConditions = combatant.dnd5eConditions.filter(
+            (activeCondition) => activeCondition !== condition,
+          );
+
+          await this.save();
+          this.render();
+        });
+
+        conditionTags.appendChild(chip);
+      }
+
+      conditionControl.appendChild(conditionTags);
+
+      /*
+       * Exhaustion is intentionally separate from normal
+       * 5E conditions because it has a numeric level.
+       */
+      const exhaustionLabel = document.createElement("label");
+      exhaustionLabel.className = "compact-control dnd5e-exhaustion-control";
+
+      const exhaustionLabelText = document.createElement("span");
+      exhaustionLabelText.textContent = "Exhaustion";
+
+      const exhaustionSelect = document.createElement("select");
+
+      for (
+        let level = ENC.DND5E_EXHAUSTION_MIN;
+        level <= ENC.DND5E_EXHAUSTION_MAX;
+        level += 1
+      ) {
+        const option = document.createElement("option");
+        option.value = String(level);
+        option.textContent = level === 0 ? "None" : `Level ${level}`;
+
+        exhaustionSelect.appendChild(option);
+      }
+
+      exhaustionSelect.value = String(combatant.dnd5eExhaustion ?? 0);
+
+      exhaustionSelect.addEventListener("change", async () => {
+        combatant.dnd5eExhaustion =
+          Number.parseInt(exhaustionSelect.value, 10) || 0;
+
+        await this.save();
+        this.render();
+      });
+
+      exhaustionLabel.append(exhaustionLabelText, exhaustionSelect);
+
+      conditionControl.appendChild(exhaustionLabel);
+
+      fields.appendChild(conditionControl);
+    }
+
     card.appendChild(fields);
 
     const detail = document.createElement("div");
@@ -611,6 +730,9 @@ ENC.combat = {
   async savePreset() {
     const name = prompt("Preset name:", this.encounter.name);
     if (!name?.trim()) return;
+    if (ENC.app?.getPreparedTimerConfig) {
+      this.encounter.timer = ENC.app.getPreparedTimerConfig();
+    }
     await ENC.db.savePreset(this.encounter, name.trim());
     ENC.backup.scheduleExternalBackup();
     await this.renderPresetControls();
@@ -635,24 +757,22 @@ ENC.combat = {
     this.encounter.currentId = null;
     this.encounter.combatants = (preset.combatants || []).map((c) =>
       ENC.normalizeCombatant(
-        {
+        ENC.resetCombatantTransientState({
           ...c,
           id: ENC.makeId("cmb"),
           initiative: 10,
-          hp: c.maxHp ?? c.hp ?? "",
-          conditionTrack: "Normal",
-          visibleStatus: "",
-          combatState: "active",
           hidden: false,
-          delayed: false,
-          ready: false,
           createdOrder: Date.now() + Math.random(),
-        },
+        }),
         preset.systemId,
         preset.customProfile,
       ),
     );
+    ENC.app?.applyPreparedTimerConfig?.(this.encounter.timer, {
+      broadcast: false,
+    });
     await this.save("preset loaded");
+    ENC.app?.broadcastTimerState?.();
     this.render();
     ENC.app?.refreshEncounterMediaControls?.();
     ENC.soundscapeUI?.render?.();
@@ -693,6 +813,9 @@ ENC.combat = {
     this.encounter.playerDisplayMode = "standby";
     ENC.app.playerDisplayMode = "standby";
     ENC.app.playerDisplayPaused = true;
+    ENC.app?.applyPreparedTimerConfig?.(this.encounter.timer, {
+      broadcast: false,
+    });
 
     await this.save();
     ENC.app?.renderSnapshots?.();
@@ -701,6 +824,7 @@ ENC.combat = {
     ENC.app?.refreshEncounterMediaControls?.();
     ENC.soundscapeUI?.render?.();
     ENC.app?.broadcastDisplayState?.();
+    ENC.app?.broadcastTimerState?.();
     ENC.app?.toast("New encounter ready.");
   },
 

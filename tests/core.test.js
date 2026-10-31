@@ -243,3 +243,88 @@ test("normalizeEncounter preserves scene/combat display modes and soundscape", (
   assert.equal(encounter.soundscape.scene.ambience[0].combatBehavior, "duck");
   assert.equal(encounter.soundscape.combat.music.asset, "/assets/sounds/music/battle.mp3");
 });
+
+test("normalizeCombatant keeps valid 5E conditions, removes duplicates, and clamps Exhaustion", () => {
+  const normalized = ENC.normalizeCombatant({
+    id: "fighter",
+    name: "Fighter",
+    systemId: "dnd5e",
+    dnd5eConditions: [
+      "Prone",
+      "Poisoned",
+      "Prone",
+      "Made Up Condition",
+    ],
+    dnd5eExhaustion: 99,
+  });
+
+  assert.deepEqual(Array.from(normalized.dnd5eConditions), ["Prone", "Poisoned"]);
+  assert.equal(normalized.dnd5eExhaustion, 6);
+});
+
+test("normalizeCombatant defaults invalid negative 5E Exhaustion to zero", () => {
+  const normalized = ENC.normalizeCombatant({
+    id: "fighter",
+    name: "Fighter",
+    systemId: "dnd5e",
+    dnd5eExhaustion: -4,
+  });
+
+  assert.equal(normalized.dnd5eExhaustion, 0);
+});
+
+test("resetCombatantTransientState clears reusable encounter combat state", () => {
+  const reset = ENC.resetCombatantTransientState({
+    id: "fighter",
+    maxHp: 42,
+    hp: 11,
+    conditionTrack: "-5",
+    dnd5eConditions: ["Prone", "Poisoned"],
+    dnd5eExhaustion: 2,
+    visibleStatus: "Concentrating",
+    combatState: "defeated",
+    delayed: true,
+    ready: true,
+    hidden: true,
+  });
+
+  assert.equal(reset.hp, 42);
+  assert.equal(reset.conditionTrack, "Normal");
+  assert.deepEqual(Array.from(reset.dnd5eConditions), []);
+  assert.equal(reset.dnd5eExhaustion, 0);
+  assert.equal(reset.visibleStatus, "");
+  assert.equal(reset.combatState, "active");
+  assert.equal(reset.delayed, false);
+  assert.equal(reset.ready, false);
+  assert.equal(reset.hidden, true);
+});
+
+test("normalizeEncounter preserves prepared Timer configuration but drops runtime state", () => {
+  const encounter = ENC.normalizeEncounter({
+    timer: {
+      name: "Reinforcements",
+      durationMs: 600000,
+      skin: "scifi-pixels",
+      visibleToPlayers: true,
+      showNumericToDM: true,
+      showNumericToPlayers: false,
+      displayMode: "featured",
+      status: "running",
+      remainingMs: 12345,
+      endAt: Date.now() + 12345,
+    },
+  });
+
+  assert.deepEqual(JSON.parse(JSON.stringify(encounter.timer)), {
+    name: "Reinforcements",
+    durationMs: 600000,
+    skin: "scifi-pixels",
+    visibleToPlayers: true,
+    showNumericToDM: true,
+    showNumericToPlayers: false,
+    displayMode: "featured",
+  });
+  assert.equal(Object.hasOwn(encounter.timer, "status"), false);
+  assert.equal(Object.hasOwn(encounter.timer, "remainingMs"), false);
+  assert.equal(Object.hasOwn(encounter.timer, "endAt"), false);
+});

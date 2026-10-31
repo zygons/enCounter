@@ -6,7 +6,11 @@
 set -euo pipefail
 cd "$(dirname "$0")"
 
-VERSION="0.2.0-alpha.1"
+VERSION="$(awk '/^Version:/ {print $2; exit}' docs/VERSION.txt)"
+if [[ -z "${VERSION}" ]]; then
+  echo "ERROR: Could not read the release version from docs/VERSION.txt."
+  exit 1
+fi
 ARCH="$(uname -m)"
 case "${ARCH}" in
   amd64) ARCH="x86_64" ;;
@@ -88,6 +92,7 @@ mkdir -p \
   "${RELEASE_DIR}/data/imports"
 
 [[ -d docs ]] && cp -a docs "${RELEASE_DIR}/docs"
+[[ -f "docs/enCounter User Guide.pdf" ]] && cp "docs/enCounter User Guide.pdf" "${RELEASE_DIR}/enCounter User Guide.pdf"
 cp LICENSE README.md AI_ASSISTANCE.md PRIVACY.md THIRD_PARTY_NOTICES.md "${RELEASE_DIR}/"
 
 # Defensive cleanup: no prior user data may ship.

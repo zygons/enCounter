@@ -6,9 +6,16 @@ REM See LICENSE for the full license terms.
 setlocal EnableExtensions
 cd /d "%~dp0"
 
-title enCounter 0.2.0-alpha.1 Windows Build
+set "VERSION="
+for /f "tokens=2" %%V in ('findstr /B /C:"Version:" "docs\VERSION.txt" 2^>nul') do set "VERSION=%%V"
+if not defined VERSION (
+    echo ERROR: Could not read the release version from docs\VERSION.txt.
+    if not defined CI pause
+    exit /b 1
+)
 
-set "VERSION=0.2.0-alpha.1"
+title enCounter %VERSION% Windows Build
+
 set "RELEASE_ROOT=release"
 set "RELEASE_NAME=enCounter-v%VERSION%-Windows-Portable"
 set "RELEASE_DIR=%RELEASE_ROOT%\%RELEASE_NAME%"
@@ -125,7 +132,7 @@ copy /Y "README.md" "%RELEASE_DIR%\README.md" >nul
 copy /Y "AI_ASSISTANCE.md" "%RELEASE_DIR%\AI_ASSISTANCE.md" >nul
 copy /Y "PRIVACY.md" "%RELEASE_DIR%\PRIVACY.md" >nul
 copy /Y "THIRD_PARTY_NOTICES.md" "%RELEASE_DIR%\THIRD_PARTY_NOTICES.md" >nul
-copy /Y "enCounter User Guide.pdf" "%RELEASE_DIR%\enCounter User Guide.pdf" >nul
+copy /Y "docs\enCounter User Guide.pdf" "%RELEASE_DIR%\enCounter User Guide.pdf" >nul
 
 REM Defensive cleanup: no prior user data may ship.
 del /q "%RELEASE_DIR%\data\backups\*" >nul 2>nul

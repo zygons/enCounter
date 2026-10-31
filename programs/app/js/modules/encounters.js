@@ -111,6 +111,9 @@ ENC.encounterUI = {
       encounter.soundscape = ENC.soundscapeUI.collect();
       ENC.audio?.setSoundscape(encounter.soundscape);
     }
+    if (ENC.app?.getPreparedTimerConfig) {
+      encounter.timer = ENC.app.getPreparedTimerConfig();
+    }
     if (saveAs || !existingId) {
       const requested = prompt(
         "Saved encounter name:",
@@ -157,6 +160,7 @@ ENC.encounterUI = {
     if (!loaded) return ENC.app.toast("Saved encounter could not be loaded.");
     ENC.combat.encounter = loaded;
     ENC.audio?.setSoundscape(loaded.soundscape);
+    ENC.app.applyPreparedTimerConfig?.(loaded.timer, { broadcast: false });
     ENC.app.playerDisplayPaused = true;
     ENC.app.playerDisplayMode = "standby";
     ENC.app.broadcastDisplayState?.();

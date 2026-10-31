@@ -150,15 +150,9 @@ ENC.db = {
       playerDisplayMode: "standby",
       currentId: null,
       round: 1,
-      combatants: (source.combatants || []).map((combatant) => ({
-        ...combatant,
-        hp: combatant.maxHp ?? combatant.hp ?? "",
-        conditionTrack: "Normal",
-        visibleStatus: "",
-        combatState: "active",
-        delayed: false,
-        ready: false,
-      })),
+      combatants: (source.combatants || []).map((combatant) =>
+        ENC.resetCombatantTransientState(combatant),
+      ),
       updatedAt: new Date().toISOString(),
     });
     template.id = templateId;
@@ -189,18 +183,14 @@ ENC.db = {
       playerDisplayMode: "standby",
       currentId: null,
       round: 1,
-      combatants: (saved.combatants || []).map((combatant) => ({
-        ...combatant,
-        id: ENC.makeId("cmb"),
-        hp: combatant.maxHp ?? combatant.hp ?? "",
-        conditionTrack: "Normal",
-        visibleStatus: "",
-        combatState: "active",
-        hidden: Boolean(combatant.hidden),
-        delayed: false,
-        ready: false,
-        createdOrder: Date.now() + Math.random(),
-      })),
+      combatants: (saved.combatants || []).map((combatant) =>
+        ENC.resetCombatantTransientState({
+          ...combatant,
+          id: ENC.makeId("cmb"),
+          hidden: Boolean(combatant.hidden),
+          createdOrder: Date.now() + Math.random(),
+        }),
+      ),
     });
     working.id = "active";
     working.kind = "active";
@@ -224,19 +214,15 @@ ENC.db = {
       currentId: null,
       round: 1,
       updatedAt: new Date().toISOString(),
-      combatants: (encounter.combatants || []).map((combatant) => ({
-        ...combatant,
-        id: ENC.makeId("cmb"),
-        initiative: 10,
-        hp: combatant.maxHp ?? combatant.hp ?? "",
-        conditionTrack: "Normal",
-        visibleStatus: "",
-        combatState: "active",
-        hidden: false,
-        delayed: false,
-        ready: false,
-        createdOrder: Date.now() + Math.random(),
-      })),
+      combatants: (encounter.combatants || []).map((combatant) =>
+        ENC.resetCombatantTransientState({
+          ...combatant,
+          id: ENC.makeId("cmb"),
+          initiative: 10,
+          hidden: false,
+          createdOrder: Date.now() + Math.random(),
+        }),
+      ),
     });
     await this.put("encounters", preset);
     return preset;

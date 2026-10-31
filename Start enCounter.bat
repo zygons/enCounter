@@ -6,7 +6,9 @@ REM This file is part of enCounter. See LICENSE for the full license terms.
 setlocal EnableDelayedExpansion
 cd /d "%~dp0"
 
-title enCounter 0.2.0-alpha.1
+set "VERSION=Development"
+for /f "tokens=2" %%V in ('findstr /B /C:"Version:" "docs\VERSION.txt" 2^>nul') do set "VERSION=%%V"
+title enCounter !VERSION!
 
 REM ============================================================
 REM Verify launcher exists
