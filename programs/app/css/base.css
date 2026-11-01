@@ -729,7 +729,76 @@ hr {
    SAVED ENCOUNTERS / LIVE ENCOUNTER CONTROL
 ======================================== */
 
-.encounter-library-bar,
+.encounter-library-bar {
+  display: grid;
+  gap: 12px;
+  padding: 12px;
+  margin: 12px 0;
+  border: 1px solid var(--line);
+  border-radius: 9px;
+  background: rgba(7, 20, 28, 0.72);
+}
+
+.saved-encounter-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.saved-encounter-header strong {
+  color: #d7eef7;
+  font-size: 14px;
+}
+
+.saved-encounter-groups {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.saved-encounter-group {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  min-width: 0;
+  padding: 12px;
+  border: 1px solid #2d4b5c;
+  border-radius: 8px;
+  background: rgba(8, 20, 28, 0.82);
+}
+
+.saved-encounter-group-title {
+  color: #b9d6e3;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 1.2px;
+  text-transform: uppercase;
+}
+
+.saved-encounter-controls {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  flex-wrap: wrap;
+}
+
+.saved-encounter-controls select {
+  flex: 1 1 260px;
+  width: auto;
+  min-width: 220px;
+}
+
+.saved-encounter-controls button {
+  width: auto;
+  white-space: nowrap;
+}
+
+.saved-encounter-group > .hint {
+  margin-top: 1px;
+}
+
 .encounter-live-bar {
   display: flex;
   align-items: center;
@@ -740,10 +809,6 @@ hr {
   border: 1px solid var(--line);
   border-radius: 9px;
   background: rgba(7, 20, 28, 0.72);
-}
-
-.encounter-library-bar > select {
-  width: min(380px, 100%);
 }
 
 .encounter-phase-block {
@@ -822,6 +887,25 @@ hr {
 .encounter-cue-button.is-playing {
   border-color: #6fc6e8;
   box-shadow: 0 0 0 1px rgba(111, 198, 232, 0.24);
+}
+
+@media (max-width: 1100px) {
+  .saved-encounter-groups {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 700px) {
+  .saved-encounter-controls {
+    display: grid;
+    grid-template-columns: 1fr;
+  }
+
+  .saved-encounter-controls select,
+  .saved-encounter-controls button {
+    width: 100%;
+    min-width: 0;
+  }
 }
 
 /* ========================================

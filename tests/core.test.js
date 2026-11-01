@@ -328,3 +328,83 @@ test("normalizeEncounter preserves prepared Timer configuration but drops runtim
   assert.equal(Object.hasOwn(encounter.timer, "remainingMs"), false);
   assert.equal(Object.hasOwn(encounter.timer, "endAt"), false);
 });
+
+
+test("legacy saved encounters default to reusable template mode", () => {
+  const encounter = ENC.normalizeEncounter({
+    kind: "saved",
+    name: "Legacy Encounter",
+  });
+
+  assert.equal(encounter.saveMode, "template");
+  assert.equal(encounter.timerCheckpoint, null);
+});
+
+test("saved encounter state preserves live combat progress during normalization", () => {
+  const encounter = ENC.normalizeEncounter({
+    kind: "saved",
+    saveMode: "state",
+    phase: "combat",
+    playerDisplayMode: "combat",
+    round: 4,
+    currentId: "fighter",
+    combatants: [
+      {
+        id: "fighter",
+        name: "Fighter",
+        systemId: "dnd5e",
+        maxHp: 42,
+        hp: 11,
+        initiative: 18,
+        dnd5eConditions: ["Prone", "Poisoned"],
+        dnd5eExhaustion: 2,
+        visibleStatus: "Concentrating",
+        combatState: "active",
+      },
+    ],
+  });
+
+  assert.equal(encounter.saveMode, "state");
+  assert.equal(encounter.phase, "combat");
+  assert.equal(encounter.round, 4);
+  assert.equal(encounter.currentId, "fighter");
+  assert.equal(encounter.combatants[0].hp, 11);
+  assert.deepEqual(Array.from(encounter.combatants[0].dnd5eConditions), [
+    "Prone",
+    "Poisoned",
+  ]);
+  assert.equal(encounter.combatants[0].dnd5eExhaustion, 2);
+  assert.equal(encounter.combatants[0].visibleStatus, "Concentrating");
+});
+
+test("saved running timer checkpoints restore paused at the saved remaining time", () => {
+  const encounter = ENC.normalizeEncounter({
+    kind: "saved",
+    saveMode: "state",
+    timer: {
+      name: "Reinforcements",
+      durationMs: 600000,
+      skin: "scifi-pixels",
+      visibleToPlayers: true,
+      showNumericToDM: true,
+      showNumericToPlayers: false,
+      displayMode: "featured",
+    },
+    timerCheckpoint: {
+      name: "Reinforcements",
+      durationMs: 600000,
+      remainingMs: 272000,
+      status: "running",
+      endAt: Date.now() + 272000,
+      skin: "scifi-pixels",
+      visibleToPlayers: true,
+      showNumericToDM: true,
+      showNumericToPlayers: false,
+      displayMode: "featured",
+    },
+  });
+
+  assert.equal(encounter.timerCheckpoint.status, "paused");
+  assert.equal(encounter.timerCheckpoint.remainingMs, 272000);
+  assert.equal(encounter.timerCheckpoint.endAt, null);
+});

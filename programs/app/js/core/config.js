@@ -158,6 +158,8 @@ ENC.DND5E_CONDITION_VALUES = new Set(ENC.DND5E_CONDITIONS);
 ENC.DND5E_EXHAUSTION_MIN = 0;
 ENC.DND5E_EXHAUSTION_MAX = 6;
 
+ENC.SAVED_ENCOUNTER_MODES = new Set(["template", "state"]);
+
 ENC.makeId = function (prefix = "id") {
   if (window.crypto && typeof window.crypto.randomUUID === "function") {
     return `${prefix}-${window.crypto.randomUUID()}`;
@@ -401,6 +403,44 @@ ENC.isDefaultTimerConfig = function (timer = {}) {
   const current = ENC.normalizeTimerConfig(timer);
   const defaults = ENC.createDefaultTimerConfig();
   return Object.keys(defaults).every((key) => current[key] === defaults[key]);
+};
+
+ENC.normalizeTimerCheckpoint = function (timerState = null, timerConfig = {}) {
+  if (!timerState || typeof timerState !== "object") return null;
+
+  const prepared = ENC.normalizeTimerConfig(timerConfig);
+  const stateConfig = ENC.normalizeTimerConfig(timerState);
+
+  let durationMs = Math.max(1000, ENC.finiteNumber(timerState.durationMs, stateConfig.durationMs));
+  let remainingMs = Math.max(0, ENC.finiteNumber(timerState.remainingMs, durationMs));
+
+  if (remainingMs > durationMs) durationMs = remainingMs;
+
+  let status = String(timerState.status || "idle");
+  if (remainingMs <= 0 || status === "complete") {
+    status = "complete";
+    remainingMs = 0;
+  } else if (status === "running" || status === "paused") {
+    // A saved checkpoint never continues counting while the app is closed.
+    status = "paused";
+  } else {
+    status = "idle";
+  }
+
+  return {
+    id: "primary-timer",
+    name: stateConfig.name || prepared.name,
+    mode: "countdown",
+    skin: stateConfig.skin || prepared.skin,
+    durationMs,
+    remainingMs,
+    endAt: null,
+    status,
+    visibleToPlayers: stateConfig.visibleToPlayers,
+    showNumericToDM: stateConfig.showNumericToDM,
+    showNumericToPlayers: stateConfig.showNumericToPlayers,
+    displayMode: stateConfig.displayMode,
+  };
 };
 
 ENC.normalizeSettings = function (settings = {}) {
@@ -683,6 +723,8 @@ ENC.normalizeEncounter = function (encounter = {}) {
   const kind = ["active", "preset", "saved"].includes(source.kind)
     ? source.kind
     : "active";
+  const saveMode =
+    kind === "saved" && source.saveMode === "state" ? "state" : kind === "saved" ? "template" : null;
   const systemId = ENC.normalizeSystemId(source.systemId || "generic");
   const customProfile = ENC.normalizeCustomProfile(source.customProfile);
   const combatants = Array.isArray(source.combatants)
@@ -717,6 +759,11 @@ ENC.normalizeEncounter = function (encounter = {}) {
   )
     ? source.playerDisplayMode
     : "standby";
+  const timer = ENC.normalizeTimerConfig(source.timer || source.timerConfig);
+  const timerCheckpoint =
+    kind === "saved" && saveMode === "state"
+      ? ENC.normalizeTimerCheckpoint(source.timerCheckpoint, timer)
+      : null;
 
   return {
     id: String(
@@ -726,6 +773,7 @@ ENC.normalizeEncounter = function (encounter = {}) {
           : ENC.makeId(kind === "saved" ? "enc" : "preset")),
     ),
     kind,
+    saveMode,
     sourceEncounterId: source.sourceEncounterId
       ? String(source.sourceEncounterId)
       : null,
@@ -746,7 +794,8 @@ ENC.normalizeEncounter = function (encounter = {}) {
       combatImage,
     },
     soundscape: ENC.normalizeSoundscape(source.soundscape),
-    timer: ENC.normalizeTimerConfig(source.timer || source.timerConfig),
+    timer,
+    timerCheckpoint,
     combatants,
     updatedAt: String(source.updatedAt || new Date().toISOString()),
   };

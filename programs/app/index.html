@@ -165,18 +165,108 @@
           <!-- Saved Encounter Library -->
 
           <div class="encounter-library-bar">
-            <div>
-              <strong>Saved Encounter</strong>
-              <div id="loadedEncounterSource" class="hint">Unsaved working encounter</div>
+            <div class="saved-encounter-header">
+              <strong>Saved Encounters</strong>
+              <div id="loadedEncounterSource" class="hint">
+                Unsaved working encounter
+              </div>
             </div>
-            <select id="savedEncounterSelect">
-              <option value="">Load saved encounter…</option>
-            </select>
-            <button id="loadSavedEncounterBtn" type="button">Load</button>
-            <button id="saveEncounterLibraryBtn" class="primary" type="button">Save</button>
-            <button id="saveEncounterAsBtn" type="button">Save As…</button>
-            <button id="duplicateSavedEncounterBtn" type="button">Duplicate</button>
-            <button id="deleteSavedEncounterBtn" class="danger-outline" type="button">Delete</button>
+
+            <div class="saved-encounter-groups">
+              <!-- Reusable Encounter Templates -->
+
+              <div class="saved-encounter-group">
+                <div class="saved-encounter-group-title">
+                  Reusable Encounter Templates
+                </div>
+
+                <div class="saved-encounter-controls">
+                  <select
+                    id="savedTemplateSelect"
+                    aria-label="Reusable encounter templates"
+                  >
+                    <option value="">Choose template…</option>
+                  </select>
+
+                  <button id="loadTemplateBtn" type="button">
+                    Load Template
+                  </button>
+
+                  <button
+                    id="saveNewTemplateBtn"
+                    class="primary"
+                    type="button"
+                  >
+                    Save New Template
+                  </button>
+
+                  <button id="updateTemplateBtn" type="button">
+                    Update Template
+                  </button>
+
+                  <button
+                    id="deleteTemplateBtn"
+                    class="danger-outline"
+                    type="button"
+                  >
+                    Delete
+                  </button>
+                </div>
+
+                <div class="hint">
+                  Reusable templates preserve encounter setup but reset live combat
+                  progress such as current HP, conditions, exhaustion, round, and
+                  current turn when loaded.
+                </div>
+              </div>
+
+              <!-- Saved Encounter States -->
+
+              <div class="saved-encounter-group">
+                <div class="saved-encounter-group-title">
+                  Saved Encounter States
+                </div>
+
+                <div class="saved-encounter-controls">
+                  <select
+                    id="savedStateSelect"
+                    aria-label="Saved encounter states"
+                  >
+                    <option value="">Choose saved state…</option>
+                  </select>
+
+                  <button id="loadStateBtn" type="button">
+                    Resume State
+                  </button>
+
+                  <button
+                    id="saveNewStateBtn"
+                    class="primary"
+                    type="button"
+                  >
+                    Save Current State
+                  </button>
+
+                  <button id="updateStateBtn" type="button">
+                    Update State
+                  </button>
+
+                  <button
+                    id="deleteStateBtn"
+                    class="danger-outline"
+                    type="button"
+                  >
+                    Delete
+                  </button>
+                </div>
+
+                <div class="hint">
+                  Saved states preserve live encounter progress so the encounter can
+                  be resumed later from the saved HP, conditions, exhaustion, round,
+                  current turn, and other active state.
+                </div>
+              </div>
+            </div>
           </div>
 
           <!-- Live Scene / Combat Controls -->

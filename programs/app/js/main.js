@@ -263,6 +263,24 @@ ENC.app = {
     return normalized;
   },
 
+  applySavedTimerCheckpoint(checkpoint, options = {}) {
+    if (!this.timerController || !checkpoint) return false;
+
+    const state = ENC.normalizeTimerCheckpoint(
+      checkpoint,
+      ENC.combat?.encounter?.timer,
+    );
+    if (!state) return false;
+
+    const shouldBroadcast = options.broadcast !== false;
+    this.preparedTimerConfig = ENC.normalizeTimerConfig(state);
+    this.setTimerConfigInputs(this.preparedTimerConfig);
+    this.timerController.setState(state, { notify: false });
+    this.updateTimerUI();
+    if (shouldBroadcast) this.broadcastTimerState();
+    return true;
+  },
+
   getTimerDurationFromInputs() {
     const minutesInput = document.getElementById("timerMinutes");
     const secondsInput = document.getElementById("timerSeconds");

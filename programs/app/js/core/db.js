@@ -139,11 +139,12 @@ ENC.db = {
 
   async saveEncounterTemplate(encounter, name = null, existingId = null) {
     const source = ENC.normalizeEncounter(ENC.deepClone(encounter));
-    const templateId = existingId || source.sourceEncounterId || ENC.makeId("enc");
+    const templateId = existingId || ENC.makeId("enc");
     const template = ENC.normalizeEncounter({
       ...source,
       id: templateId,
       kind: "saved",
+      saveMode: "template",
       sourceEncounterId: null,
       name: String(name || source.name || "Saved Encounter").trim() || "Saved Encounter",
       phase: "prepared",
@@ -157,9 +158,46 @@ ENC.db = {
     });
     template.id = templateId;
     template.kind = "saved";
+    template.saveMode = "template";
     template.sourceEncounterId = null;
     await this.put("encounters", template);
     return template;
+  },
+
+  async saveEncounterState(
+    encounter,
+    name = null,
+    existingId = null,
+    options = {},
+  ) {
+    const source = ENC.normalizeEncounter(ENC.deepClone(encounter));
+    const stateId = existingId || ENC.makeId("enc");
+    const timerCheckpoint = ENC.normalizeTimerCheckpoint(
+      options.timerState,
+      source.timer,
+    );
+
+    const savedState = ENC.normalizeEncounter({
+      ...source,
+      id: stateId,
+      kind: "saved",
+      saveMode: "state",
+      sourceEncounterId: null,
+      name:
+        String(name || source.name || "Saved Encounter State").trim() ||
+        "Saved Encounter State",
+      timerCheckpoint,
+      updatedAt: new Date().toISOString(),
+    });
+
+    savedState.id = stateId;
+    savedState.kind = "saved";
+    savedState.saveMode = "state";
+    savedState.sourceEncounterId = null;
+    savedState.timerCheckpoint = timerCheckpoint;
+
+    await this.put("encounters", savedState);
+    return savedState;
   },
 
   async getSavedEncounters() {
@@ -171,8 +209,26 @@ ENC.db = {
   },
 
   async loadSavedEncounter(id) {
-    const saved = await this.get("encounters", id);
-    if (!saved || saved.kind !== "saved") return null;
+    const stored = await this.get("encounters", id);
+    if (!stored || stored.kind !== "saved") return null;
+
+    const saved = ENC.normalizeEncounter(stored);
+
+    if (saved.saveMode === "state") {
+      const working = ENC.normalizeEncounter({
+        ...ENC.deepClone(saved),
+        id: "active",
+        kind: "active",
+        sourceEncounterId: saved.id,
+        // Loading never exposes the Player Display automatically.
+        playerDisplayMode: "standby",
+      });
+      working.id = "active";
+      working.kind = "active";
+      working.sourceEncounterId = saved.id;
+      await this.saveActiveEncounter(working);
+      return working;
+    }
 
     const working = ENC.normalizeEncounter({
       ...ENC.deepClone(saved),
@@ -202,7 +258,22 @@ ENC.db = {
   async duplicateSavedEncounter(id) {
     const saved = await this.get("encounters", id);
     if (!saved || saved.kind !== "saved") return null;
-    return this.saveEncounterTemplate(saved, `${saved.name} Copy`, null);
+
+    const normalized = ENC.normalizeEncounter(saved);
+    if (normalized.saveMode === "state") {
+      return this.saveEncounterState(
+        normalized,
+        `${normalized.name} Copy`,
+        null,
+        { timerState: normalized.timerCheckpoint },
+      );
+    }
+
+    return this.saveEncounterTemplate(
+      normalized,
+      `${normalized.name} Copy`,
+      null,
+    );
   },
 
   async savePreset(encounter, name) {
