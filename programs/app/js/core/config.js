@@ -26,7 +26,7 @@ ENC.DB_VERSION = 3;
 // Phase 1 adds the upgrade/compatibility foundation without moving user data.
 ENC.UI_GENERATION = 3;
 ENC.UPGRADE_FLOW_VERSION = 1;
-ENC.UPGRADE_ASSISTANT_AUTO_START = false;
+ENC.UPGRADE_ASSISTANT_AUTO_START = true;
 
 ENC.CHANNEL_NAME = "enCounter-sync-alpha";
 ENC.SYNC_FALLBACK_KEY = "enCounter-sync-alpha-fallback";

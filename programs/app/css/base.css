@@ -1081,6 +1081,183 @@ hr {
 }
 
 /* ========================================
+   ALPHA 3 DM WORKSPACE
+======================================== */
+
+.dm-workspace-shell {
+  display: grid;
+  grid-template-columns: 220px minmax(0, 1fr);
+  gap: 16px;
+  align-items: start;
+}
+
+.dm-sidebar {
+  position: sticky;
+  top: 148px;
+  display: grid;
+  gap: 7px;
+  padding: 14px;
+  border: 1px solid var(--line);
+  border-radius: 11px;
+  background: rgba(10, 24, 33, 0.96);
+}
+
+.dm-sidebar-heading {
+  display: grid;
+  gap: 5px;
+  padding: 4px 5px 11px;
+  border-bottom: 1px solid var(--line);
+  margin-bottom: 3px;
+}
+
+.dm-sidebar-heading strong {
+  color: #d7eef7;
+}
+
+.dm-nav-button {
+  width: 100%;
+  text-align: left;
+  background: transparent;
+  border-color: transparent;
+  color: var(--muted);
+}
+
+.dm-nav-button:hover,
+.dm-nav-button.active {
+  color: white;
+  border-color: #2d7088;
+  background: #123041;
+}
+
+.dm-workspace-content {
+  min-width: 0;
+}
+
+.dm-page {
+  display: none;
+}
+
+.dm-page.active-dm-page {
+  display: block;
+}
+
+.dm-page-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 14px;
+  margin-bottom: 12px;
+}
+
+.dm-page-header h2 {
+  margin: 4px 0;
+}
+
+.dm-page-header p {
+  margin: 4px 0 0;
+}
+
+.dm-segmented-nav {
+  display: flex;
+  gap: 7px;
+  flex-wrap: wrap;
+  padding: 10px;
+  margin-bottom: 14px;
+  border: 1px solid var(--line);
+  border-radius: 9px;
+  background: rgba(7, 20, 28, 0.72);
+}
+
+.dm-segment-button {
+  background: #0c1b24;
+  color: var(--muted);
+}
+
+.dm-segment-button.active {
+  color: white;
+  border-color: var(--accent);
+  background: #123041;
+}
+
+.dm-placeholder-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+}
+
+.dm-placeholder-card {
+  margin-bottom: 0;
+}
+
+.dm-placeholder-card p {
+  color: var(--muted);
+  line-height: 1.6;
+}
+
+.encounter-quick-load-bar {
+  display: grid;
+  gap: 10px;
+  padding: 12px;
+  margin: 12px 0;
+  border: 1px solid var(--line);
+  border-radius: 9px;
+  background: rgba(7, 20, 28, 0.72);
+}
+
+.encounter-quick-load-heading {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.encounter-quick-load-controls {
+  display: grid;
+  grid-template-columns: minmax(220px, 1fr) auto minmax(220px, 1fr) auto;
+  gap: 9px;
+  align-items: end;
+}
+
+@media (max-width: 1100px) {
+  .dm-workspace-shell {
+    grid-template-columns: 1fr;
+  }
+
+  .dm-sidebar {
+    position: static;
+    display: flex;
+    flex-wrap: wrap;
+  }
+
+  .dm-sidebar-heading {
+    width: 100%;
+  }
+
+  .dm-nav-button {
+    width: auto;
+  }
+
+  .encounter-quick-load-controls,
+  .dm-placeholder-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 700px) {
+  .dm-sidebar {
+    display: grid;
+  }
+
+  .dm-nav-button {
+    width: 100%;
+  }
+
+  .encounter-quick-load-heading {
+    display: grid;
+  }
+}
+
+/* ========================================
    SOUNDSCAPE EDITOR
 ======================================== */
 

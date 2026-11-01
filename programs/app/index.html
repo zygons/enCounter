@@ -95,7 +95,7 @@
          MAIN NAVIGATION
          ========================================================= -->
 
-    <nav class="main-nav">
+    <nav class="main-nav" aria-label="Primary navigation">
       <button
         class="nav-button active"
         data-section="encounterSection"
@@ -104,24 +104,16 @@
         Encounter
       </button>
 
-      <button class="nav-button" data-section="librarySection" type="button">
-        Library
-      </button>
-
-      <button class="nav-button" data-section="assetsSection" type="button">
-        Assets
-      </button>
-
-      <button class="nav-button" data-section="timerSection" type="button">
-        Timer
+      <button class="nav-button" data-section="dmSection" type="button">
+        DM
       </button>
 
       <button class="nav-button" data-section="soundscapeSection" type="button">
         Soundscape
       </button>
 
-      <button class="nav-button" data-section="dataSection" type="button">
-        Data
+      <button class="nav-button" data-section="timerSection" type="button">
+        Timer
       </button>
 
       <button class="nav-button" data-section="settingsSection" type="button">
@@ -162,110 +154,36 @@
             </div>
           </div>
 
-          <!-- Saved Encounter Library -->
+          <!-- Quick Saved Encounter Loading -->
 
-          <div class="encounter-library-bar">
-            <div class="saved-encounter-header">
-              <strong>Saved Encounters</strong>
-              <div id="loadedEncounterSource" class="hint">
-                Unsaved working encounter
+          <div class="encounter-quick-load-bar">
+            <div class="encounter-quick-load-heading">
+              <div>
+                <strong>Load Encounter</strong>
+                <div class="hint">
+                  Start from a reusable template or resume a saved encounter state.
+                  Full saved-encounter management is under DM &gt; Encounters.
+                </div>
               </div>
+              <button id="openDmEncountersBtn" type="button">Manage in DM</button>
             </div>
 
-            <div class="saved-encounter-groups">
-              <!-- Reusable Encounter Templates -->
+            <div class="encounter-quick-load-controls">
+              <label>
+                <span>Reusable Template</span>
+                <select id="quickTemplateSelect">
+                  <option value="">Choose template…</option>
+                </select>
+              </label>
+              <button id="quickLoadTemplateBtn" type="button">Load Template</button>
 
-              <div class="saved-encounter-group">
-                <div class="saved-encounter-group-title">
-                  Reusable Encounter Templates
-                </div>
-
-                <div class="saved-encounter-controls">
-                  <select
-                    id="savedTemplateSelect"
-                    aria-label="Reusable encounter templates"
-                  >
-                    <option value="">Choose template…</option>
-                  </select>
-
-                  <button id="loadTemplateBtn" type="button">
-                    Load Template
-                  </button>
-
-                  <button
-                    id="saveNewTemplateBtn"
-                    class="primary"
-                    type="button"
-                  >
-                    Save New Template
-                  </button>
-
-                  <button id="updateTemplateBtn" type="button">
-                    Update Template
-                  </button>
-
-                  <button
-                    id="deleteTemplateBtn"
-                    class="danger-outline"
-                    type="button"
-                  >
-                    Delete
-                  </button>
-                </div>
-
-                <div class="hint">
-                  Reusable templates preserve encounter setup but reset live combat
-                  progress such as current HP, conditions, exhaustion, round, and
-                  current turn when loaded.
-                </div>
-              </div>
-
-              <!-- Saved Encounter States -->
-
-              <div class="saved-encounter-group">
-                <div class="saved-encounter-group-title">
-                  Saved Encounter States
-                </div>
-
-                <div class="saved-encounter-controls">
-                  <select
-                    id="savedStateSelect"
-                    aria-label="Saved encounter states"
-                  >
-                    <option value="">Choose saved state…</option>
-                  </select>
-
-                  <button id="loadStateBtn" type="button">
-                    Resume State
-                  </button>
-
-                  <button
-                    id="saveNewStateBtn"
-                    class="primary"
-                    type="button"
-                  >
-                    Save Current State
-                  </button>
-
-                  <button id="updateStateBtn" type="button">
-                    Update State
-                  </button>
-
-                  <button
-                    id="deleteStateBtn"
-                    class="danger-outline"
-                    type="button"
-                  >
-                    Delete
-                  </button>
-                </div>
-
-                <div class="hint">
-                  Saved states preserve live encounter progress so the encounter can
-                  be resumed later from the saved HP, conditions, exhaustion, round,
-                  current turn, and other active state.
-                </div>
-              </div>
+              <label>
+                <span>Saved Encounter State</span>
+                <select id="quickStateSelect">
+                  <option value="">Choose saved state…</option>
+                </select>
+              </label>
+              <button id="quickResumeStateBtn" type="button">Resume State</button>
             </div>
           </div>
 
@@ -390,7 +308,56 @@
            LIBRARY SECTION
            ======================================================= -->
 
-      <section id="librarySection" class="app-section">
+      <!-- =======================================================
+           ASSETS SECTION
+           ======================================================= -->
+
+      <!-- =======================================================
+           DM WORKSPACE
+           ======================================================= -->
+
+      <section id="dmSection" class="app-section">
+        <div class="dm-workspace-shell">
+          <aside class="dm-sidebar" aria-label="DM Workspace navigation">
+            <div class="dm-sidebar-heading">
+              <div class="eyebrow">DM WORKSPACE</div>
+              <strong>Prepare &amp; Manage</strong>
+            </div>
+
+            <button class="dm-nav-button active" data-dm-page="characters" type="button">
+              Characters
+            </button>
+            <button class="dm-nav-button" data-dm-page="compendium" type="button">
+              Compendium
+            </button>
+            <button class="dm-nav-button" data-dm-page="encounters" type="button">
+              Encounters
+            </button>
+            <button class="dm-nav-button" data-dm-page="assets" type="button">
+              Assets
+            </button>
+            <button class="dm-nav-button" data-dm-page="data" type="button">
+              Data &amp; Tools
+            </button>
+          </aside>
+
+          <div class="dm-workspace-content">
+            <div id="dmCharactersPage" class="dm-page active-dm-page" data-dm-page-panel="characters">
+              <div class="dm-page-header">
+                <div>
+                  <div class="eyebrow">CHARACTERS</div>
+                  <h2>Character Library</h2>
+                  <p class="hint">Manage reusable players, NPCs, enemies, and creatures.</p>
+                </div>
+              </div>
+
+              <div class="dm-segmented-nav" aria-label="Character categories">
+                <button class="dm-segment-button active" data-library-type="all" type="button">All</button>
+                <button class="dm-segment-button" data-library-type="player" type="button">Players</button>
+                <button class="dm-segment-button" data-library-type="npc" type="button">NPCs</button>
+                <button class="dm-segment-button" data-library-type="enemy-creature" type="button">Enemies &amp; Creatures</button>
+              </div>
+
         <div class="panel">
           <div class="section-heading">
             <div>
@@ -406,12 +373,11 @@
                 placeholder="Search library…"
               />
 
-              <select id="libraryTypeFilter">
-                <option value="all">All Types</option>
+              <select id="libraryTypeFilter" class="hidden" aria-hidden="true" tabindex="-1">
+                <option value="all">All Characters</option>
                 <option value="player">Players</option>
                 <option value="npc">NPCs</option>
-                <option value="enemy">Enemies</option>
-                <option value="creature">Creatures</option>
+                <option value="enemy-creature">Enemies &amp; Creatures</option>
               </select>
 
               <select id="librarySystemFilter">
@@ -571,13 +537,173 @@
             </div>
           </div>
         </div>
-      </section>
+            </div>
 
-      <!-- =======================================================
-           ASSETS SECTION
-           ======================================================= -->
+            <div id="dmCompendiumPage" class="dm-page" data-dm-page-panel="compendium">
+              <div class="dm-page-header">
+                <div>
+                  <div class="eyebrow">COMPENDIUM</div>
+                  <h2>Rules &amp; Creature Sources</h2>
+                  <p class="hint">
+                    Phase 3 will connect provider-based creature search here without changing your local Library.
+                  </p>
+                </div>
+              </div>
 
-      <section id="assetsSection" class="app-section">
+              <div class="dm-placeholder-grid">
+                <article class="panel dm-placeholder-card">
+                  <div class="eyebrow">D&amp;D 5E</div>
+                  <h3>SRD Creature Search</h3>
+                  <p>Search licensed SRD creature data, preview stat blocks, add directly to an encounter, or save a local editable copy.</p>
+                  <button type="button" disabled>Coming in Phase 3</button>
+                </article>
+                <article class="panel dm-placeholder-card">
+                  <div class="eyebrow">STAR WARS SAGA EDITION</div>
+                  <h3>Local Compendium</h3>
+                  <p>Search user-provided or legally redistributable local compendium data using the same provider framework.</p>
+                  <button type="button" disabled>Coming in Phase 3</button>
+                </article>
+              </div>
+            </div>
+
+            <div id="dmEncountersPage" class="dm-page" data-dm-page-panel="encounters">
+              <div class="dm-page-header">
+                <div>
+                  <div class="eyebrow">ENCOUNTER LIBRARY</div>
+                  <h2>Templates &amp; Saved States</h2>
+                  <p class="hint">Create reusable setups or checkpoint a live encounter for later resumption.</p>
+                </div>
+              </div>
+
+          <!-- Saved Encounter Library -->
+
+          <div class="encounter-library-bar">
+            <div class="saved-encounter-header">
+              <strong>Saved Encounters</strong>
+              <div id="loadedEncounterSource" class="hint">
+                Unsaved working encounter
+              </div>
+            </div>
+
+            <div class="saved-encounter-groups">
+              <!-- Reusable Encounter Templates -->
+
+              <div class="saved-encounter-group">
+                <div class="saved-encounter-group-title">
+                  Reusable Encounter Templates
+                </div>
+
+                <div class="saved-encounter-controls">
+                  <select
+                    id="savedTemplateSelect"
+                    aria-label="Reusable encounter templates"
+                  >
+                    <option value="">Choose template…</option>
+                  </select>
+
+                  <button id="loadTemplateBtn" type="button">
+                    Load Template
+                  </button>
+
+                  <button
+                    id="saveNewTemplateBtn"
+                    class="primary"
+                    type="button"
+                  >
+                    Save New Template
+                  </button>
+
+                  <button id="updateTemplateBtn" type="button">
+                    Update Template
+                  </button>
+
+                  <button
+                    id="deleteTemplateBtn"
+                    class="danger-outline"
+                    type="button"
+                  >
+                    Delete
+                  </button>
+                </div>
+
+                <div class="hint">
+                  Reusable templates preserve encounter setup but reset live combat
+                  progress such as current HP, conditions, exhaustion, round, and
+                  current turn when loaded.
+                </div>
+              </div>
+
+              <!-- Saved Encounter States -->
+
+              <div class="saved-encounter-group">
+                <div class="saved-encounter-group-title">
+                  Saved Encounter States
+                </div>
+
+                <div class="saved-encounter-controls">
+                  <select
+                    id="savedStateSelect"
+                    aria-label="Saved encounter states"
+                  >
+                    <option value="">Choose saved state…</option>
+                  </select>
+
+                  <button id="loadStateBtn" type="button">
+                    Resume State
+                  </button>
+
+                  <button
+                    id="saveNewStateBtn"
+                    class="primary"
+                    type="button"
+                  >
+                    Save Current State
+                  </button>
+
+                  <button id="updateStateBtn" type="button">
+                    Update State
+                  </button>
+
+                  <button
+                    id="deleteStateBtn"
+                    class="danger-outline"
+                    type="button"
+                  >
+                    Delete
+                  </button>
+                </div>
+
+                <div class="hint">
+                  Saved states preserve live encounter progress so the encounter can
+                  be resumed later from the saved HP, conditions, exhaustion, round,
+                  current turn, and other active state.
+                </div>
+              </div>
+            </div>
+          </div>
+
+            </div>
+
+            <div id="dmAssetsPage" class="dm-page" data-dm-page-panel="assets">
+              <div class="dm-page-header">
+                <div>
+                  <div class="eyebrow">ASSETS</div>
+                  <h2>Asset Library</h2>
+                  <p class="hint">Browse each asset type directly instead of using a single category dropdown.</p>
+                </div>
+              </div>
+
+              <div class="dm-segmented-nav dm-asset-nav" aria-label="Asset categories">
+                <button class="dm-segment-button active" data-asset-filter="" type="button">All</button>
+                <button class="dm-segment-button" data-asset-filter="backgrounds/" type="button">Backgrounds</button>
+                <button class="dm-segment-button" data-asset-filter="portraits/" type="button">Portraits</button>
+                <button class="dm-segment-button" data-asset-filter="tokens" type="button">Tokens</button>
+                <button class="dm-segment-button" data-asset-filter="sounds/music" type="button">Music</button>
+                <button class="dm-segment-button" data-asset-filter="sounds/ambience" type="button">Ambience</button>
+                <button class="dm-segment-button" data-asset-filter="sounds/sfx" type="button">Sound Effects</button>
+                <button class="dm-segment-button" data-asset-filter="icons/" type="button">Icons</button>
+              </div>
+
         <div class="panel">
           <div class="section-heading">
             <div>
@@ -590,16 +716,18 @@
           </div>
 
           <div class="tool-grid">
-            <label>
+            <label class="hidden" aria-hidden="true">
               <span>Show Category</span>
 
-              <select id="assetFilter">
+              <select id="assetFilter" tabindex="-1">
                 <option value="">All Assets</option>
                 <option value="backgrounds/">Backgrounds</option>
                 <option value="portraits/">Portraits</option>
-                <option value="icons/">Icons</option>
                 <option value="tokens">Tokens</option>
-                <option value="sounds/">Audio</option>
+                <option value="sounds/music">Music</option>
+                <option value="sounds/ambience">Ambience</option>
+                <option value="sounds/sfx">Sound Effects</option>
+                <option value="icons/">Icons</option>
               </select>
             </label>
 
@@ -648,6 +776,97 @@
           </p>
 
           <div id="assetGrid" class="asset-grid"></div>
+        </div>
+            </div>
+
+            <div id="dmDataPage" class="dm-page" data-dm-page-panel="data">
+              <div class="dm-page-header">
+                <div>
+                  <div class="eyebrow">DATA &amp; TOOLS</div>
+                  <h2>Backup, Restore &amp; Recovery</h2>
+                  <p class="hint">Administrative and recovery tools are collected here for the DM.</p>
+                </div>
+              </div>
+
+        <div class="data-grid">
+          <!-- Export -->
+
+          <div class="panel">
+            <div class="eyebrow">EXPORT</div>
+
+            <h2>Back Up Your Data</h2>
+
+            <p>
+              Library data, presets, settings, and the active encounter are
+              saved in IndexedDB. Export creates an additional portable JSON
+              backup.
+            </p>
+
+            <div class="stacked-buttons">
+              <button id="exportLibraryBtn" type="button">
+                Export Library Only
+              </button>
+
+              <button id="exportEverythingBtn" class="primary" type="button">
+                Export Everything
+              </button>
+            </div>
+          </div>
+
+          <!-- Import -->
+
+          <div class="panel">
+            <div class="eyebrow">IMPORT / RECOVERY</div>
+
+            <h2>Restore Data</h2>
+
+            <label>
+              <span>Backup File</span>
+
+              <input
+                id="importFile"
+                type="file"
+                accept="application/json,.json"
+              />
+            </label>
+
+            <button id="importBackupBtn" class="danger-outline" type="button">
+              Import &amp; Replace Current Data
+            </button>
+
+            <hr />
+
+            <button id="restoreLatestBackupBtn" type="button">
+              Restore Latest External Backup
+            </button>
+
+            <p class="hint">
+              External backups are written to
+              <code>data/backups/</code>
+              when the local Python launcher is used.
+            </p>
+          </div>
+
+          <!-- Browser Storage -->
+
+          <div class="panel">
+            <div class="eyebrow">BROWSER STORAGE</div>
+
+            <h2>Storage Protection</h2>
+
+            <div id="storageStatus">Checking storage…</div>
+
+            <button id="requestPersistenceBtn" type="button">
+              Request Persistent Browser Storage
+            </button>
+
+            <h3>Recovery Snapshots</h3>
+
+            <div id="snapshotList" class="snapshot-list"></div>
+          </div>
+        </div>
+            </div>
+          </div>
         </div>
       </section>
 
@@ -922,86 +1141,6 @@
            DATA SECTION
            ======================================================= -->
 
-      <section id="dataSection" class="app-section">
-        <div class="data-grid">
-          <!-- Export -->
-
-          <div class="panel">
-            <div class="eyebrow">EXPORT</div>
-
-            <h2>Back Up Your Data</h2>
-
-            <p>
-              Library data, presets, settings, and the active encounter are
-              saved in IndexedDB. Export creates an additional portable JSON
-              backup.
-            </p>
-
-            <div class="stacked-buttons">
-              <button id="exportLibraryBtn" type="button">
-                Export Library Only
-              </button>
-
-              <button id="exportEverythingBtn" class="primary" type="button">
-                Export Everything
-              </button>
-            </div>
-          </div>
-
-          <!-- Import -->
-
-          <div class="panel">
-            <div class="eyebrow">IMPORT / RECOVERY</div>
-
-            <h2>Restore Data</h2>
-
-            <label>
-              <span>Backup File</span>
-
-              <input
-                id="importFile"
-                type="file"
-                accept="application/json,.json"
-              />
-            </label>
-
-            <button id="importBackupBtn" class="danger-outline" type="button">
-              Import &amp; Replace Current Data
-            </button>
-
-            <hr />
-
-            <button id="restoreLatestBackupBtn" type="button">
-              Restore Latest External Backup
-            </button>
-
-            <p class="hint">
-              External backups are written to
-              <code>data/backups/</code>
-              when the local Python launcher is used.
-            </p>
-          </div>
-
-          <!-- Browser Storage -->
-
-          <div class="panel">
-            <div class="eyebrow">BROWSER STORAGE</div>
-
-            <h2>Storage Protection</h2>
-
-            <div id="storageStatus">Checking storage…</div>
-
-            <button id="requestPersistenceBtn" type="button">
-              Request Persistent Browser Storage
-            </button>
-
-            <h3>Recovery Snapshots</h3>
-
-            <div id="snapshotList" class="snapshot-list"></div>
-          </div>
-        </div>
-      </section>
-
       <!-- =======================================================
            SETTINGS SECTION
            ======================================================= -->
@@ -1128,7 +1267,7 @@
         </p>
 
         <div id="upgradePreviewNotice" class="upgrade-preview-notice hidden">
-          Phase 1 preview: the DM Workspace itself is added in the next phase.
+          Preview mode: the DM Workspace is available in this build.
           This preview does not mark the upgrade as completed.
         </div>
 
@@ -1142,8 +1281,8 @@
 
         <div class="upgrade-safety-note">
           <strong>No data is moved by this step.</strong>
-          The upcoming DM Workspace reorganizes where features appear in the UI,
-          while the underlying compatible data remains available.
+          The DM Workspace reorganizes where features appear in the UI, while
+          the underlying compatible data remains available in place.
         </div>
 
         <div id="upgradeMovedDetails" class="upgrade-moved-details hidden">
@@ -1221,6 +1360,7 @@
 
     <script src="js/modules/backup.js"></script>
     <script src="js/modules/migration.js"></script>
+    <script src="js/modules/dm-workspace.js"></script>
     <script src="js/modules/assets.js"></script>
     <script src="js/modules/settings.js"></script>
     <script src="js/modules/library.js"></script>

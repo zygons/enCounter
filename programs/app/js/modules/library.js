@@ -76,16 +76,21 @@ ENC.libraryUI = {
         document.getElementById("libraryResources").value = ENC.resourcesToText(entry.resources);
         this.renderStatFields(entry.stats || {});
         this.fillPortraitSelect(entry.portrait || "");
-        document.querySelector('[data-section="librarySection"]').click();
-        window.scrollTo({ top: 0, behavior: "smooth" });
+        ENC.dmWorkspace?.open?.("characters", {
+            characterType: entry.type,
+        });
     },
 
     filteredEntries() {
         const search = document.getElementById("librarySearch").value.trim().toLowerCase();
-        const type = document.getElementById("libraryTypeFilter").value;
+        const type = document.getElementById("libraryTypeFilter")?.value || "all";
         const system = document.getElementById("librarySystemFilter").value;
         return this.entries.filter((entry) => {
-            if (type !== "all" && entry.type !== type) return false;
+            if (type === "enemy-creature") {
+                if (entry.type !== "enemy" && entry.type !== "creature") return false;
+            } else if (type !== "all" && entry.type !== type) {
+                return false;
+            }
             if (system !== "all" && entry.systemId !== system) return false;
             if (search) {
                 const haystack = `${entry.name} ${(entry.tags || []).join(" ")} ${entry.notes || ""}`.toLowerCase();
@@ -257,7 +262,8 @@ ENC.libraryUI = {
         document.getElementById("cancelLibraryEditBtn").addEventListener("click", () => this.resetForm());
         document.getElementById("uploadLibraryPortraitBtn").addEventListener("click", () => this.uploadPortrait());
         for (const id of ["librarySearch", "libraryTypeFilter", "librarySystemFilter"]) {
-            document.getElementById(id).addEventListener(id === "librarySearch" ? "input" : "change", () => this.render());
+            const element = document.getElementById(id);
+            element?.addEventListener(id === "librarySearch" ? "input" : "change", () => this.render());
         }
     }
 };

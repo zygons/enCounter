@@ -61,14 +61,27 @@ ENC.encounterUI = {
     });
   },
 
+  fillSavedSelect(select, items, placeholder, selected = "") {
+    if (!select) return;
+
+    select.innerHTML = `<option value="">${placeholder}</option>`;
+
+    for (const encounter of items) {
+      const option = document.createElement("option");
+      option.value = encounter.id;
+      option.textContent =
+        `${encounter.name} — ` +
+        ENC.getSystemLabel(encounter.systemId, encounter.customProfile);
+      select.appendChild(option);
+    }
+
+    if (items.some((item) => item.id === selected)) {
+      select.value = selected;
+    }
+  },
+
   async refreshSaved() {
     this.saved = await ENC.db.getSavedEncounters();
-
-    const templateSelect = document.getElementById("savedTemplateSelect");
-    const stateSelect = document.getElementById("savedStateSelect");
-
-    const selectedTemplate = templateSelect?.value || "";
-    const selectedState = stateSelect?.value || "";
 
     const templates = this.saved.filter(
       (encounter) => encounter.saveMode !== "state",
@@ -77,41 +90,40 @@ ENC.encounterUI = {
       (encounter) => encounter.saveMode === "state",
     );
 
-    if (templateSelect) {
-      templateSelect.innerHTML =
-        '<option value="">Choose template…</option>';
+    const templateSelect = document.getElementById("savedTemplateSelect");
+    const stateSelect = document.getElementById("savedStateSelect");
+    const quickTemplateSelect = document.getElementById("quickTemplateSelect");
+    const quickStateSelect = document.getElementById("quickStateSelect");
 
-      for (const encounter of templates) {
-        const option = document.createElement("option");
-        option.value = encounter.id;
-        option.textContent =
-          `${encounter.name} — ` +
-          ENC.getSystemLabel(encounter.systemId, encounter.customProfile);
-        templateSelect.appendChild(option);
-      }
+    const selectedTemplate = templateSelect?.value || "";
+    const selectedState = stateSelect?.value || "";
+    const selectedQuickTemplate = quickTemplateSelect?.value || "";
+    const selectedQuickState = quickStateSelect?.value || "";
 
-      if (templates.some((item) => item.id === selectedTemplate)) {
-        templateSelect.value = selectedTemplate;
-      }
-    }
-
-    if (stateSelect) {
-      stateSelect.innerHTML =
-        '<option value="">Choose saved state…</option>';
-
-      for (const encounter of states) {
-        const option = document.createElement("option");
-        option.value = encounter.id;
-        option.textContent =
-          `${encounter.name} — ` +
-          ENC.getSystemLabel(encounter.systemId, encounter.customProfile);
-        stateSelect.appendChild(option);
-      }
-
-      if (states.some((item) => item.id === selectedState)) {
-        stateSelect.value = selectedState;
-      }
-    }
+    this.fillSavedSelect(
+      templateSelect,
+      templates,
+      "Choose template…",
+      selectedTemplate,
+    );
+    this.fillSavedSelect(
+      quickTemplateSelect,
+      templates,
+      "Choose template…",
+      selectedQuickTemplate || selectedTemplate,
+    );
+    this.fillSavedSelect(
+      stateSelect,
+      states,
+      "Choose saved state…",
+      selectedState,
+    );
+    this.fillSavedSelect(
+      quickStateSelect,
+      states,
+      "Choose saved state…",
+      selectedQuickState || selectedState,
+    );
   },
 
   renderPhase() {
@@ -364,10 +376,14 @@ ENC.encounterUI = {
 
     if (actualMode === "state") {
       const stateSelect = document.getElementById("savedStateSelect");
+      const quickStateSelect = document.getElementById("quickStateSelect");
       if (stateSelect) stateSelect.value = id;
+      if (quickStateSelect) quickStateSelect.value = id;
     } else {
       const templateSelect = document.getElementById("savedTemplateSelect");
+      const quickTemplateSelect = document.getElementById("quickTemplateSelect");
       if (templateSelect) templateSelect.value = id;
+      if (quickTemplateSelect) quickTemplateSelect.value = id;
     }
 
     this.renderPhase();
@@ -394,6 +410,18 @@ ENC.encounterUI = {
       return ENC.app.toast("Choose a saved encounter state first.");
     }
 
+    await this.loadEncounterById(id, "state");
+  },
+
+  async quickLoadTemplate() {
+    const id = document.getElementById("quickTemplateSelect")?.value;
+    if (!id) return ENC.app.toast("Choose a reusable template first.");
+    await this.loadEncounterById(id, "template");
+  },
+
+  async quickLoadState() {
+    const id = document.getElementById("quickStateSelect")?.value;
+    if (!id) return ENC.app.toast("Choose a saved encounter state first.");
     await this.loadEncounterById(id, "state");
   },
 
@@ -529,6 +557,14 @@ ENC.encounterUI = {
   },
 
   bind() {
+    document
+      .getElementById("quickLoadTemplateBtn")
+      ?.addEventListener("click", () => this.quickLoadTemplate());
+
+    document
+      .getElementById("quickResumeStateBtn")
+      ?.addEventListener("click", () => this.quickLoadState());
+
     document
       .getElementById("loadTemplateBtn")
       ?.addEventListener("click", () => this.loadTemplate());
