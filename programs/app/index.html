@@ -1105,6 +1105,68 @@
 
     <div id="toast" class="toast"></div>
 
+
+    <!-- =========================================================
+         UPGRADE / COMPATIBILITY ASSISTANT
+         ========================================================= -->
+
+    <div
+      id="upgradeAssistantModal"
+      class="upgrade-modal hidden"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="upgradeAssistantTitle"
+    >
+      <div class="upgrade-modal-card">
+        <div class="eyebrow">UPGRADE COMPATIBILITY</div>
+        <h2 id="upgradeAssistantTitle">Your enCounter Data Is Compatible</h2>
+
+        <p class="upgrade-lead">
+          Existing enCounter data was detected. This UI upgrade is designed to
+          use your current Library, encounters, settings, and recovery data in
+          place. No destructive database conversion is required.
+        </p>
+
+        <div id="upgradePreviewNotice" class="upgrade-preview-notice hidden">
+          Phase 1 preview: the DM Workspace itself is added in the next phase.
+          This preview does not mark the upgrade as completed.
+        </div>
+
+        <div class="upgrade-count-grid" aria-label="Existing data summary">
+          <div><strong id="upgradeCountLibrary">0</strong><span>Library entries</span></div>
+          <div><strong id="upgradeCountTemplates">0</strong><span>Templates</span></div>
+          <div><strong id="upgradeCountStates">0</strong><span>Saved states</span></div>
+          <div><strong id="upgradeCountPresets">0</strong><span>Presets</span></div>
+          <div><strong id="upgradeCountSnapshots">0</strong><span>Recovery snapshots</span></div>
+        </div>
+
+        <div class="upgrade-safety-note">
+          <strong>No data is moved by this step.</strong>
+          The upcoming DM Workspace reorganizes where features appear in the UI,
+          while the underlying compatible data remains available.
+        </div>
+
+        <div id="upgradeMovedDetails" class="upgrade-moved-details hidden">
+          <div class="upgrade-moved-heading">Planned UI locations</div>
+          <div id="upgradeMovedList" class="upgrade-moved-list"></div>
+        </div>
+
+        <div id="upgradeBackupStatus" class="hint upgrade-backup-status"></div>
+
+        <div class="upgrade-modal-actions">
+          <button id="upgradeReviewBtn" type="button">
+            Review Planned Changes
+          </button>
+          <button id="upgradeBackupBtn" type="button">
+            Export Backup First
+          </button>
+          <button id="upgradeContinueBtn" class="primary" type="button">
+            Continue
+          </button>
+        </div>
+      </div>
+    </div>
+
     <!-- =========================================================
          STARTUP ENCOUNTER RECOVERY MODAL
          ========================================================= -->
@@ -1158,6 +1220,7 @@
     <!-- Existing Modules -->
 
     <script src="js/modules/backup.js"></script>
+    <script src="js/modules/migration.js"></script>
     <script src="js/modules/assets.js"></script>
     <script src="js/modules/settings.js"></script>
     <script src="js/modules/library.js"></script>

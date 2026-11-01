@@ -120,6 +120,30 @@ ENC.db = {
     return this.put("settings", ENC.normalizeSettings(settings));
   },
 
+  async getMetaRecord(key) {
+    if (!key) return null;
+    return this.get("meta", String(key));
+  },
+
+  async saveMetaRecord(key, value = {}) {
+    if (!key) throw new Error("Meta record key is required.");
+
+    const source =
+      value && typeof value === "object" && !Array.isArray(value) ? value : {};
+
+    const existing = await this.get("meta", String(key));
+    const record = {
+      ...(existing || {}),
+      ...ENC.deepClone(source),
+      key: String(key),
+      createdAt: existing?.createdAt || new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+    };
+
+    await this.put("meta", record);
+    return record;
+  },
+
   async getActiveEncounter() {
     const encounter = await this.get("encounters", "active");
     if (!encounter) return ENC.createDefaultEncounter();

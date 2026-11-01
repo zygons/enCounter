@@ -1227,6 +1227,10 @@ ENC.app = {
 
     await ENC.db.open();
 
+    // Phase 1 upgrade compatibility foundation. Auto-start remains disabled
+    // until the DM Workspace navigation lands; use ?upgradePreview=1 to test.
+    await ENC.migration?.initialize?.();
+
     await ENC.settingsUI.load();
 
     ENC.settingsUI.bind();

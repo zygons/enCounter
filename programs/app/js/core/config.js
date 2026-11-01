@@ -22,6 +22,12 @@ ENC.APP_STAGE = "Alpha";
 ENC.DB_NAME = "enCounterAlphaDB";
 ENC.DB_VERSION = 3;
 
+// UI-generation metadata is intentionally independent of the IndexedDB schema.
+// Phase 1 adds the upgrade/compatibility foundation without moving user data.
+ENC.UI_GENERATION = 3;
+ENC.UPGRADE_FLOW_VERSION = 1;
+ENC.UPGRADE_ASSISTANT_AUTO_START = false;
+
 ENC.CHANNEL_NAME = "enCounter-sync-alpha";
 ENC.SYNC_FALLBACK_KEY = "enCounter-sync-alpha-fallback";
 ENC.DISPLAY_PRESENCE_PING_MS = 3000;
