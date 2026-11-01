@@ -428,185 +428,177 @@
                 <button class="dm-segment-button" data-library-type="enemy-creature" type="button">Enemies &amp; Creatures</button>
               </div>
 
-        <div class="panel">
-          <div class="section-heading">
-            <div>
-              <div class="eyebrow">PERMANENT DATA</div>
+              <div class="character-library-toolbar panel">
+                <div class="character-library-search">
+                  <input
+                    id="librarySearch"
+                    type="search"
+                    placeholder="Search characters, tags, or notes…"
+                    aria-label="Search character library"
+                  />
 
-              <h2>Library Management</h2>
-            </div>
-
-            <div class="button-row">
-              <input
-                id="librarySearch"
-                type="search"
-                placeholder="Search library…"
-              />
-
-              <select id="libraryTypeFilter" class="hidden" aria-hidden="true" tabindex="-1">
-                <option value="all">All Characters</option>
-                <option value="player">Players</option>
-                <option value="npc">NPCs</option>
-                <option value="enemy-creature">Enemies &amp; Creatures</option>
-              </select>
-
-              <select id="librarySystemFilter">
-                <option value="all">All Systems</option>
-                <option value="generic">Generic</option>
-                <option value="swse">SWSE</option>
-                <option value="dnd5e">D&amp;D 5E</option>
-                <option value="custom">Custom</option>
-              </select>
-            </div>
-          </div>
-        </div>
-
-        <div class="library-layout">
-          <div class="panel library-editor">
-            <div class="section-heading">
-              <div>
-                <div class="eyebrow">CREATE / EDIT</div>
-
-                <h2 id="libraryFormTitle">New Library Entry</h2>
-              </div>
-
-              <button
-                id="cancelLibraryEditBtn"
-                class="secondary hidden"
-                type="button"
-              >
-                Cancel Edit
-              </button>
-            </div>
-
-            <form id="libraryForm">
-              <input id="libraryEditId" type="hidden" />
-
-              <div class="form-grid">
-                <label>
-                  <span>Name</span>
-
-                  <input id="libraryName" required type="text" />
-                </label>
-
-                <label>
-                  <span>Type</span>
-
-                  <select id="libraryType">
-                    <option value="player">Player</option>
-                    <option value="npc">NPC</option>
-                    <option value="enemy">Enemy</option>
-                    <option value="creature">Creature</option>
+                  <select id="libraryTypeFilter" class="hidden" aria-hidden="true" tabindex="-1">
+                    <option value="all">All Characters</option>
+                    <option value="player">Players</option>
+                    <option value="npc">NPCs</option>
+                    <option value="enemy-creature">Enemies &amp; Creatures</option>
                   </select>
-                </label>
 
-                <label>
-                  <span>System</span>
-
-                  <select id="librarySystem">
-                    <option value="generic">Generic TTRPG</option>
-                    <option value="swse">Star Wars Saga Edition</option>
+                  <select id="librarySystemFilter" aria-label="Filter by game system">
+                    <option value="all">All Systems</option>
+                    <option value="generic">Generic</option>
+                    <option value="swse">SWSE</option>
                     <option value="dnd5e">D&amp;D 5E</option>
                     <option value="custom">Custom</option>
                   </select>
-                </label>
+                </div>
 
-                <label>
-                  <span>Maximum HP</span>
-
-                  <input id="libraryMaxHp" type="number" />
-                </label>
+                <div class="character-library-toolbar-actions">
+                  <span id="libraryResultCount" class="character-count-pill">0 entries</span>
+                  <button id="newLibraryEntryBtn" class="primary" type="button">
+                    + New Character
+                  </button>
+                </div>
               </div>
 
-              <h3>System Statistics</h3>
+              <div class="character-library-layout">
+                <div class="panel character-library-list-panel">
+                  <div class="character-table-header" aria-hidden="true">
+                    <span>Character</span>
+                    <span>System</span>
+                    <span>HP</span>
+                    <span>Key Stats</span>
+                    <span>Actions</span>
+                  </div>
 
-              <div id="libraryStatFields" class="form-grid stat-fields"></div>
+                  <div id="libraryCards" class="library-cards character-table"></div>
 
-              <h3>Portrait</h3>
+                  <div id="emptyLibrary" class="empty-state">
+                    No matching characters in your library.
+                  </div>
+                </div>
 
-              <div class="form-grid">
-                <label>
-                  <span>Existing Portrait</span>
+                <aside id="libraryEditorPanel" class="panel library-editor character-editor-panel hidden">
+                  <div class="section-heading">
+                    <div>
+                      <div class="eyebrow">CREATE / EDIT</div>
+                      <h2 id="libraryFormTitle">New Library Entry</h2>
+                    </div>
 
-                  <select id="libraryPortraitSelect">
-                    <option value="">— None —</option>
-                  </select>
-                </label>
+                    <button
+                      id="cancelLibraryEditBtn"
+                      class="secondary"
+                      type="button"
+                    >
+                      Close
+                    </button>
+                  </div>
 
-                <label>
-                  <span>Import Portrait</span>
+                  <form id="libraryForm">
+                    <input id="libraryEditId" type="hidden" />
 
-                  <input
-                    id="libraryPortraitUpload"
-                    type="file"
-                    accept="image/png,image/jpeg,image/webp"
-                  />
-                </label>
+                    <div class="form-grid">
+                      <label>
+                        <span>Name</span>
+                        <input id="libraryName" required type="text" />
+                      </label>
 
-                <button id="uploadLibraryPortraitBtn" type="button">
-                  Import Portrait
-                </button>
+                      <label>
+                        <span>Type</span>
+                        <select id="libraryType">
+                          <option value="player">Player</option>
+                          <option value="npc">NPC</option>
+                          <option value="enemy">Enemy</option>
+                          <option value="creature">Creature</option>
+                        </select>
+                      </label>
+
+                      <label>
+                        <span>System</span>
+                        <select id="librarySystem">
+                          <option value="generic">Generic TTRPG</option>
+                          <option value="swse">Star Wars Saga Edition</option>
+                          <option value="dnd5e">D&amp;D 5E</option>
+                          <option value="custom">Custom</option>
+                        </select>
+                      </label>
+
+                      <label>
+                        <span>Maximum HP</span>
+                        <input id="libraryMaxHp" type="number" />
+                      </label>
+                    </div>
+
+                    <h3>System Statistics</h3>
+                    <div id="libraryStatFields" class="form-grid stat-fields"></div>
+
+                    <h3>Portrait</h3>
+                    <div class="form-grid">
+                      <label>
+                        <span>Existing Portrait</span>
+                        <select id="libraryPortraitSelect">
+                          <option value="">— None —</option>
+                        </select>
+                      </label>
+
+                      <label>
+                        <span>Import Portrait</span>
+                        <input
+                          id="libraryPortraitUpload"
+                          type="file"
+                          accept="image/png,image/jpeg,image/webp"
+                        />
+                      </label>
+
+                      <button id="uploadLibraryPortraitBtn" type="button">
+                        Import Portrait
+                      </button>
+                    </div>
+
+                    <label>
+                      <span>Tags <small>(comma-separated)</small></span>
+                      <input
+                        id="libraryTags"
+                        type="text"
+                        placeholder="boss, humanoid, recurring"
+                      />
+                    </label>
+
+                    <label>
+                      <span>Private DM Notes</span>
+                      <textarea id="libraryNotes" rows="3"></textarea>
+                    </label>
+
+                    <label>
+                      <span>
+                        Abilities
+                        <small> one per line: Name | Uses | Description </small>
+                      </span>
+                      <textarea
+                        id="libraryAbilities"
+                        rows="5"
+                        placeholder="Jetpack |  | Move vertically&#10;Thermal Detonator | 1 | Area attack"
+                      ></textarea>
+                    </label>
+
+                    <label>
+                      <span>
+                        Resources
+                        <small> one per line: Name | Current | Max </small>
+                      </span>
+                      <textarea
+                        id="libraryResources"
+                        rows="4"
+                        placeholder="Force Points | 5 | 5"
+                      ></textarea>
+                    </label>
+
+                    <button type="submit" class="primary large-button">
+                      Save Library Entry
+                    </button>
+                  </form>
+                </aside>
               </div>
-
-              <label>
-                <span>
-                  Tags
-                  <small>(comma-separated)</small>
-                </span>
-
-                <input
-                  id="libraryTags"
-                  type="text"
-                  placeholder="boss, humanoid, recurring"
-                />
-              </label>
-
-              <label>
-                <span>Private DM Notes</span>
-
-                <textarea id="libraryNotes" rows="3"></textarea>
-              </label>
-
-              <label>
-                <span>
-                  Abilities
-                  <small> one per line: Name | Uses | Description </small>
-                </span>
-
-                <textarea
-                  id="libraryAbilities"
-                  rows="5"
-                  placeholder="Jetpack |  | Move vertically&#10;Thermal Detonator | 1 | Area attack"
-                ></textarea>
-              </label>
-
-              <label>
-                <span>
-                  Resources
-                  <small> one per line: Name | Current | Max </small>
-                </span>
-
-                <textarea
-                  id="libraryResources"
-                  rows="4"
-                  placeholder="Force Points | 5 | 5"
-                ></textarea>
-              </label>
-
-              <button type="submit" class="primary large-button">
-                Save Library Entry
-              </button>
-            </form>
-          </div>
-
-          <div class="panel">
-            <div id="libraryCards" class="library-cards"></div>
-
-            <div id="emptyLibrary" class="empty-state">
-              Your permanent character/NPC/enemy library is empty.
-            </div>
-          </div>
-        </div>
             </div>
 
             <div id="dmCompendiumPage" class="dm-page" data-dm-page-panel="compendium">

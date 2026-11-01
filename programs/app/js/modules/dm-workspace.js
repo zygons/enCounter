@@ -45,6 +45,7 @@ ENC.dmWorkspace = {
       button.classList.toggle("active", button.dataset.libraryType === filter);
     }
 
+    ENC.libraryUI?.updateCreateButton?.(filter);
     ENC.libraryUI?.render?.();
   },
 

@@ -865,13 +865,12 @@ ENC.combat = {
     if (modules.conditions || modules.status) {
       let conditionLabel = "Status";
       if (combatant.systemId === "dnd5e") {
-        const count = combatant.dnd5eConditions?.length || 0;
-        conditionLabel = count ? `Conditions ${count}` : "Conditions";
+        conditionLabel = "Conditions";
       } else if (
         ENC.getSystemProfile(combatant.systemId, combatant.customProfile)
           .usesConditionTrack
       ) {
-        conditionLabel = `Condition ${combatant.conditionTrack || "Normal"}`;
+        conditionLabel = "Condition";
       }
 
       quickActions.appendChild(

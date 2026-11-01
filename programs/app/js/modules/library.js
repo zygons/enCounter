@@ -50,15 +50,70 @@ ENC.libraryUI = {
         ENC.assets.fillSelect(document.getElementById("libraryPortraitSelect"), "portraits/", selected);
     },
 
-    resetForm() {
+    editorPanel() {
+        return document.getElementById("libraryEditorPanel");
+    },
+
+    showEditor() {
+        this.editorPanel()?.classList.remove("hidden");
+    },
+
+    hideEditor() {
+        this.editorPanel()?.classList.add("hidden");
+    },
+
+    currentTypeFilter() {
+        return document.getElementById("libraryTypeFilter")?.value || "all";
+    },
+
+    defaultTypeForFilter(filter = this.currentTypeFilter()) {
+        if (filter === "player" || filter === "npc") return filter;
+        if (filter === "enemy-creature") return "enemy";
+        return "player";
+    },
+
+    typeLabel(type) {
+        return {
+            player: "Player",
+            npc: "NPC",
+            enemy: "Enemy",
+            creature: "Creature",
+        }[type] || "Character";
+    },
+
+    updateCreateButton(filter = this.currentTypeFilter()) {
+        const button = document.getElementById("newLibraryEntryBtn");
+        if (!button) return;
+        const label =
+            filter === "player"
+                ? "Player"
+                : filter === "npc"
+                  ? "NPC"
+                  : filter === "enemy-creature"
+                    ? "Enemy / Creature"
+                    : "Character";
+        button.textContent = `+ New ${label}`;
+    },
+
+    resetForm(options = {}) {
+        const hideEditor = options.hideEditor !== false;
         this.editingId = null;
         document.getElementById("libraryForm").reset();
         document.getElementById("libraryEditId").value = "";
         document.getElementById("libraryFormTitle").textContent = "New Library Entry";
-        document.getElementById("cancelLibraryEditBtn").classList.add("hidden");
         document.getElementById("librarySystem").value = ENC.combat?.encounter?.systemId || ENC.settingsUI.settings?.systemId || "generic";
         this.renderStatFields();
         this.fillPortraitSelect();
+        if (hideEditor) this.hideEditor();
+    },
+
+    openCreate() {
+        const type = this.defaultTypeForFilter();
+        this.resetForm({ hideEditor: false });
+        document.getElementById("libraryType").value = type;
+        document.getElementById("libraryFormTitle").textContent = `New ${this.typeLabel(type)}`;
+        this.showEditor();
+        document.getElementById("libraryName")?.focus();
     },
 
     edit(entry) {
@@ -76,6 +131,7 @@ ENC.libraryUI = {
         document.getElementById("libraryResources").value = ENC.resourcesToText(entry.resources);
         this.renderStatFields(entry.stats || {});
         this.fillPortraitSelect(entry.portrait || "");
+        this.showEditor();
         ENC.dmWorkspace?.open?.("characters", {
             characterType: entry.type,
         });
@@ -114,53 +170,97 @@ ENC.libraryUI = {
     render() {
         const container = document.getElementById("libraryCards");
         const empty = document.getElementById("emptyLibrary");
+        const count = document.getElementById("libraryResultCount");
         const entries = this.filteredEntries();
         container.innerHTML = "";
         empty.classList.toggle("hidden", entries.length > 0);
+        if (count) count.textContent = `${entries.length} ${entries.length === 1 ? "entry" : "entries"}`;
+        this.updateCreateButton();
 
         for (const entry of entries) {
-            const card = document.createElement("article");
-            card.className = "library-card";
+            const row = document.createElement("article");
+            row.className = "library-row";
+            row.dataset.libraryId = entry.id;
+
+            const identity = document.createElement("div");
+            identity.className = "library-row-identity";
 
             const portrait = document.createElement("div");
+            portrait.className = "library-row-portrait";
             if (entry.portrait) {
                 const img = document.createElement("img");
                 img.src = entry.portrait;
                 img.alt = "";
                 portrait.appendChild(img);
             } else {
-                portrait.className = "library-avatar-fallback";
                 portrait.textContent = entry.name.charAt(0).toUpperCase();
             }
 
-            const info = document.createElement("div");
-            const title = document.createElement("h3");
+            const identityText = document.createElement("div");
+            identityText.className = "library-row-name-block";
+            const title = document.createElement("strong");
             title.textContent = entry.name;
-            const sub = document.createElement("small");
-            sub.textContent = `${entry.type.toUpperCase()} • ${ENC.getSystemLabel(entry.systemId, entry.customProfile)}${entry.maxHp !== "" ? ` • HP ${entry.maxHp}` : ""}`;
+            const meta = document.createElement("div");
+            meta.className = "library-row-meta";
+            const type = document.createElement("span");
+            type.className = `library-type-badge type-${entry.type}`;
+            type.textContent = this.typeLabel(entry.type);
+            meta.appendChild(type);
+            if (entry.tags?.length) {
+                const tags = document.createElement("span");
+                tags.textContent = entry.tags.slice(0, 2).join(" · ");
+                tags.title = entry.tags.join(", ");
+                meta.appendChild(tags);
+            }
+            identityText.append(title, meta);
+            identity.append(portrait, identityText);
+
+            const system = document.createElement("div");
+            system.className = "library-row-system";
+            system.textContent = ENC.getSystemLabel(entry.systemId, entry.customProfile);
+
+            const hp = document.createElement("div");
+            hp.className = "library-row-hp";
+            hp.textContent = entry.maxHp !== "" && entry.maxHp !== undefined ? entry.maxHp : "—";
+
             const stats = document.createElement("div");
-            stats.className = "stat-line";
+            stats.className = "library-row-stats";
             stats.textContent = this.statSummary(entry) || "No system stats";
-            info.append(title, sub, stats);
+            stats.title = stats.textContent;
 
             const actions = document.createElement("div");
-            actions.className = "library-card-actions";
+            actions.className = "library-row-actions";
 
             const add = document.createElement("button");
+            add.type = "button";
             add.textContent = "Add";
-            add.className = "primary";
+            add.className = "primary compact-action";
+            add.title = `Add ${entry.name} to the current encounter`;
             add.addEventListener("click", async () => {
                 const initiative = Number(prompt(`Initiative for ${entry.name}:`, "10"));
                 if (!Number.isFinite(initiative)) return;
                 await ENC.combat.addLibraryEntry(entry, initiative);
-                document.querySelector('[data-section="encounterSection"]').click();
+                document.querySelector('[data-section="encounterSection"]')?.click();
             });
 
             const edit = document.createElement("button");
+            edit.type = "button";
             edit.textContent = "Edit";
+            edit.className = "compact-action";
             edit.addEventListener("click", () => this.edit(entry));
 
+            const more = document.createElement("details");
+            more.className = "library-row-more";
+            const summary = document.createElement("summary");
+            summary.textContent = "⋯";
+            summary.title = `More actions for ${entry.name}`;
+            summary.setAttribute("aria-label", `More actions for ${entry.name}`);
+
+            const menu = document.createElement("div");
+            menu.className = "library-row-more-menu";
+
             const duplicate = document.createElement("button");
+            duplicate.type = "button";
             duplicate.textContent = "Duplicate";
             duplicate.addEventListener("click", async () => {
                 const copy = ENC.deepClone(entry);
@@ -177,6 +277,7 @@ ENC.libraryUI = {
             });
 
             const exportOne = document.createElement("button");
+            exportOne.type = "button";
             exportOne.textContent = "Export";
             exportOne.addEventListener("click", () => {
                 const safeName = ENC.backup.safeFilename(entry.name, "library-entry");
@@ -186,11 +287,12 @@ ENC.libraryUI = {
                     schemaVersion: ENC.DB_VERSION,
                     exportType: "library-entry",
                     exportedAt: new Date().toISOString(),
-                    entry
+                    entry,
                 });
             });
 
             const del = document.createElement("button");
+            del.type = "button";
             del.textContent = "Delete";
             del.className = "danger-outline";
             del.addEventListener("click", async () => {
@@ -200,11 +302,14 @@ ENC.libraryUI = {
                 await this.load();
                 this.render();
                 ENC.combat.renderLibrarySelect();
+                this.hideEditor();
             });
 
-            actions.append(add, edit, duplicate, exportOne, del);
-            card.append(portrait, info, actions);
-            container.appendChild(card);
+            menu.append(duplicate, exportOne, del);
+            more.append(summary, menu);
+            actions.append(add, edit, more);
+            row.append(identity, system, hp, stats, actions);
+            container.appendChild(row);
         }
     },
 
@@ -259,6 +364,7 @@ ENC.libraryUI = {
     bind() {
         document.getElementById("librarySystem").addEventListener("change", () => this.renderStatFields());
         document.getElementById("libraryForm").addEventListener("submit", (event) => this.saveForm(event));
+        document.getElementById("newLibraryEntryBtn")?.addEventListener("click", () => this.openCreate());
         document.getElementById("cancelLibraryEditBtn").addEventListener("click", () => this.resetForm());
         document.getElementById("uploadLibraryPortraitBtn").addEventListener("click", () => this.uploadPortrait());
         for (const id of ["librarySearch", "libraryTypeFilter", "librarySystemFilter"]) {
