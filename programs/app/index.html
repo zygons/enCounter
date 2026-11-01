@@ -66,25 +66,12 @@
           </select>
         </label>
 
-        <div class="round-chip">
-          <span>ROUND</span>
-          <strong id="roundNumber">1</strong>
-        </div>
 
-        <div id="saveIndicator" class="save-indicator">✓ SAVED</div>
       </div>
 
       <!-- Header Actions -->
 
       <div class="header-actions">
-        <button id="previousTurnBtn" type="button">◀ Previous</button>
-
-        <button id="nextTurnBtn" class="primary" type="button">
-          Next Turn ▶
-        </button>
-
-        <button id="openDisplayBtn" type="button">Start Player Display</button>
-
         <button id="exitAppBtn" class="danger-outline" type="button">
           Exit enCounter
         </button>
@@ -131,178 +118,261 @@
            ======================================================= -->
 
       <section id="encounterSection" class="app-section active-section">
-        <div class="panel encounter-tools">
-          <div class="section-heading">
-            <div>
-              <div class="eyebrow">ENCOUNTER CONTROL</div>
+        <div class="encounter-console-layout">
+          <div class="encounter-console-main">
+            <!-- Compact encounter command strip -->
+            <div class="panel encounter-command-strip">
+              <div class="encounter-command-copy">
+                <div class="eyebrow">LIVE ENCOUNTER</div>
+                <strong>Initiative &amp; Combatants</strong>
+                <span class="hint">Run the encounter here. Preparation and full saved-encounter management stay in the DM Workspace.</span>
+              </div>
 
-              <h2>Prepare &amp; Run Encounter</h2>
+              <div class="encounter-command-actions">
+                <button id="newEncounterBtn" class="primary" type="button">
+                  + New Encounter
+                </button>
+
+                <label class="encounter-quick-select">
+                  <span>Template</span>
+                  <select id="quickTemplateSelect">
+                    <option value="">Choose template…</option>
+                  </select>
+                </label>
+                <button id="quickLoadTemplateBtn" type="button">Load</button>
+
+                <label class="encounter-quick-select">
+                  <span>Saved State</span>
+                  <select id="quickStateSelect">
+                    <option value="">Choose saved state…</option>
+                  </select>
+                </label>
+                <button id="quickResumeStateBtn" type="button">Resume</button>
+
+                <button id="openDmEncountersBtn" class="icon-text-button" type="button">
+                  Manage
+                </button>
+              </div>
             </div>
 
-            <div class="button-row">
-              <button id="newEncounterBtn" class="danger-outline" type="button">
-                New Encounter
-              </button>
+            <!-- Initiative roster -->
+            <div class="panel encounter-roster-panel">
+              <div class="encounter-roster-toolbar">
+                <div>
+                  <div class="eyebrow">INITIATIVE ORDER</div>
+                  <div class="encounter-roster-title-row">
+                    <h2>Combatants</h2>
+                    <span id="encounterRosterCount" class="roster-count-pill">0</span>
+                  </div>
+                </div>
 
-              <button id="savePresetBtn" type="button">Save Preset</button>
+                <button
+                  id="toggleAddCombatantBtn"
+                  class="primary"
+                  type="button"
+                  aria-expanded="false"
+                  aria-controls="encounterAddPanel"
+                >
+                  + Add Combatant
+                </button>
+              </div>
 
-              <select id="presetSelect">
-                <option value="">Load preset…</option>
-              </select>
+              <!-- One add workflow; existing controls remain for compatibility. -->
+              <div id="encounterAddPanel" class="encounter-add-panel hidden">
+                <div class="encounter-add-section">
+                  <div class="encounter-add-heading">
+                    <strong>From Library</strong>
+                    <span class="hint">Use a saved Player, NPC, Enemy, or Creature.</span>
+                  </div>
+                  <div class="encounter-add-row">
+                    <label>
+                      <span>Library Entry</span>
+                      <select id="encounterLibrarySelect">
+                        <option value="">Choose saved character…</option>
+                      </select>
+                    </label>
+                    <label class="compact-number-field">
+                      <span>Initiative</span>
+                      <input id="libraryInitiative" type="number" value="10" />
+                    </label>
+                    <button id="addLibraryCombatantBtn" class="primary" type="button">
+                      Add to Encounter
+                    </button>
+                  </div>
+                </div>
 
-              <button id="loadPresetBtn" type="button">Load</button>
-            </div>
-          </div>
+                <div class="encounter-add-divider"><span>or</span></div>
 
-          <!-- Quick Saved Encounter Loading -->
+                <div class="encounter-add-section">
+                  <div class="encounter-add-heading">
+                    <strong>Quick Create</strong>
+                    <span class="hint">Add a temporary combatant without creating a Library entry.</span>
+                  </div>
+                  <div class="encounter-add-row quick-create-row">
+                    <label>
+                      <span>Name</span>
+                      <input id="quickName" type="text" placeholder="Goblin 1" />
+                    </label>
+                    <label>
+                      <span>Type</span>
+                      <select id="quickType">
+                        <option value="enemy">Enemy</option>
+                        <option value="npc">NPC</option>
+                        <option value="player">Player</option>
+                        <option value="creature">Creature</option>
+                      </select>
+                    </label>
+                    <label class="compact-number-field">
+                      <span>Initiative</span>
+                      <input id="quickInitiative" type="number" value="10" />
+                    </label>
+                    <button id="quickAddBtn" type="button">Quick Add</button>
+                  </div>
+                </div>
 
-          <div class="encounter-quick-load-bar">
-            <div class="encounter-quick-load-heading">
-              <div>
-                <strong>Load Encounter</strong>
-                <div class="hint">
-                  Start from a reusable template or resume a saved encounter state.
-                  Full saved-encounter management is under DM &gt; Encounters.
+                <div class="encounter-add-footer">
+                  <button id="openDmCharactersBtn" type="button">Manage Characters in DM</button>
+                  <button id="openDmCompendiumBtn" type="button" disabled title="Compendium search is added in Phase 3.">
+                    Search Compendium — Coming Next
+                  </button>
                 </div>
               </div>
-              <button id="openDmEncountersBtn" type="button">Manage in DM</button>
-            </div>
 
-            <div class="encounter-quick-load-controls">
-              <label>
-                <span>Reusable Template</span>
-                <select id="quickTemplateSelect">
-                  <option value="">Choose template…</option>
-                </select>
-              </label>
-              <button id="quickLoadTemplateBtn" type="button">Load Template</button>
-
-              <label>
-                <span>Saved Encounter State</span>
-                <select id="quickStateSelect">
-                  <option value="">Choose saved state…</option>
-                </select>
-              </label>
-              <button id="quickResumeStateBtn" type="button">Resume State</button>
-            </div>
-          </div>
-
-          <!-- Live Scene / Combat Controls -->
-
-          <div class="encounter-live-bar">
-            <div class="encounter-phase-block">
-              <span class="eyebrow">PHASE</span>
-              <strong id="encounterPhaseStatus">PREPARED</strong>
-            </div>
-            <button id="showSceneBtn" type="button">Show Scene</button>
-            <button id="startSceneAudioBtn" type="button">▶ Scene Audio</button>
-            <button id="startCombatBtn" class="primary" type="button">⚔ Start Combat</button>
-            <button id="endCombatBtn" type="button">End Combat</button>
-            <button id="hideEncounterDisplayBtn" type="button">Hide Player Display</button>
-            <button id="stopEncounterAudioBtn" class="danger-outline" type="button">■ Stop Audio</button>
-            <span id="encounterAudioStatus" class="soundscape-status">AUDIO STOPPED</span>
-          </div>
-
-          <!-- Live Prepared Sound Cues -->
-
-          <div class="encounter-cue-panel">
-            <div class="encounter-cue-heading">
-              <div>
-                <span class="eyebrow">LIVE SOUND EFFECTS</span>
-                <strong>Prepared Cues</strong>
+              <div id="combatantTableHeader" class="combatant-table-header hidden" aria-hidden="true">
+                <span>Combatant</span>
+                <span>Init</span>
+                <span>HP</span>
+                <span>Defense</span>
+                <span>Conditions / Status</span>
+                <span></span>
               </div>
-              <span class="hint">Cues saved with this encounter can be triggered during Scene or Combat.</span>
+
+              <div id="combatantList" class="combatant-list combatant-table-body"></div>
+
+              <div id="emptyEncounter" class="empty-state encounter-empty-state">
+                No combatants yet. Use <strong>+ Add Combatant</strong> to add one from the Library or create a temporary entry.
+              </div>
             </div>
-            <div id="encounterCueButtons" class="encounter-cue-buttons">
-              <span class="hint">No prepared sound cues for this encounter.</span>
+          </div>
+
+          <!-- Sticky live-control rail -->
+          <aside class="encounter-control-rail" aria-label="Encounter controls">
+            <div class="panel encounter-rail-panel encounter-turn-panel">
+              <div class="rail-section-heading">
+                <div>
+                  <div class="eyebrow">TURN CONTROL</div>
+                  <strong>Round <span id="roundNumber">1</span></strong>
+                </div>
+                <span id="saveIndicator" class="save-indicator">✓ SAVED</span>
+              </div>
+
+              <div class="turn-navigation-buttons">
+                <button id="previousTurnBtn" type="button">◀ Previous</button>
+                <button id="nextTurnBtn" class="primary" type="button">Next ▶</button>
+              </div>
             </div>
-          </div>
 
-          <!-- Background Controls -->
+            <div class="panel encounter-rail-panel">
+              <div class="rail-section-heading">
+                <div>
+                  <div class="eyebrow">PHASE</div>
+                  <strong id="encounterPhaseStatus">PREPARED</strong>
+                </div>
+                <span class="phase-indicator-dot" aria-hidden="true"></span>
+              </div>
 
-          <div id="backgroundControls" class="tool-grid">
-            <label>
-              <span>Combat Background</span>
+              <div class="rail-button-grid">
+                <button id="showSceneBtn" type="button">Show Scene</button>
+                <button id="startCombatBtn" class="primary" type="button">Start Combat</button>
+                <button id="endCombatBtn" type="button">End Combat</button>
+              </div>
+            </div>
 
-              <select id="backgroundSelect">
-                <option value="">— None —</option>
-              </select>
-            </label>
+            <div class="panel encounter-rail-panel">
+              <div class="rail-section-heading">
+                <div>
+                  <div class="eyebrow">PLAYER DISPLAY</div>
+                  <strong>Presentation</strong>
+                </div>
+              </div>
 
-            <label>
-              <span>Scene Image</span>
-              <select id="sceneImageSelect">
-                <option value="">— None —</option>
-              </select>
-            </label>
+              <div class="rail-button-grid">
+                <button id="openDisplayBtn" class="primary" type="button">Start Player Display</button>
+                <button id="hideEncounterDisplayBtn" type="button">Hide Display</button>
+              </div>
+            </div>
 
-            <label>
-              <span>Import Background</span>
+            <div class="panel encounter-rail-panel">
+              <div class="rail-section-heading">
+                <div>
+                  <div class="eyebrow">AUDIO</div>
+                  <strong>Soundscape</strong>
+                </div>
+                <span id="encounterAudioStatus" class="soundscape-status">AUDIO STOPPED</span>
+              </div>
 
-              <input
-                id="backgroundUpload"
-                type="file"
-                accept="image/png,image/jpeg,image/webp"
-              />
-            </label>
+              <div class="rail-button-grid">
+                <button id="startSceneAudioBtn" type="button">▶ Scene Audio</button>
+                <button id="stopEncounterAudioBtn" class="danger-outline" type="button">■ Stop</button>
+              </div>
+            </div>
 
-            <button id="uploadBackgroundBtn" type="button">Import</button>
-          </div>
+            <div class="panel encounter-rail-panel encounter-cue-panel">
+              <div class="rail-section-heading">
+                <div>
+                  <div class="eyebrow">PREPARED CUES</div>
+                  <strong>Live Sound Effects</strong>
+                </div>
+              </div>
+              <div id="encounterCueButtons" class="encounter-cue-buttons">
+                <span class="hint">No prepared sound cues.</span>
+              </div>
+            </div>
 
-          <!-- Quick Add Controls -->
+            <details class="panel encounter-rail-panel rail-collapsible-panel">
+              <summary>Scene &amp; Background</summary>
+              <div id="backgroundControls" class="rail-scene-controls">
+                <label>
+                  <span>Combat Background</span>
+                  <select id="backgroundSelect">
+                    <option value="">— None —</option>
+                  </select>
+                </label>
 
-          <div class="tool-grid quick-add-grid">
-            <label>
-              <span>Add From Library</span>
+                <label>
+                  <span>Scene Image</span>
+                  <select id="sceneImageSelect">
+                    <option value="">— None —</option>
+                  </select>
+                </label>
 
-              <select id="encounterLibrarySelect">
-                <option value="">Choose saved character…</option>
-              </select>
-            </label>
+                <label>
+                  <span>Import Background</span>
+                  <input
+                    id="backgroundUpload"
+                    type="file"
+                    accept="image/png,image/jpeg,image/webp"
+                  />
+                </label>
 
-            <label>
-              <span>Initiative</span>
+                <button id="uploadBackgroundBtn" type="button">Import Background</button>
+              </div>
+            </details>
 
-              <input id="libraryInitiative" type="number" value="10" />
-            </label>
-
-            <button id="addLibraryCombatantBtn" class="primary" type="button">
-              + Add Saved
-            </button>
-
-            <label>
-              <span>Quick Name</span>
-
-              <input id="quickName" type="text" placeholder="Goblin 1" />
-            </label>
-
-            <label>
-              <span>Type</span>
-
-              <select id="quickType">
-                <option value="enemy">Enemy</option>
-                <option value="npc">NPC</option>
-                <option value="player">Player</option>
-                <option value="creature">Creature</option>
-              </select>
-            </label>
-
-            <label>
-              <span>Initiative</span>
-
-              <input id="quickInitiative" type="number" value="10" />
-            </label>
-
-            <button id="quickAddBtn" type="button">+ Quick Add</button>
-          </div>
-        </div>
-
-        <div id="combatantList" class="combatant-list"></div>
-
-        <div id="emptyEncounter" class="panel empty-state">
-          No combatants yet. Add a saved character or use Quick Add.
+            <details class="panel encounter-rail-panel rail-collapsible-panel">
+              <summary>Legacy Presets</summary>
+              <div class="legacy-preset-controls">
+                <button id="savePresetBtn" type="button">Save Preset</button>
+                <select id="presetSelect">
+                  <option value="">Load preset…</option>
+                </select>
+                <button id="loadPresetBtn" type="button">Load Preset</button>
+              </div>
+            </details>
+          </aside>
         </div>
       </section>
+
 
       <!-- =======================================================
            LIBRARY SECTION

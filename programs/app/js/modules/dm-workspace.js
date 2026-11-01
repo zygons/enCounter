@@ -100,6 +100,14 @@ ENC.dmWorkspace = {
     document
       .getElementById("openDmEncountersBtn")
       ?.addEventListener("click", () => this.open("encounters"));
+
+    document
+      .getElementById("openDmCharactersBtn")
+      ?.addEventListener("click", () => this.open("characters"));
+
+    document
+      .getElementById("openDmCompendiumBtn")
+      ?.addEventListener("click", () => this.open("compendium"));
   },
 
   initialize() {
