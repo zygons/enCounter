@@ -9,6 +9,7 @@ ENC.combat = {
   saveTimer: null,
   expandedCombatantIds: new Set(),
   conditionEditorIds: new Set(),
+  libraryPickerType: "player",
 
   settings() {
     return ENC.settingsUI.settings || ENC.DEFAULT_SETTINGS;
@@ -90,6 +91,8 @@ ENC.combat = {
         initiative: Number(
           document.getElementById("quickInitiative").value || 10,
         ),
+        maxHp: document.getElementById("quickMaxHp")?.value ?? "",
+        hp: document.getElementById("quickMaxHp")?.value ?? "",
         createdOrder: Date.now() + Math.random(),
       },
       this.encounter.systemId,
@@ -99,6 +102,8 @@ ENC.combat = {
     ENC.sortCombatants(this.encounter.combatants);
     if (!this.encounter.currentId) this.encounter.currentId = combatant.id;
     document.getElementById("quickName").value = "";
+    const quickMaxHp = document.getElementById("quickMaxHp");
+    if (quickMaxHp) quickMaxHp.value = "";
     await this.save("quick combatant added");
     this.render();
   },
@@ -945,21 +950,102 @@ ENC.combat = {
     ENC.encounterUI?.renderPhase?.();
   },
 
+  libraryEntryMatchesPicker(entry, pickerType = this.libraryPickerType) {
+    if (pickerType === "monster") {
+      return ["enemy", "creature", "monster"].includes(entry.type);
+    }
+    return entry.type === pickerType;
+  },
+
+  updateLibraryPickerTabs() {
+    const entries = ENC.libraryUI?.entries || [];
+    const counts = {
+      player: entries.filter((entry) => entry.type === "player").length,
+      npc: entries.filter((entry) => entry.type === "npc").length,
+      monster: entries.filter((entry) =>
+        ["enemy", "creature", "monster"].includes(entry.type),
+      ).length,
+    };
+
+    const countIds = {
+      player: "libraryPlayerCount",
+      npc: "libraryNpcCount",
+      monster: "libraryMonsterCount",
+    };
+
+    for (const [type, id] of Object.entries(countIds)) {
+      const count = document.getElementById(id);
+      if (count) count.textContent = String(counts[type]);
+    }
+
+    document.querySelectorAll("[data-library-picker-tab]").forEach((button) => {
+      const active = button.dataset.libraryPickerTab === this.libraryPickerType;
+      button.classList.toggle("active", active);
+      button.setAttribute("aria-selected", String(active));
+    });
+  },
+
   renderLibrarySelect() {
     const select = document.getElementById("encounterLibrarySelect");
+    const addButton = document.getElementById("addLibraryCombatantBtn");
+    if (!select) return;
+
     const current = select.value;
-    select.innerHTML = '<option value="">Choose saved character…</option>';
-    const matches = (ENC.libraryUI?.entries || []).filter(
-      (entry) => entry.systemId === this.encounter.systemId,
-    );
-    for (const entry of matches) {
+    const pickerLabels = {
+      player: "player",
+      npc: "NPC",
+      monster: "monster or enemy",
+    };
+    const pickerLabel = pickerLabels[this.libraryPickerType] || "combatant";
+    select.innerHTML = `<option value="">Choose saved ${pickerLabel}…</option>`;
+
+    const entries = [...(ENC.libraryUI?.entries || [])]
+      .filter((entry) => this.libraryEntryMatchesPicker(entry))
+      .sort((a, b) => {
+        const aSameSystem = a.systemId === this.encounter.systemId ? 0 : 1;
+        const bSameSystem = b.systemId === this.encounter.systemId ? 0 : 1;
+        if (aSameSystem !== bSameSystem) return aSameSystem - bSameSystem;
+
+        return String(a.name || "").localeCompare(String(b.name || ""));
+      });
+
+    const currentSystemGroup = document.createElement("optgroup");
+    currentSystemGroup.label = `${ENC.getSystemLabel(
+      this.encounter.systemId,
+      this.encounter.customProfile,
+    )} — Current Encounter`;
+
+    const otherSystemsGroup = document.createElement("optgroup");
+    otherSystemsGroup.label = "Other Systems";
+
+    for (const entry of entries) {
       const option = document.createElement("option");
       option.value = entry.id;
-      option.textContent = `${entry.name} — ${entry.type}`;
-      select.appendChild(option);
+      const typeLabel = ENC.libraryUI?.typeLabel?.(entry.type) || entry.type || "Character";
+      const systemLabel = ENC.getSystemLabel(entry.systemId, entry.customProfile);
+      option.textContent = `${entry.name} — ${typeLabel} · ${systemLabel}`;
+
+      if (entry.systemId === this.encounter.systemId) {
+        currentSystemGroup.appendChild(option);
+      } else {
+        otherSystemsGroup.appendChild(option);
+      }
     }
-    if ([...select.options].some((option) => option.value === current))
+
+    if (currentSystemGroup.children.length) select.appendChild(currentSystemGroup);
+    if (otherSystemsGroup.children.length) select.appendChild(otherSystemsGroup);
+
+    const hasEntries = entries.length > 0;
+    select.disabled = !hasEntries;
+    if (addButton) addButton.disabled = !hasEntries;
+
+    if (!hasEntries) {
+      select.options[0].textContent = `No saved ${pickerLabel}s`;
+    } else if ([...select.options].some((option) => option.value === current)) {
       select.value = current;
+    }
+
+    this.updateLibraryPickerTabs();
   },
 
   async renderPresetControls() {
@@ -1108,6 +1194,13 @@ ENC.combat = {
         await this.save("system changed");
         this.render();
       });
+    document.querySelectorAll("[data-library-picker-tab]").forEach((button) => {
+      button.addEventListener("click", () => {
+        this.libraryPickerType = button.dataset.libraryPickerTab || "player";
+        this.renderLibrarySelect();
+      });
+    });
+
     document
       .getElementById("addLibraryCombatantBtn")
       .addEventListener("click", async () => {
@@ -1124,12 +1217,17 @@ ENC.combat = {
       .addEventListener("click", () => this.quickAdd());
     document
       .getElementById("toggleAddCombatantBtn")
-      ?.addEventListener("click", (event) => {
+      ?.addEventListener("click", async (event) => {
         const panel = document.getElementById("encounterAddPanel");
         if (!panel) return;
         const isHidden = panel.classList.toggle("hidden");
         event.currentTarget.setAttribute("aria-expanded", String(!isHidden));
         event.currentTarget.textContent = isHidden ? "+ Add Combatant" : "Close Add Combatant";
+
+        if (!isHidden) {
+          await ENC.libraryUI?.load?.();
+          this.renderLibrarySelect();
+        }
       });
     document
       .getElementById("newEncounterBtn")
@@ -1156,24 +1254,6 @@ ENC.combat = {
         this.encounter.display.sceneImage = event.target.value;
         await this.save();
         this.render();
-      });
-    document
-      .getElementById("uploadBackgroundBtn")
-      .addEventListener("click", async () => {
-        const file = document.getElementById("backgroundUpload").files[0];
-        if (!file) return ENC.app.toast("Choose a background image first.");
-        try {
-          const result = await ENC.assets.upload(file, "backgrounds/custom");
-          this.encounter.background = result.url;
-          this.encounter.display = this.encounter.display || {};
-          this.encounter.display.combatImage = result.url;
-          ENC.app?.refreshEncounterMediaControls?.();
-          await this.save();
-          this.render();
-          ENC.app.toast("Background imported.");
-        } catch (error) {
-          ENC.app.toast(error.message);
-        }
       });
   },
 };

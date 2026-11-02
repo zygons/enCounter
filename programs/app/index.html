@@ -14,7 +14,7 @@
 
     <link rel="icon" type="image/png" href="/assets/branding/favicon.png" />
 
-    <link rel="stylesheet" href="css/base.css" />
+    <link rel="stylesheet" href="css/base.css?v=alpha3-p2b6-media2" />
     <link rel="stylesheet" href="css/timer.css" />
   </head>
 
@@ -182,13 +182,44 @@
                 <div class="encounter-add-section">
                   <div class="encounter-add-heading">
                     <strong>From Library</strong>
-                    <span class="hint">Use a saved Player, NPC, Enemy, or Creature.</span>
+                    <span class="hint">Choose a saved combatant by type.</span>
                   </div>
+
+                  <div class="encounter-library-tabs" role="tablist" aria-label="Library combatant type">
+                    <button
+                      class="encounter-library-tab active"
+                      type="button"
+                      role="tab"
+                      aria-selected="true"
+                      data-library-picker-tab="player"
+                    >
+                      Players <span id="libraryPlayerCount" class="library-tab-count">0</span>
+                    </button>
+                    <button
+                      class="encounter-library-tab"
+                      type="button"
+                      role="tab"
+                      aria-selected="false"
+                      data-library-picker-tab="npc"
+                    >
+                      NPCs <span id="libraryNpcCount" class="library-tab-count">0</span>
+                    </button>
+                    <button
+                      class="encounter-library-tab"
+                      type="button"
+                      role="tab"
+                      aria-selected="false"
+                      data-library-picker-tab="monster"
+                    >
+                      Monsters &amp; Enemies <span id="libraryMonsterCount" class="library-tab-count">0</span>
+                    </button>
+                  </div>
+
                   <div class="encounter-add-row">
                     <label>
                       <span>Library Entry</span>
                       <select id="encounterLibrarySelect">
-                        <option value="">Choose saved character…</option>
+                        <option value="">Choose saved player…</option>
                       </select>
                     </label>
                     <label class="compact-number-field">
@@ -225,6 +256,10 @@
                     <label class="compact-number-field">
                       <span>Initiative</span>
                       <input id="quickInitiative" type="number" value="10" />
+                    </label>
+                    <label class="compact-number-field">
+                      <span>Max HP</span>
+                      <input id="quickMaxHp" type="number" min="0" placeholder="7" />
                     </label>
                     <button id="quickAddBtn" type="button">Quick Add</button>
                   </div>
@@ -298,8 +333,10 @@
 
               <div class="rail-button-grid">
                 <button id="openDisplayBtn" class="primary" type="button">Start Player Display</button>
-                <button id="hideEncounterDisplayBtn" type="button">Hide Display</button>
               </div>
+              <p class="hint rail-display-hint">
+                Before combat, Show displays the prepared Scene. During combat, it displays initiative. Hide always returns players to Stand By.
+              </p>
             </div>
 
             <div class="panel encounter-rail-panel">
@@ -346,16 +383,9 @@
                   </select>
                 </label>
 
-                <label>
-                  <span>Import Background</span>
-                  <input
-                    id="backgroundUpload"
-                    type="file"
-                    accept="image/png,image/jpeg,image/webp"
-                  />
-                </label>
-
-                <button id="uploadBackgroundBtn" type="button">Import Background</button>
+                <button id="manageEncounterBackgroundsBtn" type="button">
+                  Manage Backgrounds
+                </button>
               </div>
             </details>
 
@@ -633,7 +663,7 @@
                 <div>
                   <div class="eyebrow">ENCOUNTER LIBRARY</div>
                   <h2>Templates &amp; Saved States</h2>
-                  <p class="hint">Create reusable setups or checkpoint a live encounter for later resumption.</p>
+                  <p class="hint">Create reusable setups, configure each template’s backgrounds and audio before play, or checkpoint a live encounter for later resumption.</p>
                 </div>
               </div>
 
@@ -667,6 +697,7 @@
                     Load Template
                   </button>
 
+
                   <button
                     id="saveNewTemplateBtn"
                     class="primary"
@@ -689,10 +720,328 @@
                 </div>
 
                 <div class="hint">
-                  Reusable templates preserve encounter setup but reset live combat
-                  progress such as current HP, conditions, exhaustion, round, and
-                  current turn when loaded.
+                  Select a reusable encounter above to edit its complete pre-game presentation setup directly below. Templates reset live combat progress such as current HP, conditions, exhaustion, round, and current turn when loaded.
                 </div>
+
+                <div id="encounterSetupPrompt" class="encounter-setup-prompt">
+                  <strong>Select a reusable encounter to configure it.</strong>
+                  <span>Backgrounds, music, ambience, cues, and encounter presentation can be prepared without loading the encounter for live play.</span>
+                </div>
+
+            <section
+              id="encounterSetupEditor"
+              class="panel encounter-setup-editor hidden"
+              aria-labelledby="encounterSetupTitle"
+            >
+              <div class="section-heading encounter-setup-heading">
+                <div>
+                  <div class="eyebrow">PRE-GAME PREPARATION</div>
+                  <h3 id="encounterSetupTitle">
+                    Encounter Setup · <span id="encounterSetupName">Template</span>
+                  </h3>
+                  <p class="hint">
+                    Configure visuals and audio directly on this reusable template without loading it into the active Encounter.
+                  </p>
+                </div>
+
+                <div class="encounter-setup-save-actions">
+                  <div
+                    id="encounterSetupSaveStatus"
+                    class="encounter-setup-save-status"
+                    role="status"
+                    aria-live="polite"
+                  >
+                    Saved setup loaded
+                  </div>
+                  <div class="button-row">
+                    <button id="encounterSetupManageAssetsBtn" type="button">Manage Assets</button>
+                    <button id="encounterSetupSaveBtn" class="primary" type="button">
+                      Save Encounter Setup
+                    </button>
+                  </div>
+                </div>
+              </div>
+
+              <div class="encounter-setup-status-row">
+                <span id="encounterSetupSystem" class="system-pill">Generic TTRPG</span>
+                <span class="hint">
+                  Changes here update the saved reusable template only. Ad hoc changes made from the live Encounter tab remain session-specific until you intentionally update the template.
+                </span>
+              </div>
+
+              <div class="encounter-setup-overview">
+                <label>
+                  <span>Encounter Name</span>
+                  <input id="encounterSetupTemplateName" type="text" maxlength="120" />
+                </label>
+                <div>
+                  <span class="field-caption">Combatants in Template</span>
+                  <div id="encounterSetupCombatants" class="encounter-setup-combatants"></div>
+                </div>
+              </div>
+
+              <div class="encounter-setup-grid">
+                <article class="encounter-setup-card">
+                  <div class="eyebrow">ROLEPLAY / EXPLORATION</div>
+                  <h3>Scene</h3>
+
+                  <div
+                    id="encounterSetupScenePreview"
+                    class="encounter-setup-background-preview"
+                    aria-label="Scene background preview"
+                  >
+                    <span>No scene background selected</span>
+                  </div>
+
+                  <label>
+                    <span>Scene Background</span>
+                    <select id="encounterSetupSceneBackground">
+                      <option value="">— Default Scene Screen —</option>
+                    </select>
+                  </label>
+
+                  <div class="encounter-setup-audio-row">
+                    <label>
+                      <span>Scene Music</span>
+                      <select
+                        id="encounterSetupSceneMusic"
+                        data-audio-select
+                        data-audio-prefix="sounds/music"
+                      >
+                        <option value="">— None —</option>
+                      </select>
+                    </label>
+                    <label>
+                      <span>Volume %</span>
+                      <input id="encounterSetupSceneMusicVolume" type="number" min="0" max="100" value="35" />
+                    </label>
+                  </div>
+
+                  <div class="encounter-setup-audio-row">
+                    <label>
+                      <span>Primary Ambience</span>
+                      <select
+                        id="encounterSetupSceneAmb1"
+                        data-audio-select
+                        data-audio-prefix="sounds/ambience"
+                      >
+                        <option value="">— None —</option>
+                      </select>
+                    </label>
+                    <label>
+                      <span>Volume %</span>
+                      <input id="encounterSetupSceneAmb1Volume" type="number" min="0" max="100" value="40" />
+                    </label>
+                  </div>
+                </article>
+
+                <article class="encounter-setup-card">
+                  <div class="eyebrow">INITIATIVE / BATTLE</div>
+                  <h3>Combat</h3>
+
+                  <div
+                    id="encounterSetupCombatPreview"
+                    class="encounter-setup-background-preview"
+                    aria-label="Combat background preview"
+                  >
+                    <span>No combat background selected</span>
+                  </div>
+
+                  <label>
+                    <span>Combat Background</span>
+                    <select id="encounterSetupCombatBackground">
+                      <option value="">— Default Combat Screen —</option>
+                    </select>
+                  </label>
+
+                  <div class="encounter-setup-audio-row">
+                    <label>
+                      <span>Combat Music</span>
+                      <select
+                        id="encounterSetupCombatMusic"
+                        data-audio-select
+                        data-audio-prefix="sounds/music"
+                      >
+                        <option value="">— None —</option>
+                      </select>
+                    </label>
+                    <label>
+                      <span>Volume %</span>
+                      <input id="encounterSetupCombatMusicVolume" type="number" min="0" max="100" value="65" />
+                    </label>
+                  </div>
+
+                  <div class="encounter-setup-audio-row">
+                    <label>
+                      <span>Primary Ambience</span>
+                      <select
+                        id="encounterSetupCombatAmb1"
+                        data-audio-select
+                        data-audio-prefix="sounds/ambience"
+                      >
+                        <option value="">— None —</option>
+                      </select>
+                    </label>
+                    <label>
+                      <span>Volume %</span>
+                      <input id="encounterSetupCombatAmb1Volume" type="number" min="0" max="100" value="35" />
+                    </label>
+                  </div>
+                </article>
+              </div>
+
+              <div class="encounter-setup-options">
+                <label>
+                  <span>Master Volume %</span>
+                  <input id="encounterSetupMasterVolume" type="number" min="0" max="100" value="80" />
+                </label>
+
+                <label>
+                  <span>Fade (seconds)</span>
+                  <input id="encounterSetupFadeSeconds" type="number" min="0" max="15" step="0.5" value="2.5" />
+                </label>
+
+                <label class="check-row">
+                  <input id="encounterSetupAutoCombat" type="checkbox" checked />
+                  Switch automatically to combat audio
+                </label>
+
+                <label class="check-row">
+                  <input id="encounterSetupReturnScene" type="checkbox" checked />
+                  Return to scene audio after combat
+                </label>
+              </div>
+
+              <details class="encounter-setup-advanced">
+                <summary>Additional ambience &amp; transition behavior</summary>
+
+                <div class="encounter-setup-advanced-grid">
+                  <div class="encounter-setup-layer">
+                    <strong>Scene Ambience 1 Transition</strong>
+                    <label>
+                      <span>During Combat</span>
+                      <select id="encounterSetupSceneAmb1Behavior">
+                        <option value="duck">Lower Volume</option>
+                        <option value="continue">Continue</option>
+                        <option value="stop">Stop</option>
+                      </select>
+                    </label>
+                    <label>
+                      <span>Combat Volume %</span>
+                      <input id="encounterSetupSceneAmb1CombatVolume" type="number" min="0" max="100" value="15" />
+                    </label>
+                  </div>
+
+                  <div class="encounter-setup-layer">
+                    <strong>Scene Ambience 2</strong>
+                    <label>
+                      <span>Audio</span>
+                      <select
+                        id="encounterSetupSceneAmb2"
+                        data-audio-select
+                        data-audio-prefix="sounds/ambience"
+                      >
+                        <option value="">— None —</option>
+                      </select>
+                    </label>
+                    <label>
+                      <span>Scene Volume %</span>
+                      <input id="encounterSetupSceneAmb2Volume" type="number" min="0" max="100" value="40" />
+                    </label>
+                    <label>
+                      <span>During Combat</span>
+                      <select id="encounterSetupSceneAmb2Behavior">
+                        <option value="duck">Lower Volume</option>
+                        <option value="continue">Continue</option>
+                        <option value="stop">Stop</option>
+                      </select>
+                    </label>
+                    <label>
+                      <span>Combat Volume %</span>
+                      <input id="encounterSetupSceneAmb2CombatVolume" type="number" min="0" max="100" value="15" />
+                    </label>
+                  </div>
+
+                  <div class="encounter-setup-layer">
+                    <strong>Scene Ambience 3</strong>
+                    <label>
+                      <span>Audio</span>
+                      <select
+                        id="encounterSetupSceneAmb3"
+                        data-audio-select
+                        data-audio-prefix="sounds/ambience"
+                      >
+                        <option value="">— None —</option>
+                      </select>
+                    </label>
+                    <label>
+                      <span>Scene Volume %</span>
+                      <input id="encounterSetupSceneAmb3Volume" type="number" min="0" max="100" value="40" />
+                    </label>
+                    <label>
+                      <span>During Combat</span>
+                      <select id="encounterSetupSceneAmb3Behavior">
+                        <option value="duck">Lower Volume</option>
+                        <option value="continue">Continue</option>
+                        <option value="stop">Stop</option>
+                      </select>
+                    </label>
+                    <label>
+                      <span>Combat Volume %</span>
+                      <input id="encounterSetupSceneAmb3CombatVolume" type="number" min="0" max="100" value="15" />
+                    </label>
+                  </div>
+
+                  <div class="encounter-setup-layer">
+                    <strong>Combat Ambience 2</strong>
+                    <label>
+                      <span>Audio</span>
+                      <select
+                        id="encounterSetupCombatAmb2"
+                        data-audio-select
+                        data-audio-prefix="sounds/ambience"
+                      >
+                        <option value="">— None —</option>
+                      </select>
+                    </label>
+                    <label>
+                      <span>Volume %</span>
+                      <input id="encounterSetupCombatAmb2Volume" type="number" min="0" max="100" value="35" />
+                    </label>
+                  </div>
+                </div>
+              </details>
+
+              <details class="encounter-setup-advanced">
+                <summary>Prepared sound cues</summary>
+
+                <div class="encounter-setup-cues">
+                  <div class="encounter-setup-cue-row">
+                    <input id="encounterSetupCue1Name" type="text" value="Cue 1" placeholder="Alarm" />
+                    <select id="encounterSetupCue1Asset" data-audio-select data-audio-prefix="sounds/">
+                      <option value="">— None —</option>
+                    </select>
+                    <input id="encounterSetupCue1Volume" type="number" min="0" max="100" value="80" title="Volume percent" />
+                  </div>
+
+                  <div class="encounter-setup-cue-row">
+                    <input id="encounterSetupCue2Name" type="text" value="Cue 2" placeholder="Explosion" />
+                    <select id="encounterSetupCue2Asset" data-audio-select data-audio-prefix="sounds/">
+                      <option value="">— None —</option>
+                    </select>
+                    <input id="encounterSetupCue2Volume" type="number" min="0" max="100" value="80" title="Volume percent" />
+                  </div>
+
+                  <div class="encounter-setup-cue-row">
+                    <input id="encounterSetupCue3Name" type="text" value="Cue 3" placeholder="Door" />
+                    <select id="encounterSetupCue3Asset" data-audio-select data-audio-prefix="sounds/">
+                      <option value="">— None —</option>
+                    </select>
+                    <input id="encounterSetupCue3Volume" type="number" min="0" max="100" value="80" title="Volume percent" />
+                  </div>
+                </div>
+              </details>
+            </section>
               </div>
 
               <!-- Saved Encounter States -->
@@ -744,6 +1093,8 @@
             </div>
           </div>
 
+
+
             </div>
 
             <div id="dmAssetsPage" class="dm-page" data-dm-page-panel="assets">
@@ -751,7 +1102,7 @@
                 <div>
                   <div class="eyebrow">ASSETS</div>
                   <h2>Asset Library</h2>
-                  <p class="hint">Browse each asset type directly instead of using a single category dropdown.</p>
+                  <p class="hint">Manage visual and audio assets from one workspace. Image categories use previews; audio categories use compact playback rows.</p>
                 </div>
               </div>
 
@@ -766,79 +1117,67 @@
                 <button class="dm-segment-button" data-asset-filter="icons/" type="button">Icons</button>
               </div>
 
-        <div class="panel">
-          <div class="section-heading">
-            <div>
-              <div class="eyebrow">REUSABLE ART</div>
+              <div class="asset-library-toolbar panel">
+                <div class="asset-search-wrap">
+                  <input id="assetSearch" type="search" placeholder="Search assets…" aria-label="Search assets" />
+                  <select id="assetFilter" class="hidden" aria-hidden="true" tabindex="-1">
+                    <option value="">All Assets</option>
+                    <option value="backgrounds/">Backgrounds</option>
+                    <option value="portraits/">Portraits</option>
+                    <option value="tokens">Tokens</option>
+                    <option value="sounds/music">Music</option>
+                    <option value="sounds/ambience">Ambience</option>
+                    <option value="sounds/sfx">Sound Effects</option>
+                    <option value="icons/">Icons</option>
+                  </select>
+                </div>
 
-              <h2>Asset Library</h2>
-            </div>
+                <div class="asset-toolbar-actions">
+                  <span id="assetResultCount" class="character-count-pill">0 assets</span>
+                  <button id="refreshAssetsBtn" type="button">Refresh</button>
+                  <button id="toggleAssetImportBtn" class="primary" type="button">+ Import Asset</button>
+                </div>
+              </div>
 
-            <button id="refreshAssetsBtn" type="button">Refresh</button>
-          </div>
+              <div id="assetImportPanel" class="panel asset-import-panel hidden">
+                <div class="section-heading">
+                  <div>
+                    <div class="eyebrow">IMPORT</div>
+                    <h3>Add Asset</h3>
+                  </div>
+                  <button id="closeAssetImportBtn" type="button">Close</button>
+                </div>
 
-          <div class="tool-grid">
-            <label class="hidden" aria-hidden="true">
-              <span>Show Category</span>
+                <div class="asset-import-grid">
+                  <label>
+                    <span>Import To</span>
+                    <select id="assetUploadCategory">
+                      <option value="backgrounds/custom">Backgrounds / Custom</option>
+                      <option value="portraits/players">Portraits / Players</option>
+                      <option value="portraits/npcs">Portraits / NPCs</option>
+                      <option value="portraits/enemies">Portraits / Enemies</option>
+                      <option value="portraits/custom">Portraits / Custom</option>
+                      <option value="tokens">Tokens</option>
+                      <option value="icons/conditions">Icons / Conditions</option>
+                      <option value="sounds/music">Audio / Music</option>
+                      <option value="sounds/ambience">Audio / Ambience</option>
+                      <option value="sounds/sfx">Audio / Sound Effects</option>
+                      <option value="sounds/custom">Audio / Custom</option>
+                    </select>
+                  </label>
 
-              <select id="assetFilter" tabindex="-1">
-                <option value="">All Assets</option>
-                <option value="backgrounds/">Backgrounds</option>
-                <option value="portraits/">Portraits</option>
-                <option value="tokens">Tokens</option>
-                <option value="sounds/music">Music</option>
-                <option value="sounds/ambience">Ambience</option>
-                <option value="sounds/sfx">Sound Effects</option>
-                <option value="icons/">Icons</option>
-              </select>
-            </label>
+                  <label class="asset-file-field">
+                    <span>Choose Asset File</span>
+                    <input id="assetUploadFile" type="file" accept="image/png,image/jpeg,image/webp,audio/mpeg,audio/ogg,audio/wav,audio/flac" />
+                  </label>
 
-            <label>
-              <span>Import To</span>
+                  <button id="uploadAssetBtn" class="primary" type="button">Import Asset</button>
+                </div>
 
-              <select id="assetUploadCategory">
-                <option value="backgrounds/custom">Backgrounds / Custom</option>
+                <p class="hint">PNG/JPEG/WebP images up to 10 MB and MP3/OGG/WAV/FLAC audio up to 50 MB. You can also copy files directly into <code>assets/</code> and click Refresh.</p>
+              </div>
 
-                <option value="portraits/players">Portraits / Players</option>
-
-                <option value="portraits/npcs">Portraits / NPCs</option>
-
-                <option value="portraits/enemies">Portraits / Enemies</option>
-
-                <option value="portraits/custom">Portraits / Custom</option>
-
-                <option value="tokens">Tokens</option>
-                <option value="icons/conditions">Icons / Conditions</option>
-
-                <option value="sounds/music">Audio / Music</option>
-                <option value="sounds/ambience">Audio / Ambience</option>
-                <option value="sounds/sfx">Audio / Sound Effects</option>
-                <option value="sounds/custom">Audio / Custom</option>
-              </select>
-            </label>
-
-            <label>
-              <span>Choose Asset File</span>
-
-              <input
-                id="assetUploadFile"
-                type="file"
-                accept="image/png,image/jpeg,image/webp,audio/mpeg,audio/ogg,audio/wav,audio/flac"
-              />
-            </label>
-
-            <button id="uploadAssetBtn" class="primary" type="button">
-              Import Asset
-            </button>
-          </div>
-
-          <p class="hint">
-            You can also copy PNG/JPEG/WebP files directly into the folders
-            under <code>assets/</code>, then click Refresh.
-          </p>
-
-          <div id="assetGrid" class="asset-grid"></div>
-        </div>
+              <div id="assetGrid" class="asset-library-content"></div>
             </div>
 
             <div id="dmDataPage" class="dm-page" data-dm-page-panel="data">
@@ -1143,14 +1482,14 @@
             <div>
               <div class="eyebrow">ENCOUNTER AUDIO</div>
               <h2>Soundscape</h2>
-              <p class="hint">Prepare scene ambience, combat audio, and one-shot cues for the currently loaded encounter. The Soundscape is saved with the encounter and loads automatically when that Saved Encounter is loaded. Audio plays from the DM computer; the Player Display remains visual-only.</p>
+              <p class="hint">Live audio mixer for the currently loaded encounter. Use DM → Encounters and select a reusable encounter to prepare backgrounds, music, ambience, and cues for multiple encounters before play. Audio plays from the DM computer; the Player Display remains visual-only.</p>
             </div>
             <div class="button-row">
               <span id="soundscapeStatus" class="soundscape-status">AUDIO STOPPED</span>
               <button id="previewSceneAudioBtn" type="button">▶ Scene</button>
               <button id="previewCombatAudioBtn" type="button">⚔ Combat</button>
               <button id="stopSoundscapeBtn" class="danger-outline" type="button">■ Stop</button>
-              <button id="saveSoundscapeBtn" class="primary" type="button">Apply to Encounter</button>
+              <button id="saveSoundscapeBtn" class="primary" type="button">Apply to Active Encounter</button>
             </div>
           </div>
 
@@ -1414,30 +1753,31 @@
 
     <!-- Core -->
 
-    <script src="js/core/config.js"></script>
-    <script src="js/core/db.js"></script>
-    <script src="js/core/sync.js"></script>
+    <script src="js/core/config.js?v=alpha3-p2b6-media2"></script>
+    <script src="js/core/db.js?v=alpha3-p2b6-media2"></script>
+    <script src="js/core/sync.js?v=alpha3-p2b6-media2"></script>
 
     <!-- Existing Modules -->
 
-    <script src="js/modules/backup.js"></script>
-    <script src="js/modules/migration.js"></script>
-    <script src="js/modules/dm-workspace.js"></script>
-    <script src="js/modules/assets.js"></script>
-    <script src="js/modules/settings.js"></script>
-    <script src="js/modules/library.js"></script>
-    <script src="js/modules/combat.js"></script>
-    <script src="js/modules/audio.js"></script>
-    <script src="js/modules/encounters.js"></script>
-    <script src="js/modules/soundscape.js"></script>
+    <script src="js/modules/backup.js?v=alpha3-p2b6-media2"></script>
+    <script src="js/modules/migration.js?v=alpha3-p2b6-media2"></script>
+    <script src="js/modules/dm-workspace.js?v=alpha3-p2b6-media2"></script>
+    <script src="js/modules/assets.js?v=alpha3-p2b6-media2"></script>
+    <script src="js/modules/settings.js?v=alpha3-p2b6-media2"></script>
+    <script src="js/modules/library.js?v=alpha3-p2b6-media2"></script>
+    <script src="js/modules/combat.js?v=alpha3-p2b6-media2"></script>
+    <script src="js/modules/audio.js?v=alpha3-p2b6-media2"></script>
+    <script src="js/modules/encounters.js?v=alpha3-p2b6-media2"></script>
+    <script src="js/modules/encounter-setup.js?v=alpha3-p2b6-media2"></script>
+    <script src="js/modules/soundscape.js?v=alpha3-p2b6-media2"></script>
 
     <!-- Visual Timer Modules -->
 
-    <script src="js/modules/timer-renderer.js"></script>
-    <script src="js/modules/timer.js"></script>
+    <script src="js/modules/timer-renderer.js?v=alpha3-p2b6-media2"></script>
+    <script src="js/modules/timer.js?v=alpha3-p2b6-media2"></script>
 
     <!-- DM Console Controller -->
 
-    <script src="js/main.js"></script>
+    <script src="js/main.js?v=alpha3-p2b6-media2"></script>
   </body>
 </html>

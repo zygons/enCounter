@@ -408,3 +408,75 @@ test("saved running timer checkpoints restore paused at the saved remaining time
   assert.equal(encounter.timerCheckpoint.remainingMs, 272000);
   assert.equal(encounter.timerCheckpoint.endAt, null);
 });
+
+
+test("normalizeEncounter preserves intentionally blank scene/combat image fields independently", () => {
+  const encounter = ENC.normalizeEncounter({
+    background: "/assets/backgrounds/custom/legacy.png",
+    display: {
+      sceneImage: "",
+      combatImage: "/assets/backgrounds/custom/battle.png",
+    },
+  });
+
+  assert.equal(encounter.display.sceneImage, "");
+  assert.equal(
+    encounter.display.combatImage,
+    "/assets/backgrounds/custom/battle.png",
+  );
+});
+
+test("prepared presentation becomes the canonical scene/combat media source", () => {
+  const normalized = ENC.normalizeEncounter({
+    id: "prepared-media",
+    kind: "saved",
+    saveMode: "template",
+    name: "Prepared Media",
+    display: {
+      sceneImage: "/assets/backgrounds/custom/old-scene.png",
+      combatImage: "/assets/backgrounds/custom/old-combat.png",
+    },
+    soundscape: ENC.createDefaultSoundscape(),
+    presentation: {
+      schemaVersion: 1,
+      sceneBackground: "/assets/backgrounds/custom/new-scene.png",
+      combatBackground: "/assets/backgrounds/custom/new-combat.png",
+      soundscape: {
+        scene: {
+          music: { asset: "/assets/sounds/music/scene.mp3", volume: 0.35 },
+          ambience: [],
+        },
+        combat: {
+          music: { asset: "/assets/sounds/music/combat.mp3", volume: 0.65 },
+          ambience: [],
+        },
+      },
+    },
+  });
+
+  assert.equal(normalized.display.sceneImage, "/assets/backgrounds/custom/new-scene.png");
+  assert.equal(normalized.display.combatImage, "/assets/backgrounds/custom/new-combat.png");
+  assert.equal(normalized.soundscape.scene.music.asset, "/assets/sounds/music/scene.mp3");
+  assert.equal(normalized.soundscape.combat.music.asset, "/assets/sounds/music/combat.mp3");
+  assert.equal(normalized.presentation.sceneBackground, normalized.display.sceneImage);
+});
+
+test("legacy encounter media is promoted into prepared presentation", () => {
+  const normalized = ENC.normalizeEncounter({
+    id: "legacy-media",
+    kind: "saved",
+    saveMode: "template",
+    display: {
+      sceneImage: "/assets/backgrounds/custom/scene.png",
+      combatImage: "/assets/backgrounds/custom/combat.png",
+    },
+    soundscape: {
+      scene: { music: { asset: "/assets/sounds/music/scene.mp3" }, ambience: [] },
+      combat: { music: { asset: "/assets/sounds/music/combat.mp3" }, ambience: [] },
+    },
+  });
+
+  assert.equal(normalized.presentation.sceneBackground, "/assets/backgrounds/custom/scene.png");
+  assert.equal(normalized.presentation.combatBackground, "/assets/backgrounds/custom/combat.png");
+  assert.equal(normalized.presentation.soundscape.scene.music.asset, "/assets/sounds/music/scene.mp3");
+});

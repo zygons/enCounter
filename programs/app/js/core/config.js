@@ -365,6 +365,60 @@ ENC.normalizeSoundscape = function (soundscape = {}) {
   };
 };
 
+
+/*
+ * Canonical prepared-presentation record for reusable encounters.
+ * The legacy display/background/soundscape fields remain supported and are
+ * mirrored for compatibility, but this object gives pre-game setup one
+ * authoritative source that can be re-applied at load/phase boundaries.
+ */
+ENC.normalizeEncounterPresentation = function (presentation = {}, fallback = {}) {
+  const source = presentation && typeof presentation === "object" ? presentation : {};
+  const fallbackDisplay = fallback?.display && typeof fallback.display === "object"
+    ? fallback.display
+    : {};
+
+  const hasScene = Object.prototype.hasOwnProperty.call(source, "sceneBackground");
+  const hasCombat = Object.prototype.hasOwnProperty.call(source, "combatBackground");
+
+  const sceneBackground = ENC.sanitizeAssetUrl(
+    hasScene
+      ? source.sceneBackground
+      : (fallbackDisplay.sceneImage ?? fallback?.background ?? ""),
+  );
+  const combatBackground = ENC.sanitizeAssetUrl(
+    hasCombat
+      ? source.combatBackground
+      : (fallbackDisplay.combatImage ?? fallback?.background ?? ""),
+  );
+
+  return {
+    schemaVersion: 1,
+    sceneBackground,
+    combatBackground,
+    soundscape: ENC.normalizeSoundscape(source.soundscape || fallback?.soundscape),
+  };
+};
+
+ENC.applyEncounterPresentation = function (encounter) {
+  if (!encounter || typeof encounter !== "object") return encounter;
+
+  const presentation = ENC.normalizeEncounterPresentation(
+    encounter.presentation,
+    encounter,
+  );
+
+  encounter.presentation = ENC.deepClone(presentation);
+  encounter.display = {
+    ...(encounter.display || {}),
+    sceneImage: presentation.sceneBackground,
+    combatImage: presentation.combatBackground,
+  };
+  encounter.background = presentation.combatBackground;
+  encounter.soundscape = ENC.deepClone(presentation.soundscape);
+  return encounter;
+};
+
 ENC.createDefaultTimerConfig = function () {
   return {
     name: "Countdown",
@@ -501,6 +555,12 @@ ENC.createDefaultEncounter = function () {
       combatImage: "",
     },
     soundscape: ENC.createDefaultSoundscape(),
+    presentation: {
+      schemaVersion: 1,
+      sceneBackground: "",
+      combatBackground: "",
+      soundscape: ENC.createDefaultSoundscape(),
+    },
     timer: ENC.createDefaultTimerConfig(),
     combatants: [],
     updatedAt: new Date().toISOString(),
@@ -665,13 +725,23 @@ ENC.normalizeCombatant = function (
     source.createdOrder,
     Date.now() + Math.random(),
   );
+  // Alpha 3 HP model: combatants need both current HP and maximum HP so
+  // the live Encounter meter can represent health accurately. Older records
+  // may only contain `hp`; when that happens, treat the legacy value as the
+  // best-known maximum rather than displaying a misleading percentage.
+  const legacyHp = ENC.numericOrBlank(source.hp);
+  const maxHp =
+    normalized.maxHp === "" && legacyHp !== "" && ENC.finiteNumber(legacyHp, 0) > 0
+      ? legacyHp
+      : normalized.maxHp;
   const hp =
     source.hp === "" || source.hp === null || source.hp === undefined
-      ? normalized.maxHp
-      : ENC.numericOrBlank(source.hp);
+      ? maxHp
+      : legacyHp;
 
   return {
     ...normalized,
+    maxHp,
     id: String(source.id || ENC.makeId("cmb")),
     sourceLibraryId: source.sourceLibraryId
       ? String(source.sourceLibraryId)
@@ -751,12 +821,31 @@ ENC.normalizeEncounter = function (encounter = {}) {
   const legacyBackground = ENC.sanitizeAssetUrl(source.background);
   const displaySource =
     source.display && typeof source.display === "object" ? source.display : {};
-  const combatImage = ENC.sanitizeAssetUrl(
-    displaySource.combatImage || legacyBackground,
+  const hasCombatImage = Object.prototype.hasOwnProperty.call(
+    displaySource,
+    "combatImage",
   );
-  const sceneImage = ENC.sanitizeAssetUrl(
-    displaySource.sceneImage || legacyBackground,
+  const hasSceneImage = Object.prototype.hasOwnProperty.call(
+    displaySource,
+    "sceneImage",
   );
+  const legacyCombatImage = ENC.sanitizeAssetUrl(
+    hasCombatImage ? displaySource.combatImage : legacyBackground,
+  );
+  const legacySceneImage = ENC.sanitizeAssetUrl(
+    hasSceneImage ? displaySource.sceneImage : legacyBackground,
+  );
+  const presentation = ENC.normalizeEncounterPresentation(source.presentation, {
+    ...source,
+    background: legacyCombatImage,
+    display: {
+      sceneImage: legacySceneImage,
+      combatImage: legacyCombatImage,
+    },
+    soundscape: source.soundscape,
+  });
+  const combatImage = presentation.combatBackground;
+  const sceneImage = presentation.sceneBackground;
   const phase = ENC.ENCOUNTER_PHASES.has(source.phase)
     ? source.phase
     : "prepared";
@@ -799,7 +888,8 @@ ENC.normalizeEncounter = function (encounter = {}) {
       sceneImage,
       combatImage,
     },
-    soundscape: ENC.normalizeSoundscape(source.soundscape),
+    soundscape: ENC.deepClone(presentation.soundscape),
+    presentation: ENC.deepClone(presentation),
     timer,
     timerCheckpoint,
     combatants,

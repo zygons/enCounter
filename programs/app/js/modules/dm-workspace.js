@@ -109,6 +109,12 @@ ENC.dmWorkspace = {
     document
       .getElementById("openDmCompendiumBtn")
       ?.addEventListener("click", () => this.open("compendium"));
+
+    document
+      .getElementById("manageEncounterBackgroundsBtn")
+      ?.addEventListener("click", () =>
+        this.open("assets", { assetFilter: "backgrounds/" }),
+      );
   },
 
   initialize() {

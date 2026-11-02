@@ -95,6 +95,19 @@ ENC.app = {
     });
   },
 
+  getSafeStartupPlayerDisplayMode(encounter) {
+    const savedMode = ENC.PLAYER_DISPLAY_MODES.has(encounter?.playerDisplayMode)
+      ? encounter.playerDisplayMode
+      : "standby";
+
+    // Privacy-first startup behavior: outside active combat, always return
+    // the Player Display to the Stand By screen. This prevents a persisted
+    // Scene mode with no scene image from reopening as a black screen.
+    if (encounter?.phase !== "combat") return "standby";
+
+    return savedMode === "combat" ? "combat" : "standby";
+  },
+
   setPlayerDisplayMode(mode) {
     const next = ENC.PLAYER_DISPLAY_MODES.has(mode) ? mode : "standby";
     this.playerDisplayMode = next;
@@ -136,7 +149,8 @@ ENC.app = {
     }
 
     if (this.playerDisplayMode === "standby") {
-      button.textContent = "Show Player Display";
+      const phase = ENC.combat?.encounter?.phase;
+      button.textContent = phase === "combat" ? "Show Combat" : "Show Scene";
       button.classList.add("player-display-paused");
       return;
     }
@@ -1106,6 +1120,28 @@ ENC.app = {
       );
     });
 
+    document.getElementById("assetSearch")?.addEventListener("input", () => {
+      ENC.assets.renderGrid(
+        document.getElementById("assetGrid"),
+        document.getElementById("assetFilter").value,
+      );
+    });
+
+    const toggleAssetImport = (show) => {
+      const panel = document.getElementById("assetImportPanel");
+      if (!panel) return;
+      panel.classList.toggle("hidden", !show);
+      if (show) document.getElementById("assetUploadCategory")?.focus();
+    };
+
+    document
+      .getElementById("toggleAssetImportBtn")
+      ?.addEventListener("click", () => toggleAssetImport(true));
+
+    document
+      .getElementById("closeAssetImportBtn")
+      ?.addEventListener("click", () => toggleAssetImport(false));
+
     document
       .getElementById("uploadAssetBtn")
       .addEventListener("click", async () => {
@@ -1121,6 +1157,7 @@ ENC.app = {
           await ENC.assets.upload(file, category);
 
           this.refreshAssetUI();
+          document.getElementById("assetUploadFile").value = "";
 
           this.toast("Asset imported.");
         } catch (error) {
@@ -1187,11 +1224,13 @@ ENC.app = {
     ENC.libraryUI.render();
 
     await ENC.combat.load();
+    ENC.applyEncounterPresentation(ENC.combat.encounter);
 
-    this.playerDisplayMode = ENC.PLAYER_DISPLAY_MODES.has(ENC.combat.encounter?.playerDisplayMode)
-      ? ENC.combat.encounter.playerDisplayMode
-      : "standby";
+    this.playerDisplayMode = this.getSafeStartupPlayerDisplayMode(ENC.combat.encounter);
     this.playerDisplayPaused = this.playerDisplayMode === "standby";
+    if (ENC.combat.encounter) {
+      ENC.combat.encounter.playerDisplayMode = this.playerDisplayMode;
+    }
     ENC.audio.setSoundscape(ENC.combat.encounter?.soundscape);
     this.applyPreparedTimerConfig(ENC.combat.encounter?.timer);
 
@@ -1245,10 +1284,11 @@ ENC.app = {
 
     await ENC.combat.load();
 
-    this.playerDisplayMode = ENC.PLAYER_DISPLAY_MODES.has(ENC.combat.encounter?.playerDisplayMode)
-      ? ENC.combat.encounter.playerDisplayMode
-      : "standby";
+    this.playerDisplayMode = this.getSafeStartupPlayerDisplayMode(ENC.combat.encounter);
     this.playerDisplayPaused = this.playerDisplayMode === "standby";
+    if (ENC.combat.encounter) {
+      ENC.combat.encounter.playerDisplayMode = this.playerDisplayMode;
+    }
     ENC.audio.setSoundscape(ENC.combat.encounter?.soundscape);
 
     this.bindNavigation();
@@ -1271,6 +1311,7 @@ ENC.app = {
     this.bindCustomSystem();
 
     await ENC.encounterUI.initialize();
+    ENC.encounterSetupUI?.initialize?.();
     ENC.soundscapeUI.initialize();
 
     ENC.libraryUI.resetForm();

@@ -18,6 +18,25 @@ ENC.encounterUI = {
     return (soundscape.cues || []).filter((cue) => cue?.asset);
   },
 
+  hasSceneAudio(soundscape) {
+    const configured = ENC.normalizeSoundscape(soundscape);
+    return Boolean(
+      configured.scene.music?.asset ||
+        configured.scene.ambience?.some?.((track) => track?.asset),
+    );
+  },
+
+  hasCombatAudio(soundscape) {
+    const configured = ENC.normalizeSoundscape(soundscape);
+    return Boolean(
+      configured.combat.music?.asset ||
+        configured.combat.ambience?.some?.((track) => track?.asset) ||
+        configured.scene.ambience?.some?.(
+          (track) => track?.asset && track.combatBehavior !== "stop",
+        ),
+    );
+  },
+
   renderCues() {
     const container = document.getElementById("encounterCueButtons");
     if (!container) return;
@@ -232,6 +251,7 @@ ENC.encounterUI = {
 
     const select = document.getElementById("savedTemplateSelect");
     if (select) select.value = saved.id;
+    ENC.encounterSetupUI?.syncFromSelection?.();
 
     this.renderPhase();
 
@@ -346,6 +366,7 @@ ENC.encounterUI = {
       return ENC.app.toast("Saved encounter could not be loaded.");
     }
 
+    ENC.applyEncounterPresentation(loaded);
     ENC.combat.encounter = loaded;
     ENC.audio?.setSoundscape(loaded.soundscape);
 
@@ -388,11 +409,21 @@ ENC.encounterUI = {
 
     this.renderPhase();
 
-    ENC.app.toast(
-      actualMode === "state"
-        ? `Resumed ${loaded.name}.`
-        : `Loaded template ${loaded.name}.`,
-    );
+    if (actualMode === "state") {
+      ENC.app.toast(`Resumed ${loaded.name}.`);
+    } else {
+      const sceneReady = Boolean(loaded.display?.sceneImage) || this.hasSceneAudio(loaded.soundscape);
+      const combatReady = Boolean(loaded.display?.combatImage) || this.hasCombatAudio(loaded.soundscape);
+      const presentation = [
+        sceneReady ? "Scene setup ready" : null,
+        combatReady ? "Combat setup ready" : null,
+      ].filter(Boolean).join(" · ");
+      ENC.app.toast(
+        presentation
+          ? `Loaded template ${loaded.name}. ${presentation}.`
+          : `Loaded template ${loaded.name}.`,
+      );
+    }
   },
 
   async loadTemplate() {
@@ -457,6 +488,9 @@ ENC.encounterUI = {
     }
 
     await this.refreshSaved();
+    if (actualMode === "template") {
+      ENC.encounterSetupUI?.syncFromSelection?.();
+    }
     this.renderPhase();
 
     ENC.app.toast(
@@ -488,8 +522,12 @@ ENC.encounterUI = {
     const encounter = ENC.combat?.encounter;
     if (!encounter) return;
 
+    // Re-apply the prepared template presentation at the moment it is used.
+    // This prevents a stale live-control field from dropping saved media.
+    ENC.applyEncounterPresentation(encounter);
     encounter.phase = phase;
     encounter.playerDisplayMode = displayMode;
+    ENC.audio?.setSoundscape(encounter.soundscape);
 
     if (phase === "combat") {
       encounter.round = Math.max(1, Number(encounter.round || 1));
@@ -500,22 +538,40 @@ ENC.encounterUI = {
           encounter.combatants.find(ENC.isTurnEligibleCombatant)?.id || null;
       }
 
-      if (encounter.soundscape?.autoSwitchToCombat) {
-        ENC.audio?.setSoundscape(encounter.soundscape);
-
+      /*
+       * Starting Combat should feel like one action. When automatic combat
+       * audio is enabled, start/switch to the configured combat soundscape.
+       * If no combat audio is configured, combat still starts normally.
+       */
+      if (
+        encounter.soundscape?.autoSwitchToCombat !== false &&
+        this.hasCombatAudio(encounter.soundscape)
+      ) {
         try {
           await ENC.audio?.playCombat();
         } catch (error) {
           ENC.app.toast(error.message);
         }
       }
+    } else if (phase === "scene" && displayMode === "scene") {
+      /*
+       * Show Scene now means show the prepared scene presentation: background
+       * plus configured scene audio. This removes the need for a separate
+       * Scene Audio click during normal prepared play.
+       */
+      if (this.hasSceneAudio(encounter.soundscape) && ENC.audio?.mode !== "scene") {
+        try {
+          await ENC.audio?.playScene();
+        } catch (error) {
+          ENC.app.toast(error.message);
+        }
+      }
     } else if (
       phase === "scene" &&
+      displayMode === "standby" &&
       encounter.soundscape?.returnToSceneAfterCombat &&
       ENC.audio?.mode === "combat"
     ) {
-      ENC.audio?.setSoundscape(encounter.soundscape);
-
       try {
         await ENC.audio?.returnToScene();
       } catch (error) {
@@ -532,6 +588,7 @@ ENC.encounterUI = {
       ENC.combat.followCurrentTurn();
     }
 
+    ENC.soundscapeUI?.renderStatus?.();
     this.renderPhase();
   },
 
@@ -607,13 +664,7 @@ ENC.encounterUI = {
 
     document
       .getElementById("endCombatBtn")
-      ?.addEventListener("click", () => this.setPhase("scene", "scene"));
-
-    document
-      .getElementById("hideEncounterDisplayBtn")
-      ?.addEventListener("click", () =>
-        ENC.app.setPlayerDisplayMode?.("standby"),
-      );
+      ?.addEventListener("click", () => this.setPhase("scene", "standby"));
 
     document
       .getElementById("startSceneAudioBtn")

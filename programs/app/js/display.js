@@ -352,6 +352,12 @@ ENC.display = {
       background.style.backgroundImage = "";
     }
 
+    const scenePresentation = document.getElementById("scenePresentation");
+    if (scenePresentation) {
+      scenePresentation.classList.remove("show", "has-background");
+      scenePresentation.setAttribute("aria-hidden", "true");
+    }
+
     document.getElementById("displayEncounterName").textContent =
       "Awaiting Encounter";
 
@@ -384,8 +390,28 @@ ENC.display = {
       background.style.backgroundImage = sceneImage
         ? `url("${sceneImage}")`
         : "";
+    const encounterName = this.encounter.name || "Scene";
     const name = document.getElementById("displayEncounterName");
-    if (name) name.textContent = this.encounter.name || "Scene";
+    if (name) name.textContent = encounterName;
+
+    const scenePresentation = document.getElementById("scenePresentation");
+    const sceneTitle = document.getElementById("scenePresentationTitle");
+    const sceneSystem = document.getElementById("scenePresentationSystem");
+
+    if (sceneTitle) sceneTitle.textContent = encounterName;
+    if (sceneSystem) {
+      sceneSystem.textContent = ENC.getSystemLabel(
+        this.encounter.systemId,
+        this.encounter.customProfile,
+      );
+    }
+
+    if (scenePresentation) {
+      scenePresentation.classList.add("show");
+      scenePresentation.classList.toggle("has-background", Boolean(sceneImage));
+      scenePresentation.setAttribute("aria-hidden", "false");
+    }
+
     this.updateIdleLogo(Boolean(sceneImage));
   },
 
@@ -408,6 +434,12 @@ ENC.display = {
     }
 
     document.body.dataset.displayMode = "combat";
+
+    const scenePresentation = document.getElementById("scenePresentation");
+    if (scenePresentation) {
+      scenePresentation.classList.remove("show", "has-background");
+      scenePresentation.setAttribute("aria-hidden", "true");
+    }
 
     /* ----------------------------------------
        No active encounter

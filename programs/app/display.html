@@ -16,10 +16,10 @@
     <link rel="icon" type="image/png" href="/assets/branding/favicon.png" />
 
     <!-- Main application styles -->
-    <link rel="stylesheet" href="css/base.css" />
+    <link rel="stylesheet" href="css/base.css?v=alpha3-p2b6-media2" />
 
     <!-- Player Display styles -->
-    <link rel="stylesheet" href="css/display.css" />
+    <link rel="stylesheet" href="css/display.css?v=alpha3-p2b6-media2" />
 
     <!-- Visual Timer styles -->
     <link rel="stylesheet" href="css/timer.css" />
@@ -34,6 +34,28 @@
 
     <!-- Dark overlay placed over encounter backgrounds -->
     <div class="display-shade"></div>
+
+    <!-- =========================================
+         SCENE / ROLEPLAY PRESENTATION
+         ========================================= -->
+
+    <section
+      id="scenePresentation"
+      class="scene-presentation"
+      aria-live="polite"
+      aria-hidden="true"
+    >
+      <div class="scene-presentation-card">
+        <img
+          src="/assets/branding/enCounter-logo.png"
+          alt=""
+          class="scene-presentation-logo"
+        />
+        <div class="eyebrow">SCENE</div>
+        <h1 id="scenePresentationTitle">Encounter</h1>
+        <p id="scenePresentationSystem">Ready</p>
+      </div>
+    </section>
 
     <!-- =========================================
          PLAYER DISPLAY PRIVACY SCREEN
@@ -203,7 +225,7 @@
 
     <!-- Shared configuration / system profiles -->
 
-    <script src="js/core/config.js"></script>
+    <script src="js/core/config.js?v=alpha3-p2b6-media2"></script>
 
     <!-- IndexedDB access -->
 
@@ -211,7 +233,7 @@
 
     <!-- DM / Player Display synchronization -->
 
-    <script src="js/core/sync.js"></script>
+    <script src="js/core/sync.js?v=alpha3-p2b6-media2"></script>
 
     <!-- Visual Timer Renderer -->
 
@@ -223,6 +245,6 @@
 
     <!-- Player Display Controller -->
 
-    <script src="js/display.js"></script>
+    <script src="js/display.js?v=alpha3-p2b6-media2"></script>
   </body>
 </html>

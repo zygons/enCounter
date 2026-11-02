@@ -2544,6 +2544,60 @@ label {
   color: #d7eef7;
 }
 
+.encounter-library-tabs {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+  padding: 2px 0 3px;
+}
+
+.encounter-library-tab {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  min-height: 36px;
+  padding: 7px 12px;
+  border: 1px solid #294654;
+  border-radius: 7px;
+  background: #0a1a24;
+  color: #9db9c6;
+  font-weight: 750;
+}
+
+.encounter-library-tab:hover {
+  border-color: #3d6d82;
+  color: #d8edf5;
+}
+
+.encounter-library-tab.active {
+  border-color: #21a9d6;
+  background: linear-gradient(180deg, #123449, #0b2635);
+  color: #e8f9ff;
+  box-shadow: inset 0 -2px 0 #22b8e8;
+}
+
+.library-tab-count {
+  display: inline-flex;
+  min-width: 21px;
+  height: 20px;
+  padding: 0 6px;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid #345568;
+  border-radius: 999px;
+  background: #07141c;
+  color: #b9dce9;
+  font-size: 10px;
+  line-height: 1;
+}
+
+.encounter-library-tab.active .library-tab-count {
+  border-color: #2d8bae;
+  background: #0a2230;
+  color: #dff8ff;
+}
+
 .encounter-add-row {
   display: grid;
   grid-template-columns: minmax(240px, 1fr) 100px auto;
@@ -3679,5 +3733,599 @@ label {
     content: "HP: ";
     color: #667f8d;
     font-weight: 500;
+  }
+}
+
+/* ========================================
+   ALPHA 3 PHASE 2B.5 — ASSET LIBRARY
+   Media-specific layouts + HP model polish
+======================================== */
+
+.quick-create-row {
+  grid-template-columns: minmax(170px, 1fr) 125px 88px 88px auto;
+}
+
+.asset-library-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  margin-bottom: 12px;
+  padding: 12px 14px;
+}
+
+.asset-search-wrap {
+  flex: 1;
+  min-width: 220px;
+  max-width: 560px;
+}
+
+.asset-search-wrap input {
+  width: 100%;
+}
+
+.asset-toolbar-actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.asset-import-panel {
+  margin-bottom: 14px;
+  border-color: rgba(34, 200, 234, 0.28);
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.18);
+}
+
+.asset-import-grid {
+  display: grid;
+  grid-template-columns: minmax(220px, 0.8fr) minmax(300px, 1.35fr) auto;
+  gap: 12px;
+  align-items: end;
+}
+
+.asset-file-field input[type="file"] {
+  min-height: 39px;
+}
+
+.asset-library-content {
+  display: grid;
+  gap: 18px;
+}
+
+.asset-media-section {
+  border: 1px solid rgba(76, 123, 145, 0.28);
+  border-radius: 9px;
+  background: rgba(6, 17, 25, 0.62);
+  overflow: hidden;
+}
+
+.asset-media-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 10px 13px;
+  border-bottom: 1px solid rgba(76, 123, 145, 0.23);
+  background: rgba(11, 30, 41, 0.9);
+}
+
+.asset-media-heading h3 {
+  margin: 0;
+  font-size: clamp(14px, 0.82vw, 17px);
+  color: #d9edf5;
+}
+
+.asset-section-count {
+  min-width: 27px;
+  padding: 3px 8px;
+  border: 1px solid rgba(67, 178, 213, 0.35);
+  border-radius: 999px;
+  color: #85d8ed;
+  background: rgba(20, 104, 130, 0.14);
+  font-size: 11px;
+  font-weight: 800;
+  text-align: center;
+}
+
+.asset-visual-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  gap: 12px;
+  padding: 12px;
+}
+
+.asset-visual-card {
+  min-width: 0;
+  border: 1px solid rgba(67, 101, 119, 0.42);
+  border-radius: 8px;
+  background: linear-gradient(180deg, rgba(13, 31, 42, 0.96), rgba(7, 19, 27, 0.96));
+  overflow: hidden;
+  transition: transform 0.15s ease, border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.asset-visual-card:hover {
+  transform: translateY(-1px);
+  border-color: rgba(45, 192, 228, 0.55);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.22);
+}
+
+.asset-visual-preview {
+  aspect-ratio: 16 / 10;
+  background: #07131b;
+  overflow: hidden;
+}
+
+.asset-visual-preview img {
+  width: 100%;
+  height: 100%;
+  display: block;
+  object-fit: cover;
+}
+
+.asset-visual-meta {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 9px 10px;
+}
+
+.asset-visual-meta strong {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: #e4f2f7;
+  font-size: 12px;
+}
+
+.asset-type-pill {
+  flex: 0 0 auto;
+  padding: 2px 6px;
+  border: 1px solid rgba(70, 123, 147, 0.38);
+  border-radius: 999px;
+  color: #86a9b9;
+  font-size: 9px;
+  font-weight: 800;
+  letter-spacing: 0.2px;
+  text-transform: uppercase;
+}
+
+.asset-audio-list,
+.asset-file-list {
+  display: grid;
+}
+
+.asset-audio-row {
+  display: grid;
+  grid-template-columns: 36px minmax(180px, 0.8fr) minmax(290px, 1.4fr);
+  gap: 12px;
+  align-items: center;
+  min-height: 58px;
+  padding: 8px 12px;
+  border-bottom: 1px solid rgba(60, 95, 113, 0.28);
+}
+
+.asset-audio-row:last-child,
+.asset-file-row:last-child {
+  border-bottom: 0;
+}
+
+.asset-audio-row:hover,
+.asset-file-row:hover {
+  background: rgba(16, 42, 55, 0.45);
+}
+
+.asset-audio-icon {
+  width: 32px;
+  height: 32px;
+  display: grid;
+  place-items: center;
+  border: 1px solid rgba(42, 167, 202, 0.35);
+  border-radius: 7px;
+  color: #5ed8f3;
+  background: rgba(19, 95, 120, 0.16);
+  font-size: 18px;
+}
+
+.asset-audio-info {
+  min-width: 0;
+  display: grid;
+  gap: 2px;
+}
+
+.asset-audio-info strong {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: #e5f2f7;
+  font-size: 12px;
+}
+
+.asset-audio-info span,
+.asset-file-row span {
+  color: #7897a7;
+  font-size: 10px;
+}
+
+.asset-audio-row audio {
+  width: 100%;
+  min-width: 0;
+  height: 34px;
+}
+
+.asset-file-row {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 10px 12px;
+  border-bottom: 1px solid rgba(60, 95, 113, 0.28);
+}
+
+.asset-empty-state {
+  margin-top: 0;
+}
+
+@media (min-width: 1800px) {
+  .asset-visual-grid {
+    grid-template-columns: repeat(auto-fill, minmax(210px, 1fr));
+  }
+}
+
+@media (max-width: 1100px) {
+  .asset-library-toolbar {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .asset-search-wrap {
+    max-width: none;
+  }
+
+  .asset-toolbar-actions {
+    justify-content: flex-start;
+  }
+
+  .asset-import-grid,
+  .quick-create-row {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .asset-audio-row {
+    grid-template-columns: 34px minmax(150px, 0.65fr) minmax(220px, 1fr);
+  }
+}
+
+@media (max-width: 700px) {
+  .asset-import-grid,
+  .quick-create-row,
+  .asset-audio-row {
+    grid-template-columns: 1fr;
+  }
+
+  .asset-audio-icon {
+    display: none;
+  }
+
+  .asset-visual-grid {
+    grid-template-columns: repeat(auto-fill, minmax(145px, 1fr));
+  }
+}
+
+
+/* ========================================
+   ALPHA 3 ENCOUNTER PREPARATION
+======================================== */
+
+.encounter-setup-editor {
+  margin-top: 18px;
+  scroll-margin-top: 92px;
+}
+
+.encounter-setup-heading {
+  gap: 18px;
+  align-items: flex-start;
+}
+
+.encounter-setup-status-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px;
+  margin: 14px 0 18px;
+  padding: 10px 12px;
+  border: 1px solid rgba(84, 156, 184, 0.2);
+  border-radius: 8px;
+  background: rgba(5, 17, 24, 0.54);
+}
+
+.encounter-setup-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+}
+
+.encounter-setup-card {
+  display: grid;
+  gap: 12px;
+  min-width: 0;
+  padding: 16px;
+  border: 1px solid rgba(84, 156, 184, 0.24);
+  border-radius: 10px;
+  background:
+    linear-gradient(180deg, rgba(11, 31, 42, 0.78), rgba(5, 16, 23, 0.88));
+}
+
+.encounter-setup-card h3 {
+  margin: -2px 0 0;
+}
+
+.encounter-setup-background-preview {
+  position: relative;
+  min-height: 180px;
+  display: grid;
+  place-items: center;
+  overflow: hidden;
+  border: 1px solid rgba(91, 169, 198, 0.24);
+  border-radius: 8px;
+  background:
+    radial-gradient(circle at 50% 25%, rgba(46, 146, 183, 0.16), transparent 45%),
+    linear-gradient(145deg, rgba(7, 23, 32, 0.92), rgba(2, 9, 14, 0.98));
+  background-position: center;
+  background-size: cover;
+}
+
+.encounter-setup-background-preview::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    to bottom,
+    rgba(0, 0, 0, 0.02),
+    rgba(0, 0, 0, 0.12) 55%,
+    rgba(0, 0, 0, 0.42)
+  );
+  pointer-events: none;
+}
+
+.encounter-setup-background-preview span {
+  position: relative;
+  z-index: 1;
+  max-width: 75%;
+  color: #89a7b5;
+  font-size: 0.88rem;
+  line-height: 1.45;
+  text-align: center;
+}
+
+.encounter-setup-background-preview.has-image span {
+  display: none;
+}
+
+.encounter-setup-audio-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 110px;
+  gap: 10px;
+  align-items: end;
+}
+
+.encounter-setup-options {
+  display: grid;
+  grid-template-columns: 160px 150px repeat(2, minmax(220px, 1fr));
+  gap: 12px;
+  align-items: end;
+  margin-top: 16px;
+  padding: 14px;
+  border: 1px solid rgba(84, 156, 184, 0.2);
+  border-radius: 8px;
+  background: rgba(5, 17, 24, 0.48);
+}
+
+.encounter-setup-options .check-row {
+  min-height: 40px;
+}
+
+.encounter-setup-advanced {
+  margin-top: 14px;
+  border: 1px solid rgba(84, 156, 184, 0.2);
+  border-radius: 8px;
+  background: rgba(4, 14, 20, 0.6);
+}
+
+.encounter-setup-advanced > summary {
+  cursor: pointer;
+  padding: 13px 15px;
+  color: #bed5df;
+  font-weight: 700;
+}
+
+.encounter-setup-advanced[open] > summary {
+  border-bottom: 1px solid rgba(84, 156, 184, 0.16);
+}
+
+.encounter-setup-advanced-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+  padding: 14px;
+}
+
+.encounter-setup-layer {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 9px;
+  padding: 12px;
+  border: 1px solid rgba(84, 156, 184, 0.16);
+  border-radius: 7px;
+  background: rgba(8, 24, 33, 0.56);
+}
+
+.encounter-setup-layer > strong {
+  grid-column: 1 / -1;
+}
+
+.encounter-setup-cues {
+  display: grid;
+  gap: 9px;
+  padding: 14px;
+}
+
+.encounter-setup-cue-row {
+  display: grid;
+  grid-template-columns: minmax(140px, 0.7fr) minmax(220px, 1.6fr) 100px;
+  gap: 9px;
+}
+
+.rail-display-hint {
+  margin: 9px 0 0;
+  line-height: 1.35;
+}
+
+@media (max-width: 1279px) {
+  .encounter-setup-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .encounter-setup-options {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 760px) {
+  .encounter-setup-options,
+  .encounter-setup-advanced-grid,
+  .encounter-setup-layer,
+  .encounter-setup-audio-row,
+  .encounter-setup-cue-row {
+    grid-template-columns: 1fr;
+  }
+
+  .encounter-setup-heading .button-row {
+    width: 100%;
+  }
+}
+
+/* ========================================
+   ALPHA 3 SAVED ENCOUNTER INLINE SETUP
+======================================== */
+
+/* Saved encounter management is sequential: select/configure a reusable
+   template first, then manage resumable states. This also gives the inline
+   setup editor the full DM workspace width. */
+#dmEncountersPage .saved-encounter-groups {
+  grid-template-columns: minmax(0, 1fr);
+}
+
+.encounter-setup-prompt {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin-top: 4px;
+  padding: 14px 16px;
+  border: 1px dashed rgba(88, 177, 211, 0.28);
+  border-radius: 8px;
+  background: rgba(5, 19, 27, 0.46);
+  color: #8eabb8;
+}
+
+.encounter-setup-prompt strong {
+  color: #cce7f2;
+  font-size: 0.95rem;
+}
+
+.encounter-setup-prompt span {
+  line-height: 1.45;
+}
+
+.encounter-setup-overview {
+  display: grid;
+  grid-template-columns: minmax(220px, 0.7fr) minmax(0, 1.6fr);
+  gap: 14px;
+  align-items: end;
+  margin: 0 0 16px;
+  padding: 14px;
+  border: 1px solid rgba(84, 156, 184, 0.2);
+  border-radius: 8px;
+  background: rgba(5, 17, 24, 0.48);
+}
+
+.encounter-setup-overview label {
+  margin: 0;
+}
+
+.field-caption {
+  display: block;
+  margin-bottom: 7px;
+  color: #89a9b7;
+  font-size: 0.78rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.encounter-setup-combatants {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 7px;
+  min-height: 40px;
+  align-items: center;
+}
+
+.encounter-setup-combatant-chip {
+  display: inline-flex;
+  align-items: center;
+  min-height: 30px;
+  padding: 5px 9px;
+  border: 1px solid rgba(84, 156, 184, 0.24);
+  border-radius: 999px;
+  background: rgba(10, 34, 45, 0.72);
+  color: #c5dce5;
+  font-size: 0.82rem;
+  line-height: 1.2;
+}
+
+@media (max-width: 900px) {
+  .encounter-setup-overview {
+    grid-template-columns: 1fr;
+    align-items: stretch;
+  }
+}
+
+/* Phase 2B.6 - encounter setup save feedback */
+.encounter-setup-save-actions {
+  display: grid;
+  justify-items: end;
+  gap: 8px;
+}
+
+.encounter-setup-save-status {
+  min-height: 20px;
+  font-size: 0.9rem;
+  line-height: 1.35;
+  color: var(--text-muted, #9bb3c0);
+}
+
+.encounter-setup-save-status[data-state="saved"] {
+  color: #8fd6b5;
+}
+
+.encounter-setup-save-status[data-state="dirty"] {
+  color: #e4c977;
+}
+
+.encounter-setup-save-status[data-state="saving"] {
+  color: #8ed7ef;
+}
+
+.encounter-setup-save-status[data-state="error"] {
+  color: #ef9c9c;
+}
+
+@media (max-width: 900px) {
+  .encounter-setup-save-actions {
+    width: 100%;
+    justify-items: start;
   }
 }

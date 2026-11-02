@@ -509,3 +509,100 @@
 .player-body[data-display-mode="combat"] .player-shell {
   display: flex;
 }
+
+
+/* ========================================
+   SCENE PRESENTATION
+======================================== */
+
+.scene-presentation {
+  position: fixed;
+  inset: 0;
+  z-index: 3;
+  display: none;
+  place-items: center;
+  padding: clamp(28px, 5vw, 72px);
+  pointer-events: none;
+}
+
+.scene-presentation.show {
+  display: grid;
+}
+
+.player-body[data-display-mode="scene"] .display-background:empty {
+  background:
+    radial-gradient(circle at 50% 25%, rgba(26, 132, 176, 0.2), transparent 44%),
+    radial-gradient(circle at 82% 72%, rgba(83, 45, 133, 0.14), transparent 40%),
+    linear-gradient(145deg, #07151e, #02070a 66%);
+}
+
+.player-body[data-display-mode="scene"] .display-background {
+  background-color: #061018;
+}
+
+.scene-presentation-card {
+  display: grid;
+  justify-items: center;
+  gap: 12px;
+  max-width: min(760px, 78vw);
+  padding: clamp(26px, 4vw, 52px) clamp(34px, 5vw, 74px);
+  border: 1px solid rgba(92, 180, 214, 0.3);
+  border-radius: 16px;
+  background: rgba(3, 13, 19, 0.84);
+  box-shadow: 0 24px 80px rgba(0, 0, 0, 0.42);
+  text-align: center;
+  backdrop-filter: blur(8px);
+}
+
+.scene-presentation.has-background {
+  place-items: end start;
+}
+
+.scene-presentation.has-background .scene-presentation-card {
+  justify-items: start;
+  max-width: min(680px, 62vw);
+  padding: 22px 28px;
+  border-color: rgba(119, 196, 222, 0.24);
+  background: rgba(2, 10, 15, 0.72);
+  text-align: left;
+}
+
+.scene-presentation-logo {
+  width: min(360px, 42vw);
+  height: auto;
+  opacity: 0.38;
+}
+
+.scene-presentation.has-background .scene-presentation-logo {
+  display: none;
+}
+
+.scene-presentation h1 {
+  margin: 0;
+  font-size: clamp(32px, 4.4vw, 68px);
+  line-height: 1.05;
+}
+
+.scene-presentation.has-background h1 {
+  font-size: clamp(26px, 3vw, 46px);
+}
+
+.scene-presentation p {
+  margin: 0;
+  color: #9db9c5;
+  font-size: clamp(14px, 1.5vw, 22px);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+@media (max-width: 900px) {
+  .scene-presentation.has-background {
+    place-items: end center;
+  }
+
+  .scene-presentation.has-background .scene-presentation-card {
+    justify-items: center;
+    max-width: 88vw;
+    text-align: center;
+  }
+}
