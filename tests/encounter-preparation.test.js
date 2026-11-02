@@ -66,7 +66,8 @@ test("live Encounter background management links to DM Assets instead of duplica
 test("Soundscape is labeled as the live active-encounter mixer", () => {
   const html = read("programs/app/index.html");
   assert.match(html, /Live audio mixer for the currently loaded encounter/);
-  assert.match(html, /Apply to Active Encounter/);
+  assert.match(html, /Apply Live Mix/);
+  assert.match(html, /Manage Audio Assets/);
 });
 
 test("Encounter setup provides persistent save confirmation and verifies storage", () => {
@@ -110,6 +111,6 @@ test("prepared media save uses canonical presentation and exact persistence veri
   assert.match(config, /applyEncounterPresentation/);
   assert.match(encounters, /ENC\.applyEncounterPresentation\(loaded\)/);
   assert.match(encounters, /ENC\.applyEncounterPresentation\(encounter\)/);
-  assert.match(html, /config\.js\?v=alpha3-p2b6-media2/);
-  assert.match(html, /encounter-setup\.js\?v=alpha3-p2b6-media2/);
+  assert.match(html, /config\.js\?v=alpha3-p2b7-cleanup/);
+  assert.match(html, /encounter-setup\.js\?v=alpha3-p2b7-cleanup/);
 });

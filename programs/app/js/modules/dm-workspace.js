@@ -115,6 +115,12 @@ ENC.dmWorkspace = {
       ?.addEventListener("click", () =>
         this.open("assets", { assetFilter: "backgrounds/" }),
       );
+
+    document
+      .getElementById("manageAudioAssetsBtn")
+      ?.addEventListener("click", () =>
+        this.open("assets", { assetFilter: "sounds/music" }),
+      );
   },
 
   initialize() {

@@ -4329,3 +4329,166 @@ label {
     justify-items: start;
   }
 }
+
+/* ========================================
+   ALPHA 3 PHASE 2B.7 — WORKFLOW CLEANUP
+======================================== */
+
+/* Soundscape is a live mixer; preparation stays in DM > Encounters. */
+#soundscapeSection .section-heading {
+  align-items: flex-start;
+}
+
+#soundscapeSection .section-heading .button-row {
+  justify-content: flex-end;
+  align-items: center;
+  max-width: 680px;
+}
+
+#soundscapeSection .soundscape-status {
+  min-height: 32px;
+  display: inline-flex;
+  align-items: center;
+  letter-spacing: 0.08em;
+}
+
+#manageAudioAssetsBtn {
+  border-color: #2b5669;
+  background: #0a1b24;
+}
+
+#saveSoundscapeBtn {
+  min-width: 130px;
+}
+
+/* Timer: emphasize the live state and reduce redundant controls. */
+.timer-active-summary {
+  min-width: 190px;
+  padding: 10px 14px !important;
+}
+
+.timer-active-summary-title {
+  font-size: clamp(14px, 0.8vw, 17px);
+  font-weight: 700;
+}
+
+.timer-active-summary-state {
+  margin-top: 3px;
+  color: #6fe7ff;
+  font-size: clamp(11px, 0.7vw, 14px);
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.timer-preset-row {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 6px;
+  margin-top: 8px;
+}
+
+.timer-preset-row button {
+  min-height: 32px;
+  padding: 6px 8px;
+  font-size: 11px;
+}
+
+.timer-primary-controls .timer-actions {
+  display: grid;
+  grid-template-columns: minmax(140px, 1.5fr) repeat(2, minmax(80px, 0.7fr));
+  gap: 7px;
+}
+
+.timer-primary-action {
+  min-height: 40px;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.timer-primary-action[data-timer-state="running"] {
+  border-color: #e8b74f;
+  background: linear-gradient(180deg, #8b6819, #65480f);
+}
+
+.timer-primary-action[data-timer-state="paused"] {
+  border-color: #62d9ff;
+  background: linear-gradient(180deg, #12617a, #0d465a);
+}
+
+/* Settings: keep only actual app/rules settings here. */
+.settings-intro-panel {
+  margin-bottom: 10px;
+}
+
+.settings-grid-cleanup {
+  grid-template-columns: minmax(320px, 1.2fr) minmax(300px, 0.8fr);
+}
+
+.settings-grid-cleanup > .panel {
+  min-height: 0;
+}
+
+/* Data & Tools owns backup/recovery workflows. */
+.data-inline-setting {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  margin-top: 14px;
+  padding-top: 12px;
+  border-top: 1px solid rgba(62, 111, 131, 0.35);
+}
+
+.data-inline-setting > div {
+  min-width: 0;
+}
+
+.data-inline-setting .hint {
+  margin: 4px 0 0;
+}
+
+.switch-row {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  white-space: nowrap;
+  color: #c8dbe3;
+  font-size: 11px;
+}
+
+.data-grid > .panel {
+  display: flex;
+  flex-direction: column;
+  min-height: 300px;
+}
+
+.data-grid .stacked-buttons {
+  margin-top: auto;
+}
+
+@media (max-width: 1100px) {
+  .settings-grid-cleanup {
+    grid-template-columns: 1fr;
+  }
+
+  .timer-primary-controls .timer-actions {
+    grid-template-columns: 1fr 1fr 1fr;
+  }
+}
+
+@media (max-width: 700px) {
+  .timer-preset-row,
+  .timer-primary-controls .timer-actions {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .timer-primary-action {
+    grid-column: 1 / -1;
+  }
+
+  .data-inline-setting {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+}

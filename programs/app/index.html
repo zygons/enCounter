@@ -14,7 +14,7 @@
 
     <link rel="icon" type="image/png" href="/assets/branding/favicon.png" />
 
-    <link rel="stylesheet" href="css/base.css?v=alpha3-p2b6-media2" />
+    <link rel="stylesheet" href="css/base.css?v=alpha3-p2b7-cleanup" />
     <link rel="stylesheet" href="css/timer.css" />
   </head>
 
@@ -1204,13 +1204,24 @@
             </p>
 
             <div class="stacked-buttons">
-              <button id="exportLibraryBtn" type="button">
-                Export Library Only
-              </button>
-
               <button id="exportEverythingBtn" class="primary" type="button">
                 Export Everything
               </button>
+
+              <button id="exportLibraryBtn" type="button">
+                Export Library Only
+              </button>
+            </div>
+
+            <div class="data-inline-setting">
+              <div>
+                <strong>Automatic external backup</strong>
+                <p class="hint">When enabled with the local Python launcher, enCounter also writes recovery backups to <code>data/backups/</code>.</p>
+              </div>
+              <label class="switch-row">
+                <input id="externalBackupEnabled" type="checkbox" />
+                <span>Enabled</span>
+              </label>
             </div>
           </div>
 
@@ -1349,6 +1360,13 @@
                     />
                   </div>
                 </div>
+
+                <div class="timer-preset-row" aria-label="Quick timer durations">
+                  <button type="button" data-timer-preset-ms="60000">1 min</button>
+                  <button type="button" data-timer-preset-ms="300000">5 min</button>
+                  <button type="button" data-timer-preset-ms="600000">10 min</button>
+                  <button type="button" data-timer-preset-ms="1800000">30 min</button>
+                </div>
               </div>
 
               <!-- Skin -->
@@ -1405,17 +1423,13 @@
 
               <!-- Primary Timer Actions -->
 
-              <div class="timer-control-group">
+              <div class="timer-control-group timer-primary-controls">
                 <label> Timer Controls </label>
 
                 <div class="timer-actions">
-                  <button id="timerStartBtn" class="primary" type="button">
-                    Start
+                  <button id="timerStartBtn" class="primary timer-primary-action" type="button">
+                    Start Timer
                   </button>
-
-                  <button id="timerPauseBtn" type="button">Pause</button>
-
-                  <button id="timerResumeBtn" type="button">Resume</button>
 
                   <button id="timerResetBtn" type="button">Reset</button>
 
@@ -1455,10 +1469,6 @@
                 if rendering is temporarily interrupted.
               </p>
 
-              <p class="hint">
-                Player Display timer synchronization will be connected after the
-                DM timer controls and animations are tested.
-              </p>
             </div>
 
             <!-- ===============================================
@@ -1480,8 +1490,8 @@
         <div class="panel">
           <div class="section-heading">
             <div>
-              <div class="eyebrow">ENCOUNTER AUDIO</div>
-              <h2>Soundscape</h2>
+              <div class="eyebrow">LIVE ENCOUNTER AUDIO</div>
+              <h2>Soundscape Live Mixer</h2>
               <p class="hint">Live audio mixer for the currently loaded encounter. Use DM → Encounters and select a reusable encounter to prepare backgrounds, music, ambience, and cues for multiple encounters before play. Audio plays from the DM computer; the Player Display remains visual-only.</p>
             </div>
             <div class="button-row">
@@ -1489,7 +1499,8 @@
               <button id="previewSceneAudioBtn" type="button">▶ Scene</button>
               <button id="previewCombatAudioBtn" type="button">⚔ Combat</button>
               <button id="stopSoundscapeBtn" class="danger-outline" type="button">■ Stop</button>
-              <button id="saveSoundscapeBtn" class="primary" type="button">Apply to Active Encounter</button>
+              <button id="manageAudioAssetsBtn" type="button">Manage Audio Assets</button>
+              <button id="saveSoundscapeBtn" class="primary" type="button">Apply Live Mix</button>
             </div>
           </div>
 
@@ -1527,15 +1538,6 @@
           </div>
         </div>
 
-        <div class="panel">
-          <div class="section-heading"><div><div class="eyebrow">AUDIO LIBRARY</div><h2>Import Audio</h2></div></div>
-          <div class="tool-grid">
-            <label><span>Category</span><select id="audioUploadCategory"><option value="sounds/music">Music</option><option value="sounds/ambience">Ambience</option><option value="sounds/sfx">Sound Effects</option><option value="sounds/custom">Custom</option></select></label>
-            <label><span>Audio File</span><input id="audioUploadFile" type="file" accept="audio/mpeg,audio/ogg,audio/wav,audio/flac" /></label>
-            <button id="uploadAudioBtn" class="primary" type="button">Import Audio</button>
-          </div>
-          <p class="hint">Supported: MP3, OGG, WAV, FLAC. Long music/ambience files are best stored as MP3 or OGG.</p>
-        </div>
       </section>
 
       <!-- =======================================================
@@ -1547,7 +1549,12 @@
            ======================================================= -->
 
       <section id="settingsSection" class="app-section">
-        <div class="settings-grid">
+        <div class="panel settings-intro-panel">
+          <div class="eyebrow">APPLICATION SETTINGS</div>
+          <h2>Settings</h2>
+          <p class="hint">Configure tracker behavior and custom rules. Backup, restore, storage, and recovery tools are managed under DM → Data &amp; Tools.</p>
+        </div>
+        <div class="settings-grid settings-grid-cleanup">
           <!-- Tracker Mode -->
 
           <div class="panel">
@@ -1572,26 +1579,6 @@
             </p>
 
             <div id="moduleCheckboxes" class="module-list"></div>
-          </div>
-
-          <!-- Backup Settings -->
-
-          <div class="panel">
-            <div class="eyebrow">DATA PROTECTION</div>
-
-            <h2>Backup Settings</h2>
-
-            <label class="check-row">
-              <input id="externalBackupEnabled" type="checkbox" />
-
-              Write automatic external backups to
-              <code>data/backups/</code>
-            </label>
-
-            <p class="hint">
-              Browser storage remains the working database. The external file is
-              an extra recovery layer.
-            </p>
           </div>
 
           <!-- Custom Ruleset -->
@@ -1753,31 +1740,31 @@
 
     <!-- Core -->
 
-    <script src="js/core/config.js?v=alpha3-p2b6-media2"></script>
-    <script src="js/core/db.js?v=alpha3-p2b6-media2"></script>
-    <script src="js/core/sync.js?v=alpha3-p2b6-media2"></script>
+    <script src="js/core/config.js?v=alpha3-p2b7-cleanup"></script>
+    <script src="js/core/db.js?v=alpha3-p2b7-cleanup"></script>
+    <script src="js/core/sync.js?v=alpha3-p2b7-cleanup"></script>
 
     <!-- Existing Modules -->
 
-    <script src="js/modules/backup.js?v=alpha3-p2b6-media2"></script>
-    <script src="js/modules/migration.js?v=alpha3-p2b6-media2"></script>
-    <script src="js/modules/dm-workspace.js?v=alpha3-p2b6-media2"></script>
-    <script src="js/modules/assets.js?v=alpha3-p2b6-media2"></script>
-    <script src="js/modules/settings.js?v=alpha3-p2b6-media2"></script>
-    <script src="js/modules/library.js?v=alpha3-p2b6-media2"></script>
-    <script src="js/modules/combat.js?v=alpha3-p2b6-media2"></script>
-    <script src="js/modules/audio.js?v=alpha3-p2b6-media2"></script>
-    <script src="js/modules/encounters.js?v=alpha3-p2b6-media2"></script>
-    <script src="js/modules/encounter-setup.js?v=alpha3-p2b6-media2"></script>
-    <script src="js/modules/soundscape.js?v=alpha3-p2b6-media2"></script>
+    <script src="js/modules/backup.js?v=alpha3-p2b7-cleanup"></script>
+    <script src="js/modules/migration.js?v=alpha3-p2b7-cleanup"></script>
+    <script src="js/modules/dm-workspace.js?v=alpha3-p2b7-cleanup"></script>
+    <script src="js/modules/assets.js?v=alpha3-p2b7-cleanup"></script>
+    <script src="js/modules/settings.js?v=alpha3-p2b7-cleanup"></script>
+    <script src="js/modules/library.js?v=alpha3-p2b7-cleanup"></script>
+    <script src="js/modules/combat.js?v=alpha3-p2b7-cleanup"></script>
+    <script src="js/modules/audio.js?v=alpha3-p2b7-cleanup"></script>
+    <script src="js/modules/encounters.js?v=alpha3-p2b7-cleanup"></script>
+    <script src="js/modules/encounter-setup.js?v=alpha3-p2b7-cleanup"></script>
+    <script src="js/modules/soundscape.js?v=alpha3-p2b7-cleanup"></script>
 
     <!-- Visual Timer Modules -->
 
-    <script src="js/modules/timer-renderer.js?v=alpha3-p2b6-media2"></script>
-    <script src="js/modules/timer.js?v=alpha3-p2b6-media2"></script>
+    <script src="js/modules/timer-renderer.js?v=alpha3-p2b7-cleanup"></script>
+    <script src="js/modules/timer.js?v=alpha3-p2b7-cleanup"></script>
 
     <!-- DM Console Controller -->
 
-    <script src="js/main.js?v=alpha3-p2b6-media2"></script>
+    <script src="js/main.js?v=alpha3-p2b7-cleanup"></script>
   </body>
 </html>

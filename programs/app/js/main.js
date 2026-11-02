@@ -387,22 +387,20 @@ ENC.app = {
     }
 
     const startButton = document.getElementById("timerStartBtn");
-    const pauseButton = document.getElementById("timerPauseBtn");
-    const resumeButton = document.getElementById("timerResumeBtn");
     const resetButton = document.getElementById("timerResetBtn");
     const stopButton = document.getElementById("timerStopBtn");
 
     if (startButton) {
-      startButton.disabled =
-        state.status === "running" || state.status === "paused";
-    }
-
-    if (pauseButton) {
-      pauseButton.disabled = state.status !== "running";
-    }
-
-    if (resumeButton) {
-      resumeButton.disabled = state.status !== "paused";
+      startButton.disabled = false;
+      startButton.dataset.timerState = state.status;
+      startButton.textContent =
+        state.status === "running"
+          ? "Pause Timer"
+          : state.status === "paused"
+            ? "Resume Timer"
+            : state.status === "complete"
+              ? "Restart Timer"
+              : "Start Timer";
     }
 
     if (resetButton) {
@@ -547,8 +545,6 @@ ENC.app = {
     const secondsInput = document.getElementById("timerSeconds");
 
     const startButton = document.getElementById("timerStartBtn");
-    const pauseButton = document.getElementById("timerPauseBtn");
-    const resumeButton = document.getElementById("timerResumeBtn");
     const resetButton = document.getElementById("timerResetBtn");
     const stopButton = document.getElementById("timerStopBtn");
 
@@ -639,16 +635,21 @@ ENC.app = {
           return;
         }
 
+        if (state.status === "running") {
+          this.timerController.pause();
+          this.updateTimerUI();
+          return;
+        }
+
         if (state.status === "paused") {
+          this.timerController.resume();
+          this.updateTimerUI();
           return;
         }
 
         /*
          * If the configured duration fields changed while the
          * timer was idle/complete, apply them before starting.
-         *
-         * A stopped timer preserves its remaining time when the
-         * duration fields still match the configured duration.
          */
         const requestedDuration = this.getTimerDurationFromInputs();
 
@@ -669,16 +670,20 @@ ENC.app = {
       });
     }
 
-    if (pauseButton) {
-      pauseButton.addEventListener("click", () => {
-        this.timerController.pause();
-        this.updateTimerUI();
-      });
-    }
+    for (const presetButton of document.querySelectorAll("[data-timer-preset-ms]")) {
+      presetButton.addEventListener("click", () => {
+        const state = this.timerController.getState();
+        if (!state || state.status === "running" || state.status === "paused") {
+          return;
+        }
 
-    if (resumeButton) {
-      resumeButton.addEventListener("click", () => {
-        this.timerController.resume();
+        const durationMs = Number(presetButton.dataset.timerPresetMs);
+        if (!Number.isFinite(durationMs) || durationMs <= 0) {
+          return;
+        }
+
+        this.timerController.setDuration(durationMs);
+        this.setTimerDurationInputs(durationMs);
         this.updateTimerUI();
       });
     }
