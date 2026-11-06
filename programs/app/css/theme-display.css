@@ -1,0 +1,598 @@
+/*
+ * enCounter — Player Display theme layer
+ * Phase 3.1.13.6i — Full Theme Consistency Audit
+ * Original uses display.css unchanged. Sci-Fi and Fantasy layer on top.
+ */
+
+/* =========================================================
+   SCI-FI PLAYER DISPLAY
+   ========================================================= */
+body.theme-scifi.player-body {
+  --display-accent: #18e9ff;
+  --display-accent-soft: #68f5ff;
+  --display-surface: rgba(3, 18, 25, .92);
+  --display-line: rgba(24, 233, 255, .52);
+  background: #02090e;
+}
+
+body.theme-scifi .display-shade {
+  background:
+    linear-gradient(to bottom, rgba(0, 10, 15, .78), rgba(0, 15, 22, .18) 42%, rgba(0, 8, 12, .86)),
+    repeating-linear-gradient(0deg, transparent 0 31px, rgba(24,233,255,.025) 32px),
+    repeating-linear-gradient(90deg, transparent 0 31px, rgba(24,233,255,.02) 32px);
+}
+
+body.theme-scifi .player-display-privacy-overlay {
+  background:
+    radial-gradient(circle at 50% 40%, rgba(0,125,151,.13), transparent 40%),
+    repeating-linear-gradient(0deg, transparent 0 31px, rgba(24,233,255,.025) 32px),
+    #02090e;
+}
+
+body.theme-scifi .player-display-privacy-logo,
+body.theme-scifi .player-logo {
+  filter: drop-shadow(0 0 16px rgba(24,233,255,.28));
+}
+
+body.theme-scifi .player-display-privacy-text {
+  color: #72eaf4;
+  text-shadow: 0 0 18px rgba(24,233,255,.35);
+}
+
+body.theme-scifi .player-header {
+  border-bottom-color: var(--display-line);
+  background: linear-gradient(90deg, rgba(3,22,30,.95), rgba(2,12,18,.9));
+  box-shadow: inset 0 -1px 0 rgba(24,233,255,.08), 0 10px 30px rgba(0,0,0,.28);
+}
+
+body.theme-scifi .player-header::after {
+  content: "";
+  position: absolute;
+  left: 28px;
+  right: 60%;
+  bottom: -1px;
+  height: 1px;
+  background: var(--display-accent);
+  box-shadow: 0 0 9px rgba(24,233,255,.6);
+}
+
+body.theme-scifi .player-header {
+  position: relative;
+}
+
+body.theme-scifi .display-round strong,
+body.theme-scifi .current-turn h2,
+body.theme-scifi .next-turn strong {
+  color: #eafdff;
+  text-shadow: 0 0 18px rgba(24,233,255,.18), 0 4px 20px #000;
+}
+
+body.theme-scifi .initiative-card {
+  border-radius: 3px;
+  border-color: rgba(70,120,137,.72);
+  background: rgba(3,17,24,.94);
+  box-shadow: inset 0 0 0 1px rgba(24,233,255,.025);
+}
+
+body.theme-scifi .initiative-card.player { border-color: #2f8eaa; }
+body.theme-scifi .initiative-card.enemy { border-color: #b9584f; }
+body.theme-scifi .initiative-card.npc { border-color: #8e70b7; }
+
+body.theme-scifi .initiative-card.current {
+  opacity: 1;
+  flex-basis: 175px;
+  border-width: 2px;
+  border-color: var(--display-accent);
+  box-shadow: 0 0 0 1px rgba(24,233,255,.35), 0 0 30px rgba(24,233,255,.22), inset 0 0 26px rgba(24,233,255,.06);
+  transform: none;
+}
+
+body.theme-scifi .display-portrait {
+  border-radius: 2px;
+  border: 1px solid rgba(24,233,255,.55);
+  background: rgba(2,12,18,.9);
+}
+
+body.theme-scifi .display-init {
+  color: #69f0fa;
+}
+
+body.theme-scifi .display-badge {
+  border-radius: 2px;
+}
+
+body.theme-scifi #fullscreenBtn {
+  border-radius: 2px;
+  border-color: rgba(24,233,255,.48);
+  background: rgba(5,32,41,.86);
+  color: #dffcff;
+}
+
+/* =========================================================
+   FANTASY PLAYER DISPLAY
+   ========================================================= */
+body.theme-fantasy.player-body {
+  --display-gold: #d6a143;
+  --display-gold-light: #efd493;
+  --display-leather: #21140b;
+  --display-parchment: #d7bd86;
+  --display-ink: #27170b;
+  background: #0d0906;
+  color: #f4e5c8;
+}
+
+body.theme-fantasy .display-shade {
+  background:
+    radial-gradient(circle at center, rgba(83,48,19,.08), rgba(7,4,2,.34) 56%, rgba(6,3,2,.82) 100%),
+    linear-gradient(to bottom, rgba(23,12,6,.68), rgba(10,6,3,.14) 42%, rgba(13,7,4,.8));
+}
+
+body.theme-fantasy .player-display-privacy-overlay {
+  background:
+    radial-gradient(circle at 50% 42%, rgba(160,100,36,.13), transparent 36%),
+    linear-gradient(rgba(25,14,7,.96), rgba(9,6,4,.99));
+}
+
+body.theme-fantasy .player-display-privacy-overlay::before,
+body.theme-fantasy .player-display-privacy-overlay::after {
+  content: "";
+  position: absolute;
+  inset: 18px;
+  border: 1px solid rgba(214,161,67,.28);
+  pointer-events: none;
+}
+
+body.theme-fantasy .player-display-privacy-overlay::after {
+  inset: 25px;
+  border-color: rgba(214,161,67,.08);
+}
+
+body.theme-fantasy .player-display-privacy-logo,
+body.theme-fantasy .player-logo {
+  filter: sepia(.8) saturate(1.1) drop-shadow(0 0 18px rgba(214,161,67,.25));
+}
+
+body.theme-fantasy .player-display-privacy-text {
+  color: #e7c67f;
+  font-family: Georgia, "Times New Roman", serif;
+  letter-spacing: .22em;
+  text-shadow: 0 2px 6px #000;
+}
+
+body.theme-fantasy .player-header {
+  position: relative;
+  border-bottom-color: #8d5d23;
+  background:
+    linear-gradient(180deg, rgba(52,31,15,.95), rgba(25,15,8,.94));
+  box-shadow: inset 0 -1px 0 rgba(236,193,105,.16), 0 10px 28px rgba(0,0,0,.34);
+}
+
+body.theme-fantasy .player-header::before {
+  content: "";
+  position: absolute;
+  inset: 6px 12px;
+  border: 1px solid rgba(214,161,67,.16);
+  pointer-events: none;
+}
+
+body.theme-fantasy .player-encounter-info h1,
+body.theme-fantasy .current-turn h2,
+body.theme-fantasy .next-turn,
+body.theme-fantasy .display-round strong {
+  font-family: Georgia, "Times New Roman", serif;
+}
+
+body.theme-fantasy .player-encounter-info h1,
+body.theme-fantasy .current-turn h2,
+body.theme-fantasy .display-round strong {
+  color: #f4dfb2;
+  text-shadow: 0 3px 10px #000;
+}
+
+body.theme-fantasy .player-app-version,
+body.theme-fantasy .display-round span,
+body.theme-fantasy .eyebrow {
+  color: #b99760;
+}
+
+body.theme-fantasy .display-connection-status {
+  border-radius: 3px;
+  background: rgba(29,17,9,.9);
+}
+
+body.theme-fantasy .initiative-card {
+  border-radius: 4px;
+  border: 2px solid #71502b;
+  background:
+    linear-gradient(180deg, rgba(45,26,13,.96), rgba(25,15,8,.96));
+  box-shadow: inset 0 0 0 1px rgba(221,172,82,.08), 0 8px 22px rgba(0,0,0,.3);
+}
+
+body.theme-fantasy .initiative-card.player { border-color: #8a7740; }
+body.theme-fantasy .initiative-card.enemy { border-color: #934639; }
+body.theme-fantasy .initiative-card.npc { border-color: #806d91; }
+
+body.theme-fantasy .initiative-card.current {
+  opacity: 1;
+  flex-basis: 175px;
+  border-width: 2px;
+  border-color: #e0b35b;
+  background:
+    linear-gradient(180deg, rgba(111,47,25,.98), rgba(57,23,14,.98));
+  box-shadow: 0 0 0 1px rgba(224,179,91,.35), 0 0 28px rgba(170,99,30,.22), inset 0 0 0 2px rgba(255,219,144,.07);
+  transform: none;
+}
+
+body.theme-fantasy .display-portrait {
+  border-radius: 3px;
+  border: 2px solid #9d6c2c;
+  background: #21140b;
+  box-shadow: inset 0 0 0 2px rgba(225,181,94,.14);
+}
+
+body.theme-fantasy .display-card-name {
+  color: #f3deb4;
+  font-family: Georgia, "Times New Roman", serif;
+}
+
+body.theme-fantasy .display-init {
+  color: #e7bd68;
+}
+
+body.theme-fantasy .display-badge {
+  border-radius: 3px;
+  background: rgba(77,39,21,.86);
+  border-color: #98662a;
+  color: #f0dbb0;
+}
+
+body.theme-fantasy .display-badge.condition {
+  background: #4c2f56;
+  border-color: #9b7caf;
+}
+
+body.theme-fantasy .display-badge.exhaustion,
+body.theme-fantasy .display-badge.defeated {
+  background: #6c2d24;
+  border-color: #ad5b49;
+}
+
+body.theme-fantasy .next-turn {
+  color: #d6b577;
+}
+
+body.theme-fantasy .next-turn strong {
+  color: #f2deb7;
+}
+
+body.theme-fantasy #fullscreenBtn {
+  border-radius: 3px;
+  border-color: #a5722c;
+  background: linear-gradient(#65331c, #422014);
+  color: #f5dfb3;
+}
+
+/* Timer layers get a frame treatment but keep the selected timer skin. */
+body.theme-fantasy .player-timer-overlay,
+body.theme-fantasy .player-timer-focus {
+  --timer-theme-accent: #d7a13f;
+}
+
+@media (max-width: 900px) {
+  body.theme-fantasy .player-header,
+  body.theme-scifi .player-header {
+    padding-inline: 18px;
+  }
+}
+
+
+/* Phase 3.1.13.6d — stable Player Display card geometry.
+   The base display stylesheet enlarges the current card. The themed layouts
+   keep every card and portrait at a fixed size so encounter broadcasts do not
+   cause visible portrait resize/jitter. */
+body.theme-scifi .initiative-card,
+body.theme-fantasy .initiative-card {
+  flex-basis: 175px;
+  transition: border-color .18s ease, box-shadow .18s ease, background-color .18s ease, opacity .18s ease;
+}
+body.theme-scifi .display-portrait,
+body.theme-fantasy .display-portrait {
+  transform: none;
+  backface-visibility: hidden;
+}
+
+/* Phase 3.1.13.6e — fixed geometry and explicit per-mode theme protection. */
+body.theme-scifi .initiative-card,
+body.theme-fantasy .initiative-card {
+  flex: 0 0 175px !important;
+  width: 175px;
+  min-width: 175px;
+  max-width: 175px;
+  box-sizing: border-box;
+  transform: none !important;
+}
+
+body.theme-scifi .initiative-card.current,
+body.theme-fantasy .initiative-card.current {
+  flex: 0 0 175px !important;
+  width: 175px;
+  min-width: 175px;
+  max-width: 175px;
+  transform: none !important;
+}
+
+body.theme-scifi .display-portrait,
+body.theme-fantasy .display-portrait {
+  width: 151px;
+  min-width: 151px;
+  max-width: 151px;
+  height: 151px;
+  min-height: 151px;
+  max-height: 151px;
+  aspect-ratio: auto;
+  flex: 0 0 151px;
+  box-sizing: border-box;
+}
+
+body.theme-scifi .display-portrait img,
+body.theme-fantasy .display-portrait img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transform: none !important;
+}
+
+/* =========================================================
+   CONSOLIDATED PLAYER DISPLAY MODE OWNERSHIP — 3.1.13.6i
+
+   Layout lives in display.css. Each theme below explicitly owns the visible
+   surfaces for Standby, Scene, and Combat so presentation changes cannot
+   expose another theme's palette.
+   ========================================================= */
+
+/* ---------- shared scene presentation layout ---------- */
+.scene-presentation-copy {
+  display: grid;
+  justify-items: inherit;
+  gap: 8px;
+}
+
+.scene-presentation-kicker {
+  display: inline-flex;
+  align-items: center;
+  min-height: 24px;
+  padding: 4px 9px;
+  border: 1px solid currentColor;
+  border-radius: 3px;
+  font-size: 10px;
+  font-weight: 900;
+  line-height: 1;
+  letter-spacing: .2em;
+  text-transform: uppercase;
+  opacity: .9;
+}
+
+/* Between-encounter logo spacing. */
+.idle-logo-backdrop.show {
+  align-items: flex-start;
+  padding-top: clamp(72px, 11vh, 128px);
+  box-sizing: border-box;
+}
+.idle-logo-backdrop.show .idle-logo-image {
+  width: min(58vw, 760px);
+  max-width: 760px;
+}
+.idle-logo-backdrop.show ~ .current-turn {
+  transform: translateY(clamp(78px, 10vh, 118px));
+}
+@media (max-height: 800px) {
+  .idle-logo-backdrop.show { padding-top: 48px; }
+  .idle-logo-backdrop.show .idle-logo-image { width: min(52vw, 620px); }
+  .idle-logo-backdrop.show ~ .current-turn { transform: translateY(58px); }
+}
+
+/* ---------- scene frame ---------- */
+.scene-theme-frame {
+  position: fixed;
+  inset: 0;
+  z-index: 8;
+  display: none;
+  pointer-events: none;
+  box-sizing: border-box;
+}
+body.theme-scifi.player-body[data-display-mode="scene"] .scene-theme-frame,
+body.theme-fantasy.player-body[data-display-mode="scene"] .scene-theme-frame {
+  display: block;
+}
+.scene-theme-label {
+  position: absolute;
+  top: 22px;
+  right: 28px;
+  padding: 6px 12px;
+  font-size: 10px;
+  font-weight: 900;
+  line-height: 1;
+  letter-spacing: .22em;
+  text-transform: uppercase;
+  backdrop-filter: blur(5px);
+}
+
+/* =========================================================
+   SCI-FI — Standby / Scene / Combat
+   ========================================================= */
+body.theme-scifi.player-body[data-display-mode="standby"],
+body.theme-scifi.player-body[data-display-mode="scene"],
+body.theme-scifi.player-body[data-display-mode="combat"] {
+  background-color: #02090e;
+}
+
+body.theme-scifi.player-body[data-display-mode="scene"] .display-shade {
+  background: linear-gradient(to bottom, rgba(0,17,23,.16), rgba(0,10,14,.03) 55%, rgba(0,14,19,.22));
+}
+body.theme-scifi.player-body[data-display-mode="scene"].scene-no-image .display-background {
+  background-color: #02090e !important;
+  background-image:
+    radial-gradient(circle at 50% 42%, rgba(24,233,255,.09), transparent 38%),
+    repeating-linear-gradient(0deg, transparent 0 31px, rgba(24,233,255,.025) 32px),
+    repeating-linear-gradient(90deg, transparent 0 31px, rgba(24,233,255,.02) 32px) !important;
+}
+body.theme-scifi .scene-presentation-card {
+  border-radius: 3px;
+  border-color: rgba(24,233,255,.42);
+  background: linear-gradient(180deg, rgba(4,24,32,.94), rgba(2,13,19,.94));
+  box-shadow: 0 24px 80px rgba(0,0,0,.48), inset 0 0 0 1px rgba(24,233,255,.04), 0 0 32px rgba(24,233,255,.08);
+}
+body.theme-scifi .scene-presentation-logo {
+  filter: drop-shadow(0 0 18px rgba(24,233,255,.22));
+}
+body.theme-scifi .scene-presentation-kicker,
+body.theme-scifi .scene-presentation h1 {
+  color: #eafdff;
+}
+body.theme-scifi .scene-presentation p { color: #72eaf4; }
+body.theme-scifi .scene-presentation.has-background .scene-presentation-card {
+  border-color: rgba(24,233,255,.32);
+  background: rgba(2,14,20,.72);
+}
+body.theme-scifi.player-body[data-display-mode="scene"] .scene-theme-frame {
+  inset: 14px;
+  border: 1px solid rgba(24,233,255,.42);
+  box-shadow: inset 0 0 0 1px rgba(24,233,255,.04), inset 0 0 32px rgba(24,233,255,.035), 0 0 18px rgba(24,233,255,.08);
+}
+body.theme-scifi.player-body[data-display-mode="scene"] .scene-theme-label {
+  color: #dffcff;
+  border: 1px solid rgba(24,233,255,.4);
+  background: rgba(2,18,24,.68);
+}
+
+/* =========================================================
+   FANTASY — Standby / Scene / Combat
+   ========================================================= */
+body.theme-fantasy.player-body[data-display-mode="standby"],
+body.theme-fantasy.player-body[data-display-mode="scene"],
+body.theme-fantasy.player-body[data-display-mode="combat"] {
+  background-color: #0d0906;
+}
+
+/* Standby fully owns the viewport; no blue base surface should remain visible. */
+body.theme-fantasy .player-display-privacy-overlay {
+  background:
+    radial-gradient(circle at 50% 40%, rgba(176,108,40,.16), transparent 36%),
+    linear-gradient(180deg, #2b1a0e 0%, #160d07 42%, #0d0906 100%) !important;
+  box-shadow: inset 0 0 0 2px rgba(214,161,67,.18), inset 0 0 90px rgba(0,0,0,.48);
+}
+
+/* Scene without artwork is a complete fantasy surface, not the original blue fallback. */
+body.theme-fantasy.player-body[data-display-mode="scene"] .display-shade {
+  background: radial-gradient(circle at center, rgba(83,48,19,.05), rgba(7,4,2,.14) 58%, rgba(6,3,2,.3) 100%);
+}
+body.theme-fantasy.player-body[data-display-mode="scene"].scene-no-image .display-background {
+  background-color: #0d0906 !important;
+  background-image:
+    radial-gradient(circle at 50% 38%, rgba(184,118,45,.16), transparent 34%),
+    linear-gradient(135deg, rgba(108,61,24,.07) 25%, transparent 25%) 0 0 / 44px 44px,
+    linear-gradient(315deg, rgba(108,61,24,.05) 25%, transparent 25%) 0 0 / 44px 44px,
+    linear-gradient(180deg, #2a190d, #120b07 58%, #0d0906) !important;
+}
+body.theme-fantasy.player-body[data-display-mode="scene"].scene-has-image .display-shade {
+  background: linear-gradient(to bottom, rgba(31,16,7,.10), rgba(8,5,3,.02) 58%, rgba(29,14,6,.18));
+}
+
+body.theme-fantasy .scene-presentation-card {
+  border-radius: 5px;
+  border: 2px solid #a97832;
+  background:
+    linear-gradient(180deg, rgba(229,207,161,.98), rgba(190,155,96,.98));
+  color: #2a190b;
+  box-shadow: 0 24px 80px rgba(0,0,0,.5), inset 0 0 0 3px rgba(99,57,20,.18), inset 0 0 34px rgba(103,57,20,.12);
+}
+body.theme-fantasy .scene-presentation-logo {
+  filter: sepia(.85) saturate(1.05) contrast(.9) drop-shadow(0 3px 8px rgba(58,31,11,.22));
+  opacity: .62;
+}
+body.theme-fantasy .scene-presentation-kicker {
+  color: #714416;
+  border-color: #9e6828;
+  background: rgba(125,77,28,.08);
+  font-family: Georgia, "Times New Roman", serif;
+}
+body.theme-fantasy .scene-presentation h1 {
+  color: #2d1a0b;
+  font-family: Georgia, "Times New Roman", serif;
+  text-shadow: none;
+}
+body.theme-fantasy .scene-presentation p {
+  color: #68451f;
+  font-family: Georgia, "Times New Roman", serif;
+}
+body.theme-fantasy .scene-presentation.has-background .scene-presentation-card {
+  border-color: rgba(224,179,91,.62);
+  background: linear-gradient(180deg, rgba(51,29,13,.88), rgba(28,16,8,.88));
+  color: #f4e5c8;
+}
+body.theme-fantasy .scene-presentation.has-background .scene-presentation-kicker,
+body.theme-fantasy .scene-presentation.has-background h1 { color: #f4dfb2; }
+body.theme-fantasy .scene-presentation.has-background p { color: #d2b27b; }
+
+body.theme-fantasy.player-body[data-display-mode="scene"] .scene-theme-frame {
+  inset: 14px;
+  border: 2px solid rgba(214,161,67,.58);
+  box-shadow: inset 0 0 0 4px rgba(88,49,20,.24), inset 0 0 36px rgba(98,51,18,.08), 0 0 20px rgba(0,0,0,.34);
+}
+body.theme-fantasy.player-body[data-display-mode="scene"] .scene-theme-frame::before {
+  content: "";
+  position: absolute;
+  inset: 7px;
+  border: 1px solid rgba(239,212,147,.13);
+}
+body.theme-fantasy.player-body[data-display-mode="scene"] .scene-theme-label {
+  color: #f4dfb2;
+  border: 1px solid rgba(214,161,67,.5);
+  background: rgba(39,22,10,.76);
+  font-family: Georgia, "Times New Roman", serif;
+  text-shadow: 0 2px 5px #000;
+}
+
+/* Combat shell remains the full themed combat presentation. */
+body.theme-fantasy.player-body[data-display-mode="combat"] .player-shell { color: #f4e5c8; }
+body.theme-scifi.player-body[data-display-mode="combat"] .player-shell { color: #eafcff; }
+
+@media (max-width: 900px), (max-height: 700px) {
+  .scene-theme-label {
+    top: 16px;
+    right: 18px;
+    padding: 5px 9px;
+    font-size: 9px;
+  }
+  body.theme-scifi.player-body[data-display-mode="scene"] .scene-theme-frame,
+  body.theme-fantasy.player-body[data-display-mode="scene"] .scene-theme-frame { inset: 8px; }
+}
+
+
+/* =========================================================
+   PHASE 3.1.13.6j — FULL-SCREEN SCENE BACKGROUND GUARANTEE
+
+   Encounter artwork must always behave like a full-screen backdrop in both
+   Scene and Combat. Explicit declarations here prevent browser-default tiling
+   or an inherited background shorthand from changing image presentation.
+   ========================================================= */
+.player-body[data-display-mode="scene"].scene-has-image .display-background,
+.player-body[data-display-mode="combat"] .display-background {
+  background-repeat: no-repeat !important;
+  background-position: center center !important;
+  background-size: cover !important;
+}
+
+/* Phase 3.1.13.6o — Fantasy condition/status badge consistency. */
+body.theme-fantasy .display-badge.condition {
+  background: rgba(104, 60, 20, 0.88);
+  border-color: #c28a35;
+  color: #f5dda8;
+}
+
+body.theme-fantasy .display-badge.exhaustion {
+  background: rgba(104, 47, 25, 0.90);
+  border-color: #bf7049;
+  color: #f3c5a7;
+}

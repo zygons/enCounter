@@ -89,7 +89,8 @@ done
 mkdir -p \
   "${RELEASE_DIR}/data/backups" \
   "${RELEASE_DIR}/data/exports" \
-  "${RELEASE_DIR}/data/imports"
+  "${RELEASE_DIR}/data/imports" \
+  "${RELEASE_DIR}/data/cache/compendium"
 
 [[ -d docs ]] && cp -a docs "${RELEASE_DIR}/docs"
 [[ -f "docs/enCounter User Guide.pdf" ]] && cp "docs/enCounter User Guide.pdf" "${RELEASE_DIR}/enCounter User Guide.pdf"
@@ -99,6 +100,7 @@ cp LICENSE README.md AI_ASSISTANCE.md PRIVACY.md THIRD_PARTY_NOTICES.md "${RELEA
 find "${RELEASE_DIR}/data/backups" -mindepth 1 -delete
 find "${RELEASE_DIR}/data/exports" -mindepth 1 -delete
 find "${RELEASE_DIR}/data/imports" -mindepth 1 -delete
+find "${RELEASE_DIR}/data/cache/compendium" -mindepth 1 -delete
 rm -f "${RELEASE_DIR}/data/enCounter-startup-error.log"
 
 chmod +x "${RELEASE_DIR}/enCounter"

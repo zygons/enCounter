@@ -93,3 +93,15 @@ test("Asset CSS uses distinct image grid and audio row layouts", () => {
   assert.match(css, /\.asset-import-grid\s*\{/);
   assert.match(css, /@media \(max-width: 1100px\)/);
 });
+
+
+test("Asset deletion UI checks references before calling the local delete endpoint", () => {
+  const assets = read("programs/app/js/modules/assets.js");
+  const launcher = read("programs/launcher.py");
+  assert.match(assets, /findReferences\(url\)/);
+  assert.match(assets, /createDeleteButton\(item\)/);
+  assert.match(assets, /Cannot delete/);
+  assert.match(launcher, /def do_DELETE\(self\):/);
+  assert.match(launcher, /\/api\/assets\/delete/);
+  assert.match(launcher, /Application branding assets cannot be deleted/);
+});

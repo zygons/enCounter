@@ -124,6 +124,42 @@ ENC.DEFAULT_SETTINGS = {
   },
   externalBackup: true,
   snapshotLimit: 20,
+  uiTheme: "scifi",
+};
+
+ENC.UI_THEMES = new Set(["original", "scifi", "fantasy"]);
+
+ENC.normalizeUiTheme = function (theme) {
+  const value = String(theme || "").trim().toLowerCase();
+  return ENC.UI_THEMES.has(value) ? value : "scifi";
+};
+
+ENC.applyUiTheme = function (theme, root = document.body) {
+  const normalized = ENC.normalizeUiTheme(theme);
+
+  if (root?.classList) {
+    root.classList.remove("theme-original", "theme-scifi", "theme-fantasy");
+    root.classList.add(`theme-${normalized}`);
+    root.dataset.uiTheme = normalized;
+  }
+
+  try {
+    localStorage.setItem("encounter-ui-theme", normalized);
+  } catch (error) {
+    console.warn("Unable to persist UI theme preference:", error);
+  }
+
+  const subtitle = document.getElementById("themeSidebarSubtitle");
+  if (subtitle) {
+    subtitle.textContent =
+      normalized === "fantasy"
+        ? "ADVENTURE DM CONSOLE"
+        : normalized === "scifi"
+          ? "TACTICAL DM CONSOLE"
+          : "TTRPG ENCOUNTER CONSOLE";
+  }
+
+  return normalized;
 };
 
 ENC.LIBRARY_TYPES = new Set(["player", "npc", "enemy", "creature"]);
@@ -534,6 +570,7 @@ ENC.normalizeSettings = function (settings = {}) {
     customProfile: ENC.normalizeCustomProfile(source.customProfile),
     externalBackup: source.externalBackup !== false,
     snapshotLimit,
+    uiTheme: ENC.normalizeUiTheme(source.uiTheme || "scifi"),
   };
 };
 
@@ -695,6 +732,17 @@ ENC.normalizeLibraryEntry = function (entry = {}) {
     tags: Array.isArray(source.tags)
       ? source.tags.map((tag) => String(tag).trim()).filter(Boolean)
       : [],
+    compendiumSource:
+      source.compendiumSource && typeof source.compendiumSource === "object"
+        ? {
+            provider: String(source.compendiumSource.provider || ""),
+            key: String(source.compendiumSource.key || ""),
+            documentKey: String(source.compendiumSource.documentKey || ""),
+            documentName: String(source.compendiumSource.documentName || ""),
+            sourceUrl: String(source.compendiumSource.sourceUrl || ""),
+            license: String(source.compendiumSource.license || ""),
+          }
+        : null,
     createdAt: String(source.createdAt || now),
     updatedAt: String(source.updatedAt || now),
   };
@@ -792,6 +840,65 @@ ENC.resetCombatantTransientState = function (combatant = {}) {
     delayed: false,
     ready: false,
   };
+};
+
+ENC.syncCombatantIdentityFromLibrary = function (combatant = {}, libraryEntry = {}) {
+  const source = ENC.normalizeCombatant(combatant);
+  const library = ENC.normalizeLibraryEntry(libraryEntry);
+
+  return ENC.normalizeCombatant(
+    {
+      ...source,
+      name: library.name,
+      type: library.type,
+      portrait: library.portrait,
+      sourceLibraryId: source.sourceLibraryId || library.id,
+    },
+    source.systemId,
+    source.customProfile,
+  );
+};
+
+ENC.syncCombatantDetailsFromLibrary = function (combatant = {}, libraryEntry = {}) {
+  const source = ENC.normalizeCombatant(combatant);
+  const library = ENC.normalizeLibraryEntry(libraryEntry);
+
+  // Library sync updates durable character data while preserving every piece
+  // of live encounter state. In particular, Current HP is never reset merely
+  // because Maximum HP changed in the Library.
+  return ENC.normalizeCombatant(
+    {
+      ...source,
+      name: library.name,
+      type: library.type,
+      systemId: library.systemId,
+      customProfile: ENC.deepClone(library.customProfile),
+      portrait: library.portrait,
+      maxHp: library.maxHp,
+      stats: ENC.deepClone(library.stats),
+      abilities: ENC.deepClone(library.abilities),
+      resources: ENC.deepClone(library.resources),
+      notes: library.notes,
+      tags: ENC.deepClone(library.tags),
+      sourceLibraryId: source.sourceLibraryId || library.id,
+
+      // Explicit live-state preservation.
+      id: source.id,
+      initiative: source.initiative,
+      hp: source.hp,
+      conditionTrack: source.conditionTrack,
+      dnd5eConditions: ENC.deepClone(source.dnd5eConditions),
+      dnd5eExhaustion: source.dnd5eExhaustion,
+      visibleStatus: source.visibleStatus,
+      combatState: source.combatState,
+      hidden: source.hidden,
+      delayed: source.delayed,
+      ready: source.ready,
+      createdOrder: source.createdOrder,
+    },
+    library.systemId,
+    library.customProfile,
+  );
 };
 
 ENC.normalizeEncounter = function (encounter = {}) {

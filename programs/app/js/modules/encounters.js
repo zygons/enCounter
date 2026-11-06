@@ -194,6 +194,67 @@ ENC.encounterUI = {
     return encounter;
   },
 
+  async createNewTemplate() {
+    const requested = prompt("New encounter build name:", "New Encounter");
+    if (!requested?.trim()) return;
+
+    const current = ENC.combat?.encounter;
+    if (
+      ENC.isMeaningfulEncounter(current) &&
+      !confirm(
+        "Create a new encounter build? The current Run encounter will be cleared after a recovery snapshot is created. Saved encounters and Library data will not be deleted.",
+      )
+    ) {
+      return;
+    }
+
+    const systemId =
+      document.getElementById("encounterSystem")?.value ||
+      current?.systemId ||
+      ENC.settingsUI?.settings?.systemId ||
+      "generic";
+    const customProfile = ENC.deepClone(
+      current?.customProfile ||
+        ENC.settingsUI?.settings?.customProfile ||
+        ENC.DEFAULT_SETTINGS.customProfile,
+    );
+
+    const blank = ENC.createDefaultEncounter();
+    blank.name = requested.trim();
+    blank.systemId = systemId;
+    blank.customProfile = customProfile;
+    blank.sourceEncounterId = null;
+    blank.phase = "prepared";
+    blank.playerDisplayMode = "standby";
+    blank.combatants = [];
+
+    const saved = await ENC.db.saveEncounterTemplate(
+      blank,
+      blank.name,
+      null,
+    );
+
+    // A new Prepare build intentionally clears any currently loaded/ad hoc
+    // Run encounter so the old session cannot remain ghost-loaded.
+    await ENC.combat?.resetActiveEncounter?.({
+      name: "Ad Hoc Encounter",
+      confirmReset: false,
+      snapshotReason: "before prepare encounter build",
+      toastMessage: null,
+    });
+
+    await this.refreshSaved();
+
+    const select = document.getElementById("savedTemplateSelect");
+    if (select) select.value = saved.id;
+
+    ENC.encounterSetupUI?.syncFromSelection?.();
+    this.renderPhase();
+    ENC.app.toast(
+      `New encounter build “${saved.name}” created in Prepare. Add combatants and configure the setup here, then load it from Run when ready.`,
+    );
+  },
+
   async saveTemplate(updateExisting = false) {
     const encounter = this.captureEncounterConfiguration();
     if (!encounter) return;
@@ -332,20 +393,22 @@ ENC.encounterUI = {
   },
 
   async loadEncounterById(id, expectedMode) {
-    if (!id) return;
+    if (!id) return false;
 
     const item = this.saved.find((entry) => entry.id === id);
     if (!item) {
-      return ENC.app.toast("Saved encounter could not be found.");
+      ENC.app.toast("Saved encounter could not be found.");
+      return false;
     }
 
     const actualMode = item.saveMode === "state" ? "state" : "template";
     if (actualMode !== expectedMode) {
-      return ENC.app.toast(
+      ENC.app.toast(
         expectedMode === "state"
           ? "Choose a saved encounter state."
           : "Choose a reusable encounter template.",
       );
+      return false;
     }
 
     const description =
@@ -356,19 +419,33 @@ ENC.encounterUI = {
         `Load ${description} “${item.name}”? Your current working encounter will be replaced.`,
       )
     ) {
-      return;
+      return false;
     }
 
     ENC.audio?.stopAll(250);
+    await ENC.app?.clearRuntimeTimerCheckpoint?.();
 
     const loaded = await ENC.db.loadSavedEncounter(id);
     if (!loaded) {
-      return ENC.app.toast("Saved encounter could not be loaded.");
+      ENC.app.toast("Saved encounter could not be loaded.");
+      return false;
     }
 
     ENC.applyEncounterPresentation(loaded);
     ENC.combat.encounter = loaded;
-    ENC.audio?.setSoundscape(loaded.soundscape);
+
+    // Reusable templates are linked preparation material, so refresh their
+    // durable Library-backed data at load time. Saved States are historical
+    // checkpoints and intentionally retain the exact character data saved.
+    if (actualMode === "template") {
+      await ENC.combat.syncLinkedIdentities({
+        full: true,
+        persist: true,
+        broadcast: false,
+      });
+    }
+
+    ENC.audio?.setSoundscape(ENC.combat.encounter.soundscape);
 
     if (actualMode === "state" && item.timerCheckpoint) {
       ENC.app.applySavedTimerCheckpoint?.(item.timerCheckpoint, {
@@ -424,6 +501,18 @@ ENC.encounterUI = {
           : `Loaded template ${loaded.name}.`,
       );
     }
+
+    return true;
+  },
+
+  resetQuickLoadMenu() {
+    const templateSelect = document.getElementById("quickTemplateSelect");
+    const stateSelect = document.getElementById("quickStateSelect");
+    const menu = document.querySelector(".encounter-load-menu");
+
+    if (templateSelect) templateSelect.value = "";
+    if (stateSelect) stateSelect.value = "";
+    if (menu) menu.open = false;
   },
 
   async loadTemplate() {
@@ -447,13 +536,17 @@ ENC.encounterUI = {
   async quickLoadTemplate() {
     const id = document.getElementById("quickTemplateSelect")?.value;
     if (!id) return ENC.app.toast("Choose a reusable template first.");
-    await this.loadEncounterById(id, "template");
+
+    const loaded = await this.loadEncounterById(id, "template");
+    if (loaded) this.resetQuickLoadMenu();
   },
 
   async quickLoadState() {
     const id = document.getElementById("quickStateSelect")?.value;
     if (!id) return ENC.app.toast("Choose a saved encounter state first.");
-    await this.loadEncounterById(id, "state");
+
+    const loaded = await this.loadEncounterById(id, "state");
+    if (loaded) this.resetQuickLoadMenu();
   },
 
   async deleteSavedById(id, expectedMode) {
@@ -518,15 +611,22 @@ ENC.encounterUI = {
     await this.deleteSavedById(id, "state");
   },
 
-  async setPhase(phase, displayMode) {
+  async setPhase(phase, displayMode, options = {}) {
     const encounter = ENC.combat?.encounter;
     if (!encounter) return;
+
+    const previousPhase = encounter.phase || "prepared";
+    const transition = String(options.transition || "");
 
     // Re-apply the prepared template presentation at the moment it is used.
     // This prevents a stale live-control field from dropping saved media.
     ENC.applyEncounterPresentation(encounter);
     encounter.phase = phase;
     encounter.playerDisplayMode = displayMode;
+
+    // Apply the Player Display presentation immediately so Scene/Combat
+    // changes do not wait on persistence or audio transitions.
+    ENC.app.setPlayerDisplayMode?.(displayMode);
     ENC.audio?.setSoundscape(encounter.soundscape);
 
     if (phase === "combat") {
@@ -545,21 +645,37 @@ ENC.encounterUI = {
        */
       if (
         encounter.soundscape?.autoSwitchToCombat !== false &&
-        this.hasCombatAudio(encounter.soundscape)
+        (this.hasCombatAudio(encounter.soundscape) || ENC.audio?.mode === "scene")
       ) {
         try {
+          /*
+           * playCombat() also owns the Scene -> Combat transition. Calling it
+           * when Scene audio is already playing ensures Scene music stops and
+           * Scene ambience applies its continue / duck / stop behavior even
+           * when no dedicated Combat track is configured.
+           */
           await ENC.audio?.playCombat();
         } catch (error) {
           ENC.app.toast(error.message);
         }
       }
     } else if (phase === "scene" && displayMode === "scene") {
-      /*
-       * Show Scene now means show the prepared scene presentation: background
-       * plus configured scene audio. This removes the need for a separate
-       * Scene Audio click during normal prepared play.
-       */
-      if (this.hasSceneAudio(encounter.soundscape) && ENC.audio?.mode !== "scene") {
+      const endingCombat =
+        previousPhase === "combat" && transition === "end-combat";
+      const returnToScene =
+        encounter.soundscape?.returnToSceneAfterCombat !== false;
+
+      if (endingCombat && !returnToScene) {
+        /*
+         * End Combat must never leave Combat audio playing when automatic
+         * return-to-scene audio is disabled. Explicit Show Scene remains a
+         * separate DM action and can still start Scene audio on demand.
+         */
+        if (ENC.audio?.mode !== "stopped") ENC.audio?.stopAll();
+      } else if (
+        this.hasSceneAudio(encounter.soundscape) &&
+        ENC.audio?.mode !== "scene"
+      ) {
         try {
           await ENC.audio?.playScene();
         } catch (error) {
@@ -580,7 +696,6 @@ ENC.encounterUI = {
     }
 
     await ENC.combat.save(`phase changed: ${phase}`);
-    ENC.app.setPlayerDisplayMode?.(displayMode);
 
     ENC.combat.render();
 
@@ -627,6 +742,10 @@ ENC.encounterUI = {
       ?.addEventListener("click", () => this.loadTemplate());
 
     document
+      .getElementById("dmNewEncounterBtn")
+      ?.addEventListener("click", () => this.createNewTemplate());
+
+    document
       .getElementById("saveNewTemplateBtn")
       ?.addEventListener("click", () => this.saveTemplate(false));
 
@@ -656,15 +775,21 @@ ENC.encounterUI = {
 
     document
       .getElementById("showSceneBtn")
-      ?.addEventListener("click", () => this.setPhase("scene", "scene"));
+      ?.addEventListener("click", () =>
+        this.setPhase("scene", "scene", { transition: "show-scene" }),
+      );
 
     document
       .getElementById("startCombatBtn")
-      ?.addEventListener("click", () => this.setPhase("combat", "combat"));
+      ?.addEventListener("click", () =>
+        this.setPhase("combat", "combat", { transition: "start-combat" }),
+      );
 
     document
       .getElementById("endCombatBtn")
-      ?.addEventListener("click", () => this.setPhase("scene", "standby"));
+      ?.addEventListener("click", () =>
+        this.setPhase("scene", "scene", { transition: "end-combat" }),
+      );
 
     document
       .getElementById("startSceneAudioBtn")

@@ -10,6 +10,7 @@ ENC.combat = {
   expandedCombatantIds: new Set(),
   conditionEditorIds: new Set(),
   libraryPickerType: "player",
+  addCombatantSource: "library",
 
   settings() {
     return ENC.settingsUI.settings || ENC.DEFAULT_SETTINGS;
@@ -21,8 +22,134 @@ ENC.combat = {
 
   async load() {
     this.encounter = await ENC.db.getActiveEncounter();
+    await this.syncLinkedIdentities({ persist: true, broadcast: false });
     ENC.sortCombatants(this.encounter.combatants);
     return this.encounter;
+  },
+
+  async getLibraryEntriesForSync() {
+    const loaded = ENC.libraryUI?.entries;
+    if (Array.isArray(loaded) && loaded.length) return loaded;
+    return ENC.db.getAll("library");
+  },
+
+  compendiumIdentity(entry) {
+    const source = entry?.compendiumSource;
+    if (!source?.provider) return "";
+    const key = source.key || source.documentKey;
+    if (!key) return "";
+    return `${String(source.provider)}::${String(key)}`;
+  },
+
+  async syncLinkedIdentities({ persist = true, broadcast = false, full = false } = {}) {
+    if (!this.encounter?.combatants?.length) return 0;
+
+    const libraryEntries = await this.getLibraryEntriesForSync();
+    const normalizedLibraryEntries = libraryEntries.map((entry) => ENC.normalizeLibraryEntry(entry));
+    const libraryById = new Map(
+      normalizedLibraryEntries.map((entry) => [String(entry.id), entry]),
+    );
+    const libraryByCompendium = new Map(
+      normalizedLibraryEntries
+        .map((entry) => [this.compendiumIdentity(entry), entry])
+        .filter(([identity]) => Boolean(identity)),
+    );
+
+    let changed = 0;
+    for (let index = 0; index < this.encounter.combatants.length; index += 1) {
+      const combatant = this.encounter.combatants[index];
+      const libraryEntry = combatant.sourceLibraryId
+        ? libraryById.get(String(combatant.sourceLibraryId))
+        : libraryByCompendium.get(this.compendiumIdentity(combatant));
+      if (!libraryEntry) continue;
+
+      const before = full
+        ? JSON.stringify(combatant)
+        : JSON.stringify({
+            name: combatant.name,
+            type: combatant.type,
+            portrait: combatant.portrait,
+            sourceLibraryId: combatant.sourceLibraryId || null,
+          });
+      const synced = full
+        ? ENC.syncCombatantDetailsFromLibrary(combatant, libraryEntry)
+        : ENC.syncCombatantIdentityFromLibrary(combatant, libraryEntry);
+      const after = full
+        ? JSON.stringify(synced)
+        : JSON.stringify({
+            name: synced.name,
+            type: synced.type,
+            portrait: synced.portrait,
+            sourceLibraryId: synced.sourceLibraryId || null,
+          });
+
+      if (before !== after) {
+        this.encounter.combatants[index] = synced;
+        changed += 1;
+      }
+    }
+
+    if (changed && persist) {
+      await ENC.db.saveActiveEncounter(this.encounter);
+      if (broadcast) {
+        ENC.sync.broadcast("encounter-updated", { encounter: this.encounter });
+      }
+    }
+
+    return changed;
+  },
+
+  async syncLinkedLibraryEntry(entry, { full = false } = {}) {
+    if (!this.encounter?.combatants?.length || !entry?.id) return 0;
+    const libraryEntry = ENC.normalizeLibraryEntry(entry);
+    let changed = 0;
+
+    const libraryCompendiumIdentity = this.compendiumIdentity(libraryEntry);
+
+    this.encounter.combatants = this.encounter.combatants.map((combatant) => {
+      const linkedByLibraryId =
+        String(combatant.sourceLibraryId || "") === String(libraryEntry.id);
+      const linkedByCompendium =
+        !combatant.sourceLibraryId &&
+        Boolean(libraryCompendiumIdentity) &&
+        this.compendiumIdentity(combatant) === libraryCompendiumIdentity;
+
+      if (!linkedByLibraryId && !linkedByCompendium) {
+        return combatant;
+      }
+
+      const synced = full
+        ? ENC.syncCombatantDetailsFromLibrary(combatant, libraryEntry)
+        : ENC.syncCombatantIdentityFromLibrary(combatant, libraryEntry);
+      if (JSON.stringify(combatant) !== JSON.stringify(synced)) changed += 1;
+      return synced;
+    });
+
+    if (changed) {
+      await this.save(full ? "combatant synced from library" : null);
+      this.render();
+    }
+
+    return changed;
+  },
+
+  async syncCombatantFromLibrary(combatant) {
+    if (!combatant?.sourceLibraryId) {
+      return ENC.app.toast("This combatant is not linked to a Library entry.");
+    }
+
+    const libraryEntry = await ENC.db.get("library", combatant.sourceLibraryId);
+    if (!libraryEntry) {
+      return ENC.app.toast("The linked Library entry could not be found.");
+    }
+
+    const synced = ENC.syncCombatantDetailsFromLibrary(combatant, libraryEntry);
+    Object.assign(combatant, synced);
+    await this.save("combatant synced from library");
+    this.render();
+    ENC.app.toast(
+      `${combatant.name} synced from Library. Current HP and live combat state were preserved.`,
+    );
   },
 
   async save(reason = null) {
@@ -75,7 +202,67 @@ ENC.combat = {
         this.encounter.combatants.find((c) => c.combatState === "active")?.id ||
         combatant.id;
     await this.save("combatant added");
+
+    // Phase 3.1.10: verify that the combatant was actually persisted to the
+    // active encounter before reporting success to the Compendium workflow.
+    const persistedEncounter = await ENC.db.getActiveEncounter();
+    const persistedCombatant = persistedEncounter?.combatants?.find((item) => item.id === combatant.id);
+    if (!persistedCombatant) {
+      throw new Error(`${combatant.name || "Combatant"} was not found after saving the encounter.`);
+    }
+
+    this.encounter = persistedEncounter;
+    ENC.sortCombatants(this.encounter.combatants);
     this.render();
+    return persistedCombatant;
+  },
+
+  async addCompendiumEntry(entry, initiative = 10) {
+    const normalizedEntry = ENC.normalizeLibraryEntry({
+      ...ENC.deepClone(entry),
+      id: entry.id || ENC.makeId("cmp"),
+    });
+    const combatant = ENC.normalizeCombatant(
+      {
+        ...normalizedEntry,
+        id: ENC.makeId("cmb"),
+        sourceLibraryId: null,
+        initiative,
+        hp: normalizedEntry.maxHp ?? "",
+        conditionTrack: "Normal",
+        dnd5eConditions: [],
+        dnd5eExhaustion: 0,
+        visibleStatus: "",
+        combatState: "active",
+        hidden: false,
+        delayed: false,
+        ready: false,
+        createdOrder: Date.now() + Math.random(),
+      },
+      normalizedEntry.systemId,
+      normalizedEntry.customProfile,
+    );
+    this.encounter.combatants.push(combatant);
+    ENC.sortCombatants(this.encounter.combatants);
+    if (!this.encounter.currentId) {
+      this.encounter.currentId =
+        this.encounter.combatants.find((c) => c.combatState === "active")?.id ||
+        combatant.id;
+    }
+    await this.save("compendium combatant added");
+
+    // Phase 3.1.10: read the encounter back from IndexedDB so Add to Encounter
+    // only reports success after persistence has been confirmed.
+    const persistedEncounter = await ENC.db.getActiveEncounter();
+    const persistedCombatant = persistedEncounter?.combatants?.find((item) => item.id === combatant.id);
+    if (!persistedCombatant) {
+      throw new Error(`${combatant.name || "Combatant"} was not found after saving the encounter.`);
+    }
+
+    this.encounter = persistedEncounter;
+    ENC.sortCombatants(this.encounter.combatants);
+    this.render();
+    return persistedCombatant;
   },
 
   async quickAdd() {
@@ -160,16 +347,26 @@ ENC.combat = {
     this.followCurrentTurn();
   },
 
+  async setHp(combatant, value) {
+    const parsed = Number(value);
+    if (!Number.isFinite(parsed)) return false;
+
+    const max =
+      combatant.maxHp === "" ? null : ENC.finiteNumber(combatant.maxHp, null);
+    let next = Math.max(0, parsed);
+    if (max !== null && Number.isFinite(max)) next = Math.min(max, next);
+
+    if (combatant.hp === next) return true;
+    combatant.hp = next;
+    await this.save();
+    this.render();
+    return true;
+  },
+
   async changeHp(combatant, amount) {
     const current = ENC.finiteNumber(combatant.hp, 0);
     const delta = ENC.finiteNumber(amount, 0);
-    const max =
-      combatant.maxHp === "" ? null : ENC.finiteNumber(combatant.maxHp, null);
-    let next = current + delta;
-    if (max !== null && Number.isFinite(max)) next = Math.min(max, next);
-    combatant.hp = Math.max(0, Number.isFinite(next) ? next : 0);
-    await this.save();
-    this.render();
+    await this.setHp(combatant, current + delta);
   },
 
   async customHp(combatant, heal = false) {
@@ -407,13 +604,47 @@ ENC.combat = {
     cell.className = "combatant-hp-cell";
 
     const value = document.createElement("div");
-    value.className = "combatant-hp-value";
-    if (metrics.current === null) {
-      value.textContent = "—";
-    } else if (metrics.max !== null && metrics.max > 0) {
-      value.textContent = `${metrics.current} / ${metrics.max}`;
-    } else {
-      value.textContent = String(metrics.current);
+    value.className = "combatant-hp-value combatant-hp-editor";
+
+    const input = document.createElement("input");
+    input.className = "combatant-hp-input";
+    input.type = "number";
+    input.min = "0";
+    input.step = "1";
+    input.inputMode = "numeric";
+    input.value = metrics.current === null ? "" : String(metrics.current);
+    input.placeholder = "—";
+    input.setAttribute("aria-label", `Current HP for ${combatant.name}`);
+    input.title = "Enter exact current HP and press Enter or click away";
+    if (metrics.max !== null && Number.isFinite(metrics.max)) {
+      input.max = String(metrics.max);
+    }
+
+    const originalValue = input.value;
+    input.addEventListener("keydown", (event) => {
+      if (event.key === "Enter") {
+        event.preventDefault();
+        input.blur();
+      } else if (event.key === "Escape") {
+        input.value = originalValue;
+        input.blur();
+      }
+    });
+    input.addEventListener("change", async () => {
+      if (input.value.trim() === "") {
+        input.value = originalValue;
+        return;
+      }
+      const accepted = await this.setHp(combatant, input.value);
+      if (!accepted) input.value = originalValue;
+    });
+
+    value.appendChild(input);
+    if (metrics.max !== null && metrics.max > 0) {
+      const max = document.createElement("span");
+      max.className = "combatant-hp-max";
+      max.textContent = `/ ${metrics.max}`;
+      value.appendChild(max);
     }
     cell.appendChild(value);
 
@@ -732,6 +963,20 @@ ENC.combat = {
       );
     }
 
+    if (combatant.sourceLibraryId) {
+      actionGroups.appendChild(
+        this.createActionButton(
+          "Sync from Library",
+          () => this.syncCombatantFromLibrary(combatant),
+          {
+            className: "library-sync-action",
+            title:
+              "Refresh Max HP, stats, abilities, notes, portrait, and identity from the Library while preserving Current HP and live combat state.",
+          },
+        ),
+      );
+    }
+
     const remove = this.createActionButton(
       "Remove from Encounter",
       async () => {
@@ -792,10 +1037,19 @@ ENC.combat = {
     name.textContent = combatant.name;
     const meta = document.createElement("span");
     meta.className = "combatant-meta-line";
-    meta.textContent = `${ENC.getSystemLabel(
+    const metaText = document.createElement("span");
+    metaText.textContent = `${ENC.getSystemLabel(
       combatant.systemId,
       combatant.customProfile,
     )} · ${combatant.type}`;
+    meta.appendChild(metaText);
+    if (combatant.sourceLibraryId) {
+      const linked = document.createElement("span");
+      linked.className = "combatant-library-link-badge";
+      linked.textContent = "Library linked";
+      linked.title = "Portrait and basic identity follow this combatant's Library entry.";
+      meta.appendChild(linked);
+    }
     identityText.append(name, meta);
     identity.appendChild(identityText);
     summary.appendChild(identity);
@@ -921,6 +1175,98 @@ ENC.combat = {
     return card;
   },
 
+  renderCurrentTurnFocus() {
+    if (!this.encounter) return;
+
+    const title = document.getElementById("runEncounterTitle");
+    if (title) title.textContent = this.encounter.name || "Active Encounter";
+
+    const subtitle = document.getElementById("runEncounterSubtitle");
+    if (subtitle) {
+      const phase = String(this.encounter.phase || "prepared").toUpperCase();
+      subtitle.textContent = `Round ${this.encounter.round || 1} // ${phase}`;
+    }
+
+    const label = document.getElementById("currentTurnFocusLabel");
+    const body = document.getElementById("currentTurnFocusBody");
+    const portraitHost = document.getElementById("currentTurnPortraitHost");
+    const name = document.getElementById("currentTurnName");
+    const meta = document.getElementById("currentTurnMeta");
+    const hp = document.getElementById("currentTurnHp");
+    const hpFill = document.getElementById("currentTurnHpFill");
+    const defenseLabel = document.getElementById("currentTurnDefenseLabel");
+    const defense = document.getElementById("currentTurnDefense");
+    const initiative = document.getElementById("currentTurnInitiative");
+    const statuses = document.getElementById("currentTurnStatuses");
+
+    const current = this.encounter.combatants.find(
+      (combatant) => combatant.id === this.encounter.currentId,
+    );
+
+    if (!current) {
+      if (label) label.textContent = "Awaiting combatant";
+      if (body) body.classList.add("is-empty");
+      if (portraitHost) {
+        portraitHost.innerHTML = "";
+        portraitHost.textContent = "?";
+      }
+      if (name) name.textContent = "No current turn";
+      if (meta) meta.textContent = "Start combat or set a combatant's turn.";
+      if (hp) hp.textContent = "—";
+      if (hpFill) {
+        hpFill.style.width = "0%";
+        hpFill.dataset.state = "unknown";
+      }
+      if (defenseLabel) defenseLabel.textContent = "DEF";
+      if (defense) defense.textContent = "—";
+      if (initiative) initiative.textContent = "—";
+      if (statuses) statuses.innerHTML = '<span class="combatant-status-empty">No active status</span>';
+      return;
+    }
+
+    if (label) label.textContent = current.name || "Current combatant";
+    if (body) body.classList.remove("is-empty");
+
+    if (portraitHost) {
+      portraitHost.innerHTML = "";
+      const portrait = this.portraitElement(current);
+      portrait.classList.add("current-turn-portrait-art");
+      portraitHost.appendChild(portrait);
+    }
+
+    if (name) name.textContent = current.name || "Unnamed combatant";
+    if (meta) {
+      meta.textContent = `${ENC.getSystemLabel(
+        current.systemId,
+        current.customProfile,
+      )} // ${current.type || "combatant"}`;
+    }
+
+    const metrics = this.hpMetrics(current);
+    if (hp) {
+      if (metrics.current === null) hp.textContent = "—";
+      else if (metrics.max !== null && metrics.max > 0) hp.textContent = `${metrics.current} / ${metrics.max}`;
+      else hp.textContent = String(metrics.current);
+    }
+    if (hpFill) {
+      hpFill.style.width = metrics.percent === null ? "0%" : `${metrics.percent}%`;
+      hpFill.dataset.state = metrics.state;
+    }
+
+    const defenses = this.primaryDefenseSummary(current).filter(
+      (item) => item.value !== "" && item.value !== undefined && item.value !== null,
+    );
+    if (defenseLabel) defenseLabel.textContent = defenses[0]?.label || "DEF";
+    if (defense) defense.textContent = defenses[0]?.value ?? "—";
+    if (initiative) initiative.textContent = current.initiative ?? "—";
+
+    if (statuses) {
+      statuses.innerHTML = "";
+      const source = this.renderStatusCell(current);
+      while (source.firstChild) statuses.appendChild(source.firstChild);
+    }
+  },
+
   render() {
     if (!this.encounter) return;
     document.getElementById("encounterName").value = this.encounter.name;
@@ -948,6 +1294,7 @@ ENC.combat = {
     this.renderLibrarySelect();
     this.renderPresetControls();
     ENC.encounterUI?.renderPhase?.();
+    this.renderCurrentTurnFocus();
   },
 
   libraryEntryMatchesPicker(entry, pickerType = this.libraryPickerType) {
@@ -1092,6 +1439,7 @@ ENC.combat = {
       )
     )
       return;
+    await ENC.app?.clearRuntimeTimerCheckpoint?.();
     this.encounter = ENC.deepClone(preset);
     this.encounter.id = "active";
     this.encounter.kind = "active";
@@ -1120,27 +1468,38 @@ ENC.combat = {
     ENC.soundscapeUI?.render?.();
   },
 
-  async newEncounter() {
+  async resetActiveEncounter({
+    name = "Ad Hoc Encounter",
+    confirmReset = true,
+    snapshotReason = "before new encounter",
+    toastMessage = "Ad hoc encounter ready.",
+  } = {}) {
     if (
+      confirmReset &&
       !confirm(
-        "Start a new encounter? Permanent library data will not be deleted.",
+        "Start a clean encounter? The current Run encounter will be cleared. Permanent Library data and saved encounters will not be deleted.",
       )
-    )
-      return;
+    ) {
+      return false;
+    }
 
     const previousEncounter = this.encounter
       ? ENC.deepClone(this.encounter)
       : null;
+
     if (ENC.isMeaningfulEncounter(previousEncounter)) {
       await ENC.db.addSnapshot(
         previousEncounter,
-        "before new encounter",
+        snapshotReason,
         this.settings().snapshotLimit || 20,
       );
     }
 
     const systemId =
-      this.encounter?.systemId || this.settings().systemId || "generic";
+      document.getElementById("encounterSystem")?.value ||
+      this.encounter?.systemId ||
+      this.settings().systemId ||
+      "generic";
     const customProfile = ENC.deepClone(
       this.encounter?.customProfile ||
         this.settings().customProfile ||
@@ -1148,26 +1507,85 @@ ENC.combat = {
     );
 
     ENC.audio?.stopAll(250);
-    this.encounter = ENC.createDefaultEncounter();
-    this.encounter.systemId = systemId;
-    this.encounter.customProfile = customProfile;
-    this.encounter.phase = "prepared";
-    this.encounter.playerDisplayMode = "standby";
+    await ENC.app?.clearRuntimeTimerCheckpoint?.();
+
+    const fresh = ENC.createDefaultEncounter();
+    fresh.name = String(name || "Ad Hoc Encounter").trim() || "Ad Hoc Encounter";
+    fresh.systemId = systemId;
+    fresh.customProfile = customProfile;
+    fresh.sourceEncounterId = null;
+    fresh.phase = "prepared";
+    fresh.playerDisplayMode = "standby";
+    fresh.round = 1;
+    fresh.currentId = null;
+    fresh.combatants = [];
+    fresh.background = "";
+    fresh.display = {
+      sceneImage: "",
+      combatImage: "",
+    };
+    fresh.soundscape = ENC.createDefaultSoundscape();
+    fresh.presentation = {
+      schemaVersion: 1,
+      sceneBackground: "",
+      combatBackground: "",
+      soundscape: ENC.createDefaultSoundscape(),
+    };
+    fresh.timer = ENC.createDefaultTimerConfig();
+
+    this.encounter = fresh;
     ENC.app.playerDisplayMode = "standby";
     ENC.app.playerDisplayPaused = true;
-    ENC.app?.applyPreparedTimerConfig?.(this.encounter.timer, {
+    ENC.app?.applyPreparedTimerConfig?.(fresh.timer, {
       broadcast: false,
     });
 
-    await this.save();
-    ENC.app?.renderSnapshots?.();
+    await ENC.db.saveActiveEncounter(fresh);
+    ENC.sync.broadcast("encounter-updated", { encounter: fresh });
+    ENC.backup.scheduleExternalBackup();
+
+    const templateSelect = document.getElementById("quickTemplateSelect");
+    const stateSelect = document.getElementById("quickStateSelect");
+    if (templateSelect) templateSelect.value = "";
+    if (stateSelect) stateSelect.value = "";
 
     this.render();
+    ENC.encounterUI?.renderPhase?.();
+    ENC.app?.renderSnapshots?.();
     ENC.app?.refreshEncounterMediaControls?.();
     ENC.soundscapeUI?.render?.();
     ENC.app?.broadcastDisplayState?.();
     ENC.app?.broadcastTimerState?.();
-    ENC.app?.toast("New encounter ready.");
+    if (toastMessage) ENC.app?.toast(toastMessage);
+    return true;
+  },
+
+  async newEncounter() {
+    return this.resetActiveEncounter({
+      name: "New Encounter",
+      confirmReset: true,
+      snapshotReason: "before new encounter",
+      toastMessage: "New encounter ready.",
+    });
+  },
+
+  showAddCombatantSource(source = "library") {
+    const allowed = new Set(["library", "compendium", "quick"]);
+    const target = allowed.has(source) ? source : "library";
+    this.addCombatantSource = target;
+
+    document.querySelectorAll("[data-add-source-tab]").forEach((button) => {
+      const active = button.dataset.addSourceTab === target;
+      button.classList.toggle("active", active);
+      button.setAttribute("aria-selected", String(active));
+    });
+
+    document.querySelectorAll("[data-add-source-panel]").forEach((panel) => {
+      panel.classList.toggle(
+        "active",
+        panel.dataset.addSourcePanel === target,
+      );
+    });
   },
 
   bind() {
@@ -1201,6 +1619,12 @@ ENC.combat = {
       });
     });
 
+    document.querySelectorAll("[data-add-source-tab]").forEach((button) => {
+      button.addEventListener("click", () => {
+        this.showAddCombatantSource(button.dataset.addSourceTab || "library");
+      });
+    });
+
     document
       .getElementById("addLibraryCombatantBtn")
       .addEventListener("click", async () => {
@@ -1225,13 +1649,23 @@ ENC.combat = {
         event.currentTarget.textContent = isHidden ? "+ Add Combatant" : "Close Add Combatant";
 
         if (!isHidden) {
+          this.showAddCombatantSource(this.addCombatantSource || "library");
           await ENC.libraryUI?.load?.();
           this.renderLibrarySelect();
         }
       });
     document
-      .getElementById("newEncounterBtn")
-      .addEventListener("click", () => this.newEncounter());
+      .getElementById("startAdHocEncounterBtn")
+      ?.addEventListener("click", async () => {
+        const requested = prompt("Ad hoc encounter name:", "Ad Hoc Encounter");
+        if (requested === null) return;
+        await this.resetActiveEncounter({
+          name: requested.trim() || "Ad Hoc Encounter",
+          confirmReset: true,
+          snapshotReason: "before ad hoc encounter",
+          toastMessage: "Clean ad hoc encounter ready.",
+        });
+      });
     document
       .getElementById("savePresetBtn")
       .addEventListener("click", () => this.savePreset());

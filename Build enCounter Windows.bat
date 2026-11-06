@@ -125,6 +125,7 @@ for %%D in (
 mkdir "%RELEASE_DIR%\data\backups" >nul 2>nul
 mkdir "%RELEASE_DIR%\data\exports" >nul 2>nul
 mkdir "%RELEASE_DIR%\data\imports" >nul 2>nul
+mkdir "%RELEASE_DIR%\data\cache\compendium" >nul 2>nul
 
 if exist "docs" xcopy "docs" "%RELEASE_DIR%\docs\" /E /I /Y >nul
 copy /Y "LICENSE" "%RELEASE_DIR%\LICENSE" >nul
@@ -138,6 +139,7 @@ REM Defensive cleanup: no prior user data may ship.
 del /q "%RELEASE_DIR%\data\backups\*" >nul 2>nul
 del /q "%RELEASE_DIR%\data\exports\*" >nul 2>nul
 del /q "%RELEASE_DIR%\data\imports\*" >nul 2>nul
+del /q "%RELEASE_DIR%\data\cache\compendium\*" >nul 2>nul
 del /q "%RELEASE_DIR%\data\enCounter-startup-error.log" >nul 2>nul
 
 echo.
@@ -166,7 +168,7 @@ echo.
 echo License: MIT
 echo.
 echo This build contains NO previous backups, exports, imports,
-echo saved Library data, or personal campaign assets.
+echo saved Library data, Compendium cache data, or personal campaign assets.
 echo.
 echo NOTE: Browser IndexedDB lives outside the folder.
 echo This Alpha uses enCounterAlphaDB.

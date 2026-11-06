@@ -117,6 +117,32 @@ ENC.encounterSetupUI = {
     ENC.soundscapeUI?.refreshAudioSelects?.();
   },
 
+  // Phase 3.1.14.1: refresh asset-backed Encounter Setup controls without
+  // discarding unsaved selections. This is used after an Asset Library import
+  // or delete so newly available media appears immediately in the template
+  // editor while the DM keeps the choices already made on screen.
+  refreshAssetOptions() {
+    const sceneSelect = this.el("encounterSetupSceneBackground");
+    const combatSelect = this.el("encounterSetupCombatBackground");
+    const sceneImage = sceneSelect?.value || "";
+    const combatImage = combatSelect?.value || "";
+
+    this.fillBackgroundSelect(
+      sceneSelect,
+      sceneImage,
+      "— Default Scene Screen —",
+    );
+    this.fillBackgroundSelect(
+      combatSelect,
+      combatImage,
+      "— Default Combat Screen —",
+    );
+
+    // soundscapeUI.refreshAudioSelects() preserves each select's current value
+    // when that asset still exists, so unsaved audio choices survive too.
+    ENC.soundscapeUI?.refreshAudioSelects?.();
+  },
+
   setTrack(prefix, track = {}, defaults = {}) {
     const asset = this.el(`${prefix}`); // select itself
     const volume = this.el(`${prefix}Volume`);
@@ -230,12 +256,156 @@ ENC.encounterSetupUI = {
     for (const combatant of combatants) {
       const chip = document.createElement("span");
       chip.className = "encounter-setup-combatant-chip";
+
+      const label = document.createElement("span");
       const type = ENC.libraryUI?.typeLabel?.(combatant.type) ||
         combatant.type ||
         "Combatant";
-      chip.textContent = `${combatant.name || "Unnamed"} · ${type}`;
+      label.textContent = `${combatant.name || "Unnamed"} · ${type}`;
+
+      const remove = document.createElement("button");
+      remove.type = "button";
+      remove.className = "encounter-setup-combatant-remove";
+      remove.textContent = "×";
+      remove.title = `Remove ${combatant.name || "combatant"} from template`;
+      remove.setAttribute("aria-label", remove.title);
+      remove.addEventListener("click", () =>
+        this.removeTemplateCombatant(combatant.id),
+      );
+
+      chip.append(label, remove);
       container.appendChild(chip);
     }
+  },
+
+  async refreshLibraryCombatantSelect(template = null) {
+    const select = this.el("encounterSetupLibraryCombatant");
+    if (!select) return;
+
+    let entries = ENC.libraryUI?.entries;
+    if (!Array.isArray(entries) || !entries.length) {
+      entries = await ENC.db.getAll("library");
+    }
+
+    const systemId = template?.systemId || "";
+    const eligible = (entries || [])
+      .map((entry) => ENC.normalizeLibraryEntry(entry))
+      .filter((entry) => !systemId || entry.systemId === systemId)
+      .sort((a, b) => String(a.name).localeCompare(String(b.name)));
+
+    const previous = select.value;
+    select.innerHTML = '<option value="">Choose Library character or creature…</option>';
+
+    for (const entry of eligible) {
+      const option = document.createElement("option");
+      option.value = entry.id;
+      const type = ENC.libraryUI?.typeLabel?.(entry.type) || entry.type || "Combatant";
+      option.textContent = `${entry.name} — ${type}`;
+      select.appendChild(option);
+    }
+
+    if ([...select.options].some((option) => option.value === previous)) {
+      select.value = previous;
+    }
+  },
+
+  async addLibraryCombatant() {
+    if (!this.templateId) {
+      return ENC.app.toast("Create or select a reusable encounter first.");
+    }
+
+    const libraryId = this.el("encounterSetupLibraryCombatant")?.value || "";
+    if (!libraryId) {
+      return ENC.app.toast("Choose a Library character or creature first.");
+    }
+
+    const libraryEntry =
+      ENC.libraryUI?.entries?.find?.((entry) => String(entry.id) === String(libraryId)) ||
+      (await ENC.db.get("library", libraryId));
+
+    if (!libraryEntry) {
+      return ENC.app.toast("The selected Library entry could not be found.");
+    }
+
+    const template = (ENC.encounterUI?.saved || []).find(
+      (item) => item.id === this.templateId && item.saveMode !== "state",
+    );
+    if (!template) {
+      return ENC.app.toast("The reusable encounter template could not be found.");
+    }
+
+    if (libraryEntry.systemId !== template.systemId) {
+      return ENC.app.toast("Choose a Library entry that uses the same game system as this encounter.");
+    }
+
+    const updated = ENC.deepClone(template);
+    const combatant = ENC.normalizeCombatant(
+      ENC.resetCombatantTransientState({
+        ...ENC.deepClone(libraryEntry),
+        id: ENC.makeId("cmb"),
+        sourceLibraryId: libraryEntry.id,
+        initiative: 10,
+        hp: libraryEntry.maxHp ?? "",
+        hidden: false,
+        createdOrder: Date.now() + Math.random(),
+      }),
+      libraryEntry.systemId,
+      libraryEntry.customProfile,
+    );
+
+    updated.combatants = Array.isArray(updated.combatants)
+      ? [...updated.combatants, combatant]
+      : [combatant];
+
+    const saved = await ENC.db.saveEncounterTemplate(
+      updated,
+      updated.name,
+      updated.id,
+    );
+
+    await ENC.encounterUI.refreshSaved();
+    const select = this.el("savedTemplateSelect");
+    if (select) select.value = saved.id;
+    this.templateId = saved.id;
+    this.renderTemplate(saved);
+    this.setSaveStatus(`${libraryEntry.name} added to template ✓`, "saved");
+    ENC.app.toast(`${libraryEntry.name} added to ${saved.name}.`);
+  },
+
+  async removeTemplateCombatant(combatantId) {
+    if (!this.templateId || !combatantId) return;
+
+    const template = (ENC.encounterUI?.saved || []).find(
+      (item) => item.id === this.templateId && item.saveMode !== "state",
+    );
+    if (!template) return;
+
+    const target = (template.combatants || []).find(
+      (combatant) => combatant.id === combatantId,
+    );
+    if (!target) return;
+
+    if (!confirm(`Remove ${target.name || "this combatant"} from the reusable encounter?`)) {
+      return;
+    }
+
+    const updated = ENC.deepClone(template);
+    updated.combatants = (updated.combatants || []).filter(
+      (combatant) => combatant.id !== combatantId,
+    );
+
+    const saved = await ENC.db.saveEncounterTemplate(
+      updated,
+      updated.name,
+      updated.id,
+    );
+
+    await ENC.encounterUI.refreshSaved();
+    const select = this.el("savedTemplateSelect");
+    if (select) select.value = saved.id;
+    this.templateId = saved.id;
+    this.renderTemplate(saved);
+    this.setSaveStatus(`${target.name || "Combatant"} removed from template ✓`, "saved");
   },
 
   renderTemplate(template) {
@@ -244,6 +414,7 @@ ENC.encounterSetupUI = {
 
     const soundscape = ENC.normalizeSoundscape(template.soundscape);
     this.refreshMediaSelects(template);
+    this.refreshLibraryCombatantSelect(template);
 
     this.el("encounterSetupName").textContent = template.name || "Template";
     const templateNameInput = this.el("encounterSetupTemplateName");
@@ -609,6 +780,10 @@ ENC.encounterSetupUI = {
 
     this.el("encounterSetupSaveBtn")?.addEventListener("click", () =>
       this.save(),
+    );
+
+    this.el("encounterSetupAddCombatantBtn")?.addEventListener("click", () =>
+      this.addLibraryCombatant(),
     );
 
     this.el("encounterSetupManageAssetsBtn")?.addEventListener("click", () =>

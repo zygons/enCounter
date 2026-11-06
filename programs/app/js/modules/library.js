@@ -141,6 +141,7 @@ ENC.libraryUI = {
         const search = document.getElementById("librarySearch").value.trim().toLowerCase();
         const type = document.getElementById("libraryTypeFilter")?.value || "all";
         const system = document.getElementById("librarySystemFilter").value;
+        const source = document.getElementById("librarySourceFilter")?.value || "all";
         return this.entries.filter((entry) => {
             if (type === "enemy-creature") {
                 if (entry.type !== "enemy" && entry.type !== "creature") return false;
@@ -148,6 +149,11 @@ ENC.libraryUI = {
                 return false;
             }
             if (system !== "all" && entry.systemId !== system) return false;
+
+            const isCompendiumEntry = Boolean(entry?.compendiumSource?.provider);
+            if (source === "custom" && isCompendiumEntry) return false;
+            if (source === "compendium" && !isCompendiumEntry) return false;
+
             if (search) {
                 const haystack = `${entry.name} ${(entry.tags || []).join(" ")} ${entry.notes || ""}`.toLowerCase();
                 if (!haystack.includes(search)) return false;
@@ -165,6 +171,132 @@ ENC.libraryUI = {
             })
             .filter(Boolean)
             .join(" | ");
+    },
+
+    sourceLabel(entry) {
+        return entry?.compendiumSource?.provider ? "SRD 5.1" : "Custom";
+    },
+
+    async portraitReferences(portraitUrl, excludingLibraryId = null) {
+        if (!portraitUrl) return [];
+        const references = [];
+
+        for (const item of this.entries) {
+            if (item.id === excludingLibraryId) continue;
+            if (item.portrait === portraitUrl) references.push(`Library: ${item.name}`);
+        }
+
+        try {
+            const encounters = await ENC.db.getAll("encounters");
+            for (const encounter of encounters || []) {
+                for (const combatant of encounter.combatants || []) {
+                    if (combatant.portrait === portraitUrl) {
+                        references.push(`Encounter: ${encounter.name || "Saved Encounter"} / ${combatant.name}`);
+                    }
+                }
+            }
+        } catch (error) {
+            console.warn("Could not scan saved encounters for portrait references", error);
+        }
+
+        const active = ENC.combat?.encounter;
+        if (active?.combatants) {
+            for (const combatant of active.combatants) {
+                if (combatant.portrait === portraitUrl) {
+                    references.push(`Current Encounter: ${combatant.name}`);
+                }
+            }
+        }
+
+        return [...new Set(references)];
+    },
+
+    async unlinkDeletedLibraryEntry(libraryId) {
+        const targetId = String(libraryId || "");
+        if (!targetId) return 0;
+
+        let unlinked = 0;
+        const unlinkCombatants = (combatants = []) => {
+            let changed = 0;
+            const next = (combatants || []).map((combatant) => {
+                if (String(combatant?.sourceLibraryId || "") !== targetId) return combatant;
+                changed += 1;
+                return { ...combatant, sourceLibraryId: null };
+            });
+            return { changed, combatants: next };
+        };
+
+        // Saved Templates, Saved States, and the persisted active encounter
+        // remain self-contained after their Library source is deleted. Remove
+        // only the dead link; copied combatant data is intentionally retained.
+        const encounters = await ENC.db.getAll("encounters").catch(() => []);
+        for (const encounter of encounters || []) {
+            const result = unlinkCombatants(encounter?.combatants);
+            if (!result.changed) continue;
+            await ENC.db.put("encounters", {
+                ...ENC.deepClone(encounter),
+                combatants: result.combatants,
+                updatedAt: new Date().toISOString(),
+            });
+            unlinked += result.changed;
+        }
+
+        // Recovery snapshots should not restore a combatant that claims to be
+        // linked to a Library record that no longer exists. The snapshot's
+        // copied character data and asset references remain unchanged.
+        const snapshots = await ENC.db.getAll("snapshots").catch(() => []);
+        for (const snapshot of snapshots || []) {
+            const result = unlinkCombatants(snapshot?.encounter?.combatants);
+            if (!result.changed) continue;
+            await ENC.db.put("snapshots", {
+                ...ENC.deepClone(snapshot),
+                encounter: {
+                    ...ENC.deepClone(snapshot.encounter),
+                    combatants: result.combatants,
+                },
+            });
+            unlinked += result.changed;
+        }
+
+        // Keep the in-memory Run encounter aligned with the persisted active
+        // record without creating an extra recovery snapshot.
+        const live = ENC.combat?.encounter;
+        if (live?.combatants?.length) {
+            const result = unlinkCombatants(live.combatants);
+            if (result.changed) {
+                live.combatants = result.combatants;
+                ENC.combat.render?.();
+                ENC.sync?.broadcast?.("encounter-updated", { encounter: live });
+            }
+        }
+
+        return unlinked;
+    },
+
+    async maybeDeletePortrait(entry) {
+        const portrait = entry?.portrait || "";
+        if (!portrait.startsWith("/assets/portraits/")) return;
+
+        // Use the same complete reference scan as Prepare → Assets. This
+        // includes saved Templates/States, the active encounter, and Recovery
+        // Snapshots so deleting a Library entry cannot orphan a recoverable
+        // portrait reference.
+        const references = await ENC.assets.findReferences(portrait);
+        if (references.length) {
+            ENC.app.toast(`Portrait kept because it is still used by ${references.length} other record${references.length === 1 ? "" : "s"}.`);
+            return;
+        }
+
+        const fileName = decodeURIComponent(portrait.split("/").pop() || "portrait");
+        const removePortrait = confirm(`Also delete the local portrait file “${fileName}” from the Asset Library?\n\nOK = delete portrait file\nCancel = keep portrait file`);
+        if (!removePortrait) return;
+
+        try {
+            await ENC.assets.deleteAsset(portrait);
+            ENC.app.toast("Library entry and portrait asset deleted.");
+        } catch (error) {
+            ENC.app.toast(`Library entry deleted, but portrait could not be removed: ${error.message}`);
+        }
     },
 
     render() {
@@ -206,6 +338,13 @@ ENC.libraryUI = {
             type.className = `library-type-badge type-${entry.type}`;
             type.textContent = this.typeLabel(entry.type);
             meta.appendChild(type);
+            const sourceBadge = document.createElement("span");
+            sourceBadge.className = `library-source-badge ${entry.compendiumSource?.provider ? "source-srd" : "source-custom"}`;
+            sourceBadge.textContent = this.sourceLabel(entry);
+            sourceBadge.title = entry.compendiumSource?.provider
+                ? "Imported from the D&D 5E SRD Compendium"
+                : "Created or managed locally";
+            meta.appendChild(sourceBadge);
             if (entry.tags?.length) {
                 const tags = document.createElement("span");
                 tags.textContent = entry.tags.slice(0, 2).join(" · ");
@@ -297,12 +436,20 @@ ENC.libraryUI = {
             del.className = "danger-outline";
             del.addEventListener("click", async () => {
                 if (!confirm(`Delete ${entry.name} from the permanent library?`)) return;
+                const deletedEntry = ENC.deepClone(entry);
                 await ENC.db.delete("library", entry.id);
+                const unlinked = await this.unlinkDeletedLibraryEntry(entry.id);
                 ENC.backup.scheduleExternalBackup();
                 await this.load();
                 this.render();
                 ENC.combat.renderLibrarySelect();
                 this.hideEditor();
+                ENC.app.toast(
+                    unlinked
+                        ? `Library entry deleted. ${unlinked} encounter reference${unlinked === 1 ? "" : "s"} safely unlinked.`
+                        : "Library entry deleted.",
+                );
+                await this.maybeDeletePortrait(deletedEntry);
             });
 
             menu.append(duplicate, exportOne, del);
@@ -341,8 +488,22 @@ ENC.libraryUI = {
         await this.load();
         this.render();
         ENC.combat.renderLibrarySelect();
+
+        // Phase 3.1.13.2: immediately refresh any combatants already in the
+        // active encounter that are linked to this Library entry. Full sync
+        // updates durable character data (including portrait and stats) while
+        // preserving live encounter state such as current HP, initiative,
+        // conditions, visibility, delayed/readied state, and combat status.
+        const syncedCombatants = await ENC.combat.syncLinkedLibraryEntry(entry, {
+            full: true,
+        });
+
         this.resetForm();
-        ENC.app.toast("Library entry saved.");
+        ENC.app.toast(
+            syncedCombatants
+                ? `Library entry saved. ${syncedCombatants} active combatant${syncedCombatants === 1 ? "" : "s"} refreshed.`
+                : "Library entry saved.",
+        );
     },
 
     async uploadPortrait() {
@@ -367,7 +528,7 @@ ENC.libraryUI = {
         document.getElementById("newLibraryEntryBtn")?.addEventListener("click", () => this.openCreate());
         document.getElementById("cancelLibraryEditBtn").addEventListener("click", () => this.resetForm());
         document.getElementById("uploadLibraryPortraitBtn").addEventListener("click", () => this.uploadPortrait());
-        for (const id of ["librarySearch", "libraryTypeFilter", "librarySystemFilter"]) {
+        for (const id of ["librarySearch", "libraryTypeFilter", "librarySystemFilter", "librarySourceFilter"]) {
             const element = document.getElementById(id);
             element?.addEventListener(id === "librarySearch" ? "input" : "change", () => this.render());
         }

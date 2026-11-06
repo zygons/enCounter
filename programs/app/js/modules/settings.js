@@ -9,6 +9,7 @@ ENC.settingsUI = {
 
     async load() {
         this.settings = await ENC.db.getSettings();
+        ENC.applyUiTheme(this.settings?.uiTheme || "scifi");
         return this.settings;
     },
 
@@ -21,12 +22,19 @@ ENC.settingsUI = {
 
     async save() {
         this.settings = ENC.normalizeSettings(this.settings);
+        ENC.applyUiTheme(this.settings.uiTheme);
         await ENC.db.saveSettings(this.settings);
         ENC.sync.broadcast("settings-updated", { settings: this.settings });
         ENC.backup.scheduleExternalBackup();
     },
 
     render() {
+        ENC.applyUiTheme(this.settings?.uiTheme || "scifi");
+
+        document.querySelectorAll('input[name="uiTheme"]').forEach((radio) => {
+            radio.checked = radio.value === (this.settings?.uiTheme || "scifi");
+        });
+
         const modeSelect = document.getElementById("settingsMode");
         modeSelect.value = this.settings.mode || "standard";
 
@@ -64,11 +72,20 @@ ENC.settingsUI = {
             moduleContainer.appendChild(label);
         }
 
-        const externalBackup = document.getElementById("externalBackupEnabled");
-        if (externalBackup) externalBackup.checked = Boolean(this.settings.externalBackup);
+        document.getElementById("externalBackupEnabled").checked = Boolean(this.settings.externalBackup);
     },
 
     bind() {
+        document.querySelectorAll('input[name="uiTheme"]').forEach((radio) => {
+            radio.addEventListener("change", async (event) => {
+                if (!event.target.checked) return;
+                this.settings.uiTheme = ENC.normalizeUiTheme(event.target.value);
+                ENC.applyUiTheme(this.settings.uiTheme);
+                await this.save();
+                this.render();
+            });
+        });
+
         document.getElementById("settingsMode").addEventListener("change", async (event) => {
             const mode = event.target.value;
             if (mode !== "custom") this.applyMode(mode);
@@ -78,10 +95,9 @@ ENC.settingsUI = {
             ENC.combat?.render?.();
         });
 
-        document.getElementById("externalBackupEnabled")?.addEventListener("change", async (event) => {
+        document.getElementById("externalBackupEnabled").addEventListener("change", async (event) => {
             this.settings.externalBackup = event.target.checked;
             await this.save();
-            ENC.app?.toast?.(event.target.checked ? "Automatic external backup enabled." : "Automatic external backup disabled.");
         });
     }
 };

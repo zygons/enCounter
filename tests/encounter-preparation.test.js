@@ -111,6 +111,20 @@ test("prepared media save uses canonical presentation and exact persistence veri
   assert.match(config, /applyEncounterPresentation/);
   assert.match(encounters, /ENC\.applyEncounterPresentation\(loaded\)/);
   assert.match(encounters, /ENC\.applyEncounterPresentation\(encounter\)/);
-  assert.match(html, /config\.js\?v=alpha3-p2b7-cleanup/);
-  assert.match(html, /encounter-setup\.js\?v=alpha3-p2b7-cleanup/);
+  assert.match(html, /js\/core\/config\.js\?v=/);
+  assert.match(html, /js\/modules\/encounter-setup\.js\?v=alpha3-phase3-1-14-1/);
+});
+
+
+test("newly imported assets refresh the saved Encounter Setup selectors without clearing current choices", () => {
+  const setup = read("programs/app/js/modules/encounter-setup.js");
+  const main = read("programs/app/js/main.js");
+  const html = read("programs/app/index.html");
+
+  assert.match(setup, /refreshAssetOptions\(\)/);
+  assert.match(setup, /const sceneImage = sceneSelect\?\.value \|\| ""/);
+  assert.match(setup, /const combatImage = combatSelect\?\.value \|\| ""/);
+  assert.match(main, /ENC\.encounterSetupUI\?\.refreshAssetOptions\?\.\(\)/);
+  assert.match(html, /js\/modules\/encounter-setup\.js\?v=alpha3-phase3-1-14-1/);
+  assert.match(html, /js\/main\.js\?v=alpha3-phase3-1-14-2/);
 });

@@ -36,6 +36,11 @@ data/imports/*
 
 data/backups/.last-hourly
 
+# Runtime Compendium API cache
+data/cache/**/*
+!data/cache/**/
+!data/cache/**/.gitkeep
+
 *.log
 
 
@@ -103,3 +108,18 @@ Thumbs.db
 
 .vscode/
 .idea/
+
+# ------------------------------------------------------------
+# Temporary development / patch artifacts
+# ------------------------------------------------------------
+
+PHASE*_INSTALL.txt
+
+# Temporary editor / patch files
+*.tmp
+*.orig
+*.rej
+*.swp
+*.swo
+*~
+Desktop.ini

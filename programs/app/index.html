@@ -14,11 +14,24 @@
 
     <link rel="icon" type="image/png" href="/assets/branding/favicon.png" />
 
-    <link rel="stylesheet" href="css/base.css?v=alpha3-p2b7-cleanup" />
+    <link rel="stylesheet" href="css/base.css?v=alpha3-phase3-1-14-1a" />
     <link rel="stylesheet" href="css/timer.css" />
+    <link rel="stylesheet" href="css/theme-system.css?v=alpha3-phase3-1-13-6a" />
+    <link rel="stylesheet" href="css/theme-scifi.css?v=alpha3-phase3-1-13-6q" />
+    <link rel="stylesheet" href="css/theme-fantasy.css?v=alpha3-phase3-1-14-4a" />
   </head>
 
   <body class="dm-body">
+    <script>
+      (() => {
+        const theme = localStorage.getItem("encounter-ui-theme") || "scifi";
+        if (["original", "scifi", "fantasy"].includes(theme)) {
+          document.body.classList.add(`theme-${theme}`);
+        } else {
+          document.body.classList.add("theme-scifi");
+        }
+      })();
+    </script>
     <!-- =========================================================
          APPLICATION HEADER
          ========================================================= -->
@@ -82,30 +95,47 @@
          MAIN NAVIGATION
          ========================================================= -->
 
-    <nav class="main-nav" aria-label="Primary navigation">
-      <button
-        class="nav-button active"
-        data-section="encounterSection"
-        type="button"
-      >
-        Encounter
-      </button>
+    <nav class="main-nav workspace-nav" aria-label="Primary navigation">
+      <div class="theme-sidebar-brand sci-fi-sidebar-brand" aria-label="enCounter">
+        <img src="../../assets/branding/enCounter-icon.png" alt="" />
+      </div>
+      <div class="workspace-nav-group workspace-nav-primary" aria-label="Workspace modes">
+        <span class="workspace-nav-label">Workspace</span>
 
-      <button class="nav-button" data-section="dmSection" type="button">
-        DM
-      </button>
+        <button
+          class="nav-button workspace-mode-button active"
+          data-section="encounterSection"
+          type="button"
+        >
+          <span class="workspace-nav-kicker">RUN</span>
+          <span>Active Encounter</span>
+        </button>
 
-      <button class="nav-button" data-section="soundscapeSection" type="button">
-        Soundscape
-      </button>
+        <button
+          class="nav-button workspace-mode-button"
+          data-section="dmSection"
+          type="button"
+        >
+          <span class="workspace-nav-kicker">PREPARE</span>
+          <span>Library &amp; Setup</span>
+        </button>
+      </div>
 
-      <button class="nav-button" data-section="timerSection" type="button">
-        Timer
-      </button>
+      <div class="workspace-nav-group workspace-nav-tools" aria-label="Tools">
+        <span class="workspace-nav-label">Tools</span>
 
-      <button class="nav-button" data-section="settingsSection" type="button">
-        Settings
-      </button>
+        <button class="nav-button workspace-tool-button" data-section="soundscapeSection" type="button">
+          Audio
+        </button>
+
+        <button class="nav-button workspace-tool-button" data-section="timerSection" type="button">
+          Timer
+        </button>
+
+        <button class="nav-button workspace-tool-button" data-section="settingsSection" type="button">
+          Settings
+        </button>
+      </div>
     </nav>
 
     <!-- =========================================================
@@ -121,36 +151,41 @@
         <div class="encounter-console-layout">
           <div class="encounter-console-main">
             <!-- Compact encounter command strip -->
-            <div class="panel encounter-command-strip">
+            <div class="panel encounter-command-strip run-command-strip">
               <div class="encounter-command-copy">
-                <div class="eyebrow">LIVE ENCOUNTER</div>
-                <strong>Initiative &amp; Combatants</strong>
-                <span class="hint">Run the encounter here. Preparation and full saved-encounter management stay in the DM Workspace.</span>
+                <div class="eyebrow">RUN // ACTIVE ENCOUNTER</div>
+                <strong id="runEncounterTitle">Active Encounter</strong>
+                <span id="runEncounterSubtitle" class="run-encounter-subtitle">Round 1 // Prepared</span>
               </div>
 
-              <div class="encounter-command-actions">
-                <button id="newEncounterBtn" class="primary" type="button">
-                  + New Encounter
+              <div class="encounter-command-actions run-command-actions">
+                <button id="startAdHocEncounterBtn" class="primary" type="button">
+                  + Start Ad Hoc
                 </button>
 
-                <label class="encounter-quick-select">
-                  <span>Template</span>
-                  <select id="quickTemplateSelect">
-                    <option value="">Choose template…</option>
-                  </select>
-                </label>
-                <button id="quickLoadTemplateBtn" type="button">Load</button>
+                <details class="encounter-load-menu">
+                  <summary>Load / Resume</summary>
+                  <div class="encounter-load-popover">
+                    <label class="encounter-quick-select">
+                      <span>Reusable Template</span>
+                      <select id="quickTemplateSelect">
+                        <option value="">Choose template…</option>
+                      </select>
+                    </label>
+                    <button id="quickLoadTemplateBtn" type="button">Load Template</button>
 
-                <label class="encounter-quick-select">
-                  <span>Saved State</span>
-                  <select id="quickStateSelect">
-                    <option value="">Choose saved state…</option>
-                  </select>
-                </label>
-                <button id="quickResumeStateBtn" type="button">Resume</button>
+                    <label class="encounter-quick-select">
+                      <span>Saved Encounter State</span>
+                      <select id="quickStateSelect">
+                        <option value="">Choose saved state…</option>
+                      </select>
+                    </label>
+                    <button id="quickResumeStateBtn" type="button">Resume State</button>
+                  </div>
+                </details>
 
                 <button id="openDmEncountersBtn" class="icon-text-button" type="button">
-                  Manage
+                  Encounter Library
                 </button>
               </div>
             </div>
@@ -177,12 +212,50 @@
                 </button>
               </div>
 
-              <!-- One add workflow; existing controls remain for compatibility. -->
+              <!-- Unified Add Combatant workflow -->
               <div id="encounterAddPanel" class="encounter-add-panel hidden">
-                <div class="encounter-add-section">
+                <div class="encounter-add-workflow-header">
+                  <div>
+                    <div class="eyebrow">ADD COMBATANT</div>
+                    <strong>Choose a source</strong>
+                  </div>
+                  <span class="hint">Start with a saved Library entry, search the Compendium, or create a temporary combatant.</span>
+                </div>
+
+                <div class="encounter-add-source-tabs" role="tablist" aria-label="Combatant source">
+                  <button
+                    class="encounter-add-source-tab active"
+                    type="button"
+                    role="tab"
+                    aria-selected="true"
+                    data-add-source-tab="library"
+                  >
+                    Library
+                  </button>
+                  <button
+                    class="encounter-add-source-tab"
+                    type="button"
+                    role="tab"
+                    aria-selected="false"
+                    data-add-source-tab="compendium"
+                  >
+                    Compendium
+                  </button>
+                  <button
+                    class="encounter-add-source-tab"
+                    type="button"
+                    role="tab"
+                    aria-selected="false"
+                    data-add-source-tab="quick"
+                  >
+                    Quick Create
+                  </button>
+                </div>
+
+                <div class="encounter-add-source-panel active" data-add-source-panel="library">
                   <div class="encounter-add-heading">
-                    <strong>From Library</strong>
-                    <span class="hint">Choose a saved combatant by type.</span>
+                    <strong>Saved Library Combatant</strong>
+                    <span class="hint">Use an existing player, NPC, enemy, or creature. The Library entry remains reusable.</span>
                   </div>
 
                   <div class="encounter-library-tabs" role="tablist" aria-label="Library combatant type">
@@ -230,14 +303,32 @@
                       Add to Encounter
                     </button>
                   </div>
+
+                  <div class="encounter-add-footer compact-add-footer">
+                    <button id="openDmCharactersBtn" type="button">Manage Character Library</button>
+                  </div>
                 </div>
 
-                <div class="encounter-add-divider"><span>or</span></div>
+                <div class="encounter-add-source-panel" data-add-source-panel="compendium">
+                  <div class="encounter-add-heading">
+                    <strong>Search Compendium</strong>
+                    <span class="hint">Find an SRD creature, preview it, then add it directly to this encounter or save it to your Library.</span>
+                  </div>
+                  <div class="encounter-source-callout">
+                    <div>
+                      <strong>D&amp;D 5E SRD</strong>
+                      <span class="hint">Search by creature name and return to Run mode after adding.</span>
+                    </div>
+                    <button id="openDmCompendiumBtn" class="primary" type="button">
+                      Open Compendium Search
+                    </button>
+                  </div>
+                </div>
 
-                <div class="encounter-add-section">
+                <div class="encounter-add-source-panel" data-add-source-panel="quick">
                   <div class="encounter-add-heading">
                     <strong>Quick Create</strong>
-                    <span class="hint">Add a temporary combatant without creating a Library entry.</span>
+                    <span class="hint">Create a temporary combatant for this encounter without adding a permanent Library entry.</span>
                   </div>
                   <div class="encounter-add-row quick-create-row">
                     <label>
@@ -261,15 +352,8 @@
                       <span>Max HP</span>
                       <input id="quickMaxHp" type="number" min="0" placeholder="7" />
                     </label>
-                    <button id="quickAddBtn" type="button">Quick Add</button>
+                    <button id="quickAddBtn" class="primary" type="button">Add Temporary</button>
                   </div>
-                </div>
-
-                <div class="encounter-add-footer">
-                  <button id="openDmCharactersBtn" type="button">Manage Characters in DM</button>
-                  <button id="openDmCompendiumBtn" type="button" disabled title="Compendium search is added in Phase 3.">
-                    Search Compendium — Coming Next
-                  </button>
                 </div>
               </div>
 
@@ -290,23 +374,60 @@
             </div>
           </div>
 
-          <!-- Sticky live-control rail -->
-          <aside class="encounter-control-rail" aria-label="Encounter controls">
-            <div class="panel encounter-rail-panel encounter-turn-panel">
-              <div class="rail-section-heading">
+          <!-- Tactical current-turn focus -->
+          <section class="encounter-focus-column" aria-label="Current turn">
+            <div class="panel current-turn-focus-panel">
+              <div class="tactical-panel-heading">
                 <div>
-                  <div class="eyebrow">TURN CONTROL</div>
-                  <strong>Round <span id="roundNumber">1</span></strong>
+                  <div class="eyebrow">CURRENT TURN</div>
+                  <strong id="currentTurnFocusLabel">Awaiting combatant</strong>
                 </div>
                 <span id="saveIndicator" class="save-indicator">✓ SAVED</span>
               </div>
 
-              <div class="turn-navigation-buttons">
-                <button id="previousTurnBtn" type="button">◀ Previous</button>
-                <button id="nextTurnBtn" class="primary" type="button">Next ▶</button>
+              <div id="currentTurnFocusBody" class="current-turn-focus-body is-empty">
+                <div id="currentTurnPortraitHost" class="current-turn-portrait-host" aria-hidden="true">?</div>
+                <div class="current-turn-identity">
+                  <strong id="currentTurnName">No current turn</strong>
+                  <span id="currentTurnMeta">Start combat or set a combatant's turn.</span>
+                </div>
+
+                <div class="current-turn-stat-grid">
+                  <div class="current-turn-stat current-turn-hp-stat">
+                    <span>HP</span>
+                    <strong id="currentTurnHp">—</strong>
+                    <div class="current-turn-hp-track"><span id="currentTurnHpFill"></span></div>
+                  </div>
+                  <div class="current-turn-stat">
+                    <span id="currentTurnDefenseLabel">DEF</span>
+                    <strong id="currentTurnDefense">—</strong>
+                  </div>
+                  <div class="current-turn-stat">
+                    <span>INIT</span>
+                    <strong id="currentTurnInitiative">—</strong>
+                  </div>
+                </div>
+
+                <div id="currentTurnStatuses" class="current-turn-statuses">
+                  <span class="combatant-status-empty">No active status</span>
+                </div>
+              </div>
+
+              <div class="current-turn-controls">
+                <div class="current-turn-round">
+                  <span>ROUND</span>
+                  <strong id="roundNumber">1</strong>
+                </div>
+                <div class="turn-navigation-buttons">
+                  <button id="previousTurnBtn" type="button">◀ Previous</button>
+                  <button id="nextTurnBtn" class="primary" type="button">Next Turn ▶</button>
+                </div>
               </div>
             </div>
+          </section>
 
+          <!-- Sticky live-control rail -->
+          <aside class="encounter-control-rail" aria-label="Encounter controls">
             <div class="panel encounter-rail-panel">
               <div class="rail-section-heading">
                 <div>
@@ -317,26 +438,89 @@
               </div>
 
               <div class="rail-button-grid">
-                <button id="showSceneBtn" type="button">Show Scene</button>
+                <button id="showSceneBtn" type="button">Scene Mode</button>
                 <button id="startCombatBtn" class="primary" type="button">Start Combat</button>
                 <button id="endCombatBtn" type="button">End Combat</button>
               </div>
             </div>
 
-            <div class="panel encounter-rail-panel">
+            <div class="panel encounter-rail-panel encounter-display-panel">
               <div class="rail-section-heading">
                 <div>
                   <div class="eyebrow">PLAYER DISPLAY</div>
                   <strong>Presentation</strong>
                 </div>
+                <span id="playerDisplayStatus" class="rail-status-pill display-status-closed">CLOSED</span>
               </div>
 
-              <div class="rail-button-grid">
-                <button id="openDisplayBtn" class="primary" type="button">Start Player Display</button>
+              <div class="rail-button-grid rail-display-actions">
+                <button id="openDisplayBtn" class="primary" type="button">Open Display</button>
+                <button id="showSceneDisplayBtn" type="button" aria-pressed="false">Show Scene</button>
+                <button id="showCombatDisplayBtn" type="button" aria-pressed="false">Show Combat</button>
+                <button id="hideEncounterDisplayBtn" class="danger-outline" type="button" aria-pressed="false">Hide / Standby</button>
               </div>
               <p class="hint rail-display-hint">
-                Before combat, Show displays the prepared Scene. During combat, it displays initiative. Hide always returns players to Stand By.
+                Scene and Combat presentation are independent of encounter phase. Hide returns players to Stand By without ending the scene or combat.
               </p>
+            </div>
+
+            <div class="panel encounter-rail-panel encounter-timer-panel">
+              <div class="rail-section-heading">
+                <div>
+                  <div class="eyebrow">PREPARED TIMER</div>
+                  <strong id="encounterTimerName">Countdown</strong>
+                </div>
+                <span id="encounterTimerStatus" class="rail-status-pill">READY</span>
+              </div>
+
+              <div class="rail-timer-readout" aria-label="Prepared timer remaining time">
+                <div id="encounterTimerCountdown" class="rail-timer-countdown">00:00</div>
+                <div
+                  id="encounterTimerProgress"
+                  class="rail-timer-progress"
+                  role="progressbar"
+                  aria-label="Timer remaining"
+                  aria-valuemin="0"
+                  aria-valuemax="100"
+                  aria-valuenow="100"
+                >
+                  <span id="encounterTimerProgressFill"></span>
+                </div>
+              </div>
+
+              <div class="rail-timer-actions">
+                <button id="encounterTimerStartBtn" class="primary" type="button">▶ Start</button>
+                <button id="encounterTimerResetBtn" type="button">↺ Reset</button>
+                <button id="encounterTimerStopBtn" class="danger-outline" type="button">■ Stop</button>
+              </div>
+
+              <div class="rail-timer-adjustments" aria-label="Adjust prepared timer">
+                <span class="rail-timer-adjustments-label">Adjust Time</span>
+                <div class="rail-timer-adjust-grid">
+                  <button type="button" data-run-timer-adjust-ms="-300000" aria-label="Subtract 5 minutes">−5m</button>
+                  <button type="button" data-run-timer-adjust-ms="-60000" aria-label="Subtract 1 minute">−1m</button>
+                  <button type="button" data-run-timer-adjust-ms="-10000" aria-label="Subtract 10 seconds">−10s</button>
+                  <button type="button" data-run-timer-adjust-ms="10000" aria-label="Add 10 seconds">+10s</button>
+                  <button type="button" data-run-timer-adjust-ms="60000" aria-label="Add 1 minute">+1m</button>
+                  <button type="button" data-run-timer-adjust-ms="300000" aria-label="Add 5 minutes">+5m</button>
+                </div>
+              </div>
+
+              <div class="rail-timer-display-control">
+                <span>Player Display</span>
+                <button
+                  id="encounterTimerVisibilityBtn"
+                  class="rail-timer-visibility-button"
+                  type="button"
+                  aria-pressed="false"
+                >
+                  Show on Display
+                </button>
+              </div>
+              <p class="hint rail-timer-hint">
+                Stop preserves the remaining time. Reset restores the full prepared duration.
+              </p>
+              <button id="openTimerToolBtn" class="rail-link-button" type="button">Configure Timer</button>
             </div>
 
             <div class="panel encounter-rail-panel">
@@ -420,8 +604,8 @@
         <div class="dm-workspace-shell">
           <aside class="dm-sidebar" aria-label="DM Workspace navigation">
             <div class="dm-sidebar-heading">
-              <div class="eyebrow">DM WORKSPACE</div>
-              <strong>Prepare &amp; Manage</strong>
+              <div class="eyebrow">PREPARE</div>
+              <strong>Library &amp; Setup</strong>
             </div>
 
             <button class="dm-nav-button active" data-dm-page="characters" type="button">
@@ -431,7 +615,7 @@
               Compendium
             </button>
             <button class="dm-nav-button" data-dm-page="encounters" type="button">
-              Encounters
+              Encounter Library
             </button>
             <button class="dm-nav-button" data-dm-page="assets" type="button">
               Assets
@@ -480,6 +664,12 @@
                     <option value="swse">SWSE</option>
                     <option value="dnd5e">D&amp;D 5E</option>
                     <option value="custom">Custom</option>
+                  </select>
+
+                  <select id="librarySourceFilter" aria-label="Filter by library source">
+                    <option value="all">All Sources</option>
+                    <option value="custom">Custom</option>
+                    <option value="compendium">Compendium (SRD 5.1)</option>
                   </select>
                 </div>
 
@@ -632,29 +822,71 @@
             </div>
 
             <div id="dmCompendiumPage" class="dm-page" data-dm-page-panel="compendium">
-              <div class="dm-page-header">
+              <div class="dm-page-header compendium-page-header">
                 <div>
                   <div class="eyebrow">COMPENDIUM</div>
-                  <h2>Rules &amp; Creature Sources</h2>
+                  <h2>Creature Search</h2>
                   <p class="hint">
-                    Phase 3 will connect provider-based creature search here without changing your local Library.
+                    Search licensed D&amp;D 5E SRD creatures, preview their stat data, add them directly to the active encounter, or save an editable local copy to your Library.
                   </p>
+                </div>
+                <button id="compendiumManageLibraryBtn" type="button">Manage Creature Library</button>
+              </div>
+
+              <div class="compendium-provider-tabs" role="tablist" aria-label="Compendium providers">
+                <button type="button" class="active" role="tab" aria-selected="true">
+                  D&amp;D 5E SRD
+                  <span>Online</span>
+                </button>
+                <button type="button" role="tab" aria-selected="false" disabled title="Local/SWSE Compendium is planned for Phase 3.2.">
+                  SWSE / Local
+                  <span>Coming next</span>
+                </button>
+              </div>
+
+              <div class="panel compendium-search-panel">
+                <div class="compendium-search-heading">
+                  <div>
+                    <div class="eyebrow">D&amp;D 5E SRD 5.1</div>
+                    <h3>Search Creatures</h3>
+                  </div>
+                  <span class="compendium-online-badge">D&D 5e API · SRD 2014</span>
+                </div>
+                <div class="compendium-search-row">
+                  <label class="compendium-search-field">
+                    <span class="sr-only">Creature name</span>
+                    <input id="compendiumSearch" type="search" autocomplete="off" placeholder="Search goblin, dragon, skeleton…" />
+                  </label>
+                  <button id="compendiumSearchBtn" class="primary" type="button">Search</button>
+                </div>
+                <div class="compendium-search-meta">
+                  <span id="compendiumStatus" class="hint">Search the SRD 2014 monster index. Results and creature details are cached when available.</span>
+                  <span id="compendiumResultCount" class="compendium-result-count">0 results</span>
                 </div>
               </div>
 
-              <div class="dm-placeholder-grid">
-                <article class="panel dm-placeholder-card">
-                  <div class="eyebrow">D&amp;D 5E</div>
-                  <h3>SRD Creature Search</h3>
-                  <p>Search licensed SRD creature data, preview stat blocks, add directly to an encounter, or save a local editable copy.</p>
-                  <button type="button" disabled>Coming in Phase 3</button>
-                </article>
-                <article class="panel dm-placeholder-card">
-                  <div class="eyebrow">STAR WARS SAGA EDITION</div>
-                  <h3>Local Compendium</h3>
-                  <p>Search user-provided or legally redistributable local compendium data using the same provider framework.</p>
-                  <button type="button" disabled>Coming in Phase 3</button>
-                </article>
+              <div class="compendium-workspace">
+                <section class="panel compendium-results-panel" aria-label="Compendium search results">
+                  <div class="compendium-table-header" aria-hidden="true">
+                    <span>Creature</span>
+                    <span>HP</span>
+                    <span>AC</span>
+                    <span>Source</span>
+                    <span></span>
+                  </div>
+                  <div id="compendiumResults" class="compendium-results"></div>
+                  <div id="compendiumEmpty" class="empty-state">
+                    Search the SRD to find creatures. Results are limited to the SRD 5.1 source in this provider.
+                  </div>
+                </section>
+
+                <aside id="compendiumPreview" class="panel compendium-preview compendium-preview-empty" aria-live="polite">
+                  Select a creature to preview its SRD details.
+                </aside>
+              </div>
+
+              <div class="compendium-attribution hint">
+                Creature data is sourced from the D&amp;D System Reference Document 5.1 through the D&amp;D 5e SRD API maintained by the 5e-bits project and is available under CC BY 4.0. enCounter does not import remote creature artwork.
               </div>
             </div>
 
@@ -663,7 +895,12 @@
                 <div>
                   <div class="eyebrow">ENCOUNTER LIBRARY</div>
                   <h2>Templates &amp; Saved States</h2>
-                  <p class="hint">Create reusable setups, configure each template’s backgrounds and audio before play, or checkpoint a live encounter for later resumption.</p>
+                  <p class="hint">Build reusable encounters here before play. Run is reserved for loading a prepared encounter, resuming a saved state, or starting an ad hoc session.</p>
+                </div>
+                <div class="dm-page-header-actions">
+                  <button id="dmNewEncounterBtn" class="primary" type="button">
+                    + New Encounter Build
+                  </button>
                 </div>
               </div>
 
@@ -703,7 +940,7 @@
                     class="primary"
                     type="button"
                   >
-                    Save New Template
+                    Save Current Run as Template
                   </button>
 
                   <button id="updateTemplateBtn" type="button">
@@ -777,6 +1014,17 @@
                 <div>
                   <span class="field-caption">Combatants in Template</span>
                   <div id="encounterSetupCombatants" class="encounter-setup-combatants"></div>
+                  <div class="encounter-template-builder-controls">
+                    <select id="encounterSetupLibraryCombatant" aria-label="Library combatant to add">
+                      <option value="">Choose Library character or creature…</option>
+                    </select>
+                    <button id="encounterSetupAddCombatantBtn" type="button">
+                      + Add to Template
+                    </button>
+                  </div>
+                  <span class="hint encounter-template-builder-hint">
+                    Add saved Library entries while preparing the encounter. Compendium creatures should be saved to the Library first.
+                  </span>
                 </div>
               </div>
 
@@ -1402,11 +1650,9 @@
               <div class="timer-control-group">
                 <label> Player Display </label>
 
-                <label class="check-row">
-                  <input id="timerShowPlayers" type="checkbox" />
-
-                  Show timer to players
-                </label>
+                <p class="hint timer-live-visibility-hint">
+                  Live timer visibility is controlled from the Run screen.
+                </p>
 
                 <label class="check-row">
                   <input id="timerShowNumericPlayers" type="checkbox" />
@@ -1554,6 +1800,41 @@
           <h2>Settings</h2>
           <p class="hint">Configure tracker behavior and custom rules. Backup, restore, storage, and recovery tools are managed under DM → Data &amp; Tools.</p>
         </div>
+        <div class="panel ui-theme-settings-panel">
+          <div class="eyebrow">INTERFACE APPEARANCE</div>
+          <h2>Interface Theme</h2>
+          <p class="hint">Choose one visual style for both the DM Console and Player Display. The workflow and encounter data do not change.</p>
+
+          <div class="ui-theme-grid" role="radiogroup" aria-label="Interface theme">
+            <label class="ui-theme-card ui-theme-card-original">
+              <input type="radio" name="uiTheme" value="original" />
+              <span class="ui-theme-swatch" aria-hidden="true">
+                <span></span><span></span><span></span>
+              </span>
+              <strong>Original / Classic</strong>
+              <small>Classic pre–Sci-Fi layout and styling</small>
+            </label>
+
+            <label class="ui-theme-card ui-theme-card-scifi">
+              <input type="radio" name="uiTheme" value="scifi" />
+              <span class="ui-theme-swatch" aria-hidden="true">
+                <span></span><span></span><span></span>
+              </span>
+              <strong>Sci-Fi Console</strong>
+              <small>Tactical layout with cyan command-console styling</small>
+            </label>
+
+            <label class="ui-theme-card ui-theme-card-fantasy">
+              <input type="radio" name="uiTheme" value="fantasy" />
+              <span class="ui-theme-swatch" aria-hidden="true">
+                <span></span><span></span><span></span>
+              </span>
+              <strong>Fantasy Console</strong>
+              <small>Same tactical layout with bronze, leather, gold, and parchment</small>
+            </label>
+          </div>
+        </div>
+
         <div class="settings-grid settings-grid-cleanup">
           <!-- Tracker Mode -->
 
@@ -1740,31 +2021,32 @@
 
     <!-- Core -->
 
-    <script src="js/core/config.js?v=alpha3-p2b7-cleanup"></script>
-    <script src="js/core/db.js?v=alpha3-p2b7-cleanup"></script>
-    <script src="js/core/sync.js?v=alpha3-p2b7-cleanup"></script>
+    <script src="js/core/config.js?v=alpha3-phase3-no-srd-artwork1"></script>
+    <script src="js/core/db.js?v=alpha3-phase3-compendium1"></script>
+    <script src="js/core/sync.js?v=alpha3-phase3-compendium1"></script>
 
     <!-- Existing Modules -->
 
-    <script src="js/modules/backup.js?v=alpha3-p2b7-cleanup"></script>
-    <script src="js/modules/migration.js?v=alpha3-p2b7-cleanup"></script>
-    <script src="js/modules/dm-workspace.js?v=alpha3-p2b7-cleanup"></script>
-    <script src="js/modules/assets.js?v=alpha3-p2b7-cleanup"></script>
-    <script src="js/modules/settings.js?v=alpha3-p2b7-cleanup"></script>
-    <script src="js/modules/library.js?v=alpha3-p2b7-cleanup"></script>
-    <script src="js/modules/combat.js?v=alpha3-p2b7-cleanup"></script>
-    <script src="js/modules/audio.js?v=alpha3-p2b7-cleanup"></script>
-    <script src="js/modules/encounters.js?v=alpha3-p2b7-cleanup"></script>
-    <script src="js/modules/encounter-setup.js?v=alpha3-p2b7-cleanup"></script>
-    <script src="js/modules/soundscape.js?v=alpha3-p2b7-cleanup"></script>
+    <script src="js/modules/backup.js?v=alpha3-phase3-compendium1"></script>
+    <script src="js/modules/migration.js?v=alpha3-phase3-compendium1"></script>
+    <script src="js/modules/dm-workspace.js?v=alpha3-phase3-compendium1"></script>
+    <script src="js/modules/assets.js?v=alpha3-phase3-1-13-6k"></script>
+    <script src="js/modules/settings.js?v=alpha3-phase3-1-13-6a"></script>
+    <script src="js/modules/library.js?v=alpha3-phase3-1-14-3"></script>
+    <script src="js/modules/combat.js?v=alpha3-phase3-1-14-3"></script>
+    <script src="js/modules/compendium.js?v=alpha3-phase3-1-14-3"></script>
+    <script src="js/modules/audio.js?v=alpha3-phase3-compendium1"></script>
+    <script src="js/modules/encounters.js?v=alpha3-phase3-1-14-4"></script>
+    <script src="js/modules/encounter-setup.js?v=alpha3-phase3-1-14-1"></script>
+    <script src="js/modules/soundscape.js?v=alpha3-phase3-compendium1"></script>
 
     <!-- Visual Timer Modules -->
 
-    <script src="js/modules/timer-renderer.js?v=alpha3-p2b7-cleanup"></script>
-    <script src="js/modules/timer.js?v=alpha3-p2b7-cleanup"></script>
+    <script src="js/modules/timer-renderer.js?v=alpha3-phase3-compendium1"></script>
+    <script src="js/modules/timer.js?v=alpha3-phase3-compendium1"></script>
 
     <!-- DM Console Controller -->
 
-    <script src="js/main.js?v=alpha3-p2b7-cleanup"></script>
+    <script src="js/main.js?v=alpha3-phase3-1-14-2"></script>
   </body>
 </html>

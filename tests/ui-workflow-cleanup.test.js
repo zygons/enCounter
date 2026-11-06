@@ -22,7 +22,14 @@ test("Timer uses one adaptive primary action and quick duration presets", () => 
   assert.match(html, /data-timer-preset-ms="1800000"/);
   assert.match(main, /Pause Timer/);
   assert.match(main, /Resume Timer/);
+  assert.match(main, /state\.status === "running"[\s\S]*timerController\.pause\(\)/);
+  assert.match(main, /state\.status === "paused"[\s\S]*timerController\.resume\(\)/);
   assert.match(main, /\[data-timer-preset-ms\]/);
+  assert.match(html, /data-run-timer-adjust-ms="-300000"/);
+  assert.match(html, /data-run-timer-adjust-ms="300000"/);
+  assert.match(main, /\[data-run-timer-adjust-ms\]/);
+  assert.match(main, /timerController\.subtractTime\(Math\.abs\(deltaMs\)\)/);
+  assert.match(main, /timerController\.addTime\(deltaMs\)/);
 });
 
 test("Soundscape no longer duplicates audio importing", () => {

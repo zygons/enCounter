@@ -21,3 +21,17 @@ Names of third-party tabletop games, systems, products, publishers, companies, a
 ## User-added content
 
 enCounter can load user-provided images and data. User-added files are not automatically relicensed merely because they are loaded into enCounter. Users are responsible for the rights needed for content they add or redistribute.
+
+## D&D System Reference Document 5.1 and D&D 5e SRD API
+
+enCounter's optional D&D 5E Compendium provider can retrieve 2014 creature data from the D&D 5e SRD API maintained by the 5e-bits project. The provider uses the API's 2014 monster resource and filters the returned monster index locally in enCounter. Content originating from the D&D System Reference Document 5.1 is made available by Wizards of the Coast under the Creative Commons Attribution 4.0 International (CC BY 4.0) license.
+
+SRD source: https://www.dndbeyond.com/srd
+
+CC BY 4.0: https://creativecommons.org/licenses/by/4.0/
+
+D&D 5e SRD API: https://www.dnd5eapi.co/
+
+5e-bits project: https://github.com/5e-bits/5e-srd-api
+
+enCounter does not bundle or automatically import remote creature artwork from this provider. Users may save retrieved SRD creature data as editable local Library entries.

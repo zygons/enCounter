@@ -6,8 +6,8 @@ const main = fs.readFileSync('programs/app/js/main.js', 'utf8');
 
 assert(
   encounters.includes('.getElementById("endCombatBtn")') &&
-    encounters.includes('this.setPhase("scene", "standby")'),
-  'End Combat must return Player Display to standby.'
+    encounters.includes('this.setPhase("scene", "scene", { transition: "end-combat" })'),
+  'End Combat must return Player Display to Scene using the explicit end-combat lifecycle transition.'
 );
 
 assert(
