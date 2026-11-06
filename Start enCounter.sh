@@ -6,6 +6,9 @@
 set -e
 cd "$(dirname "$0")"
 
+# Production launcher uses the normal enCounter port.
+export ENCOUNTER_PORT=5500
+
 if ! command -v python3 >/dev/null 2>&1; then
   echo "ERROR: python3 was not found."
   exit 1

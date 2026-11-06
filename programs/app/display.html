@@ -16,16 +16,29 @@
     <link rel="icon" type="image/png" href="/assets/branding/favicon.png" />
 
     <!-- Main application styles -->
-    <link rel="stylesheet" href="css/base.css" />
+    <link rel="stylesheet" href="css/base.css?v=alpha3-phase3-1-13-6i" />
 
     <!-- Player Display styles -->
-    <link rel="stylesheet" href="css/display.css" />
+    <link rel="stylesheet" href="css/display.css?v=alpha3-phase3-1-13-6i" />
 
     <!-- Visual Timer styles -->
     <link rel="stylesheet" href="css/timer.css" />
+
+    <!-- Theme-specific Player Display styling -->
+    <link rel="stylesheet" href="css/theme-display.css?v=alpha3-phase3-1-13-6o" />
   </head>
 
   <body class="player-body">
+    <script>
+      (() => {
+        const theme = localStorage.getItem("encounter-ui-theme") || "scifi";
+        const normalized = ["original", "scifi", "fantasy"].includes(theme)
+          ? theme
+          : "scifi";
+        document.body.classList.add(`theme-${normalized}`);
+        document.body.dataset.uiTheme = normalized;
+      })();
+    </script>
     <!-- =========================================
          ENCOUNTER BACKGROUND
          ========================================= -->
@@ -34,6 +47,41 @@
 
     <!-- Dark overlay placed over encounter backgrounds -->
     <div class="display-shade"></div>
+
+    <!-- =========================================
+         THEMED SCENE FRAME
+
+         Visible only while Scene presentation is active.
+         This keeps Sci-Fi / Fantasy identity present even
+         when the combat UI shell is intentionally hidden.
+         ========================================= -->
+
+    <div id="sceneThemeFrame" class="scene-theme-frame" aria-hidden="true">
+      <span class="scene-theme-label">SCENE</span>
+    </div>
+
+    <!-- =========================================
+         SCENE PRESENTATION
+
+         Theme-owned scene identity. Encounter artwork remains
+         dominant, while the active UI theme controls the scene
+         title card and fallback surface.
+         ========================================= -->
+
+    <div id="scenePresentation" class="scene-presentation" aria-live="polite">
+      <div id="scenePresentationCard" class="scene-presentation-card">
+        <img
+          src="/assets/branding/enCounter-logo.png"
+          alt="enCounter"
+          class="scene-presentation-logo"
+        />
+        <div class="scene-presentation-copy">
+          <span class="scene-presentation-kicker">SCENE</span>
+          <h1 id="scenePresentationTitle">Encounter Scene</h1>
+          <p id="scenePresentationSubtitle">Roleplay / Exploration</p>
+        </div>
+      </div>
+    </div>
 
     <!-- =========================================
          PLAYER DISPLAY PRIVACY SCREEN
@@ -108,7 +156,7 @@
             <span id="displaySystem" class="system-pill"> Generic TTRPG </span>
 
             <span id="playerAppVersion" class="player-app-version">
-              ALPHA · v0.1.0-alpha.1
+              ALPHA · v0.2.0-alpha.2
             </span>
 
             <span
@@ -203,7 +251,7 @@
 
     <!-- Shared configuration / system profiles -->
 
-    <script src="js/core/config.js"></script>
+    <script src="js/core/config.js?v=alpha3-phase3-1-13-6a"></script>
 
     <!-- IndexedDB access -->
 
@@ -223,6 +271,6 @@
 
     <!-- Player Display Controller -->
 
-    <script src="js/display.js"></script>
+    <script src="js/display.js?v=alpha3-phase3-1-13-6j"></script>
   </body>
 </html>

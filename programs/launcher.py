@@ -9,19 +9,23 @@ import json
 import os
 import posixpath
 import re
+import socket
 import socketserver
 import sys
 import threading
 import time
 import urllib.parse
+import urllib.request
+import urllib.error
 import webbrowser
 from datetime import datetime, timezone
 from pathlib import Path
 
-PORT = 5500
+PORT = int(os.environ.get("ENCOUNTER_PORT", "5500"))
 APP_NAME = "enCounter"
-APP_VERSION = "0.2.0-alpha.1"
+APP_VERSION = "0.2.0-alpha.2"
 APP_STAGE = "Alpha"
+COMPENDIUM_PROXY_VERSION = "3.1.12.4"
 
 if getattr(sys, "frozen", False):
     # Running as a PyInstaller executable.
@@ -38,6 +42,10 @@ APP_URL = f"http://127.0.0.1:{PORT}/programs/app/index.html"
 BACKUP_DIR = ROOT / "data" / "backups"
 EXPORT_DIR = ROOT / "data" / "exports"
 IMPORT_DIR = ROOT / "data" / "imports"
+COMPENDIUM_CACHE_DIR = ROOT / "data" / "cache" / "compendium"
+SRD_BASE_URL = "https://www.dnd5eapi.co"
+SRD_INDEX_PATH = "/api/2014/monsters"
+SRD_CACHE_MAX_AGE_SECONDS = 24 * 60 * 60
 
 ALLOWED_ASSET_CATEGORIES = {
     "backgrounds/fantasy",
@@ -74,7 +82,7 @@ PUBLIC_ROOT_FILES = {
 MAX_UPLOAD_BYTES = 50 * 1024 * 1024
 MAX_BACKUP_BYTES = 50 * 1024 * 1024
 
-for path in [BACKUP_DIR, EXPORT_DIR, IMPORT_DIR]:
+for path in [BACKUP_DIR, EXPORT_DIR, IMPORT_DIR, COMPENDIUM_CACHE_DIR]:
     path.mkdir(parents=True, exist_ok=True)
 for category in ALLOWED_ASSET_CATEGORIES:
     (ROOT / "assets" / category).mkdir(parents=True, exist_ok=True)
@@ -135,6 +143,51 @@ def detect_audio_type(data: bytes) -> str | None:
     if data.startswith(b"fLaC"):
         return "audio/flac"
     return None
+
+
+def compendium_cache_path(name: str) -> Path:
+    safe = re.sub(r"[^a-z0-9-]+", "-", name.lower()).strip("-")
+    return COMPENDIUM_CACHE_DIR / f"dnd5e-2014-{safe}.json"
+
+
+def read_json_cache(path: Path):
+    try:
+        if not path.exists():
+            return None
+        return json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError):
+        return None
+
+
+def write_json_cache(path: Path, payload) -> None:
+    try:
+        path.parent.mkdir(parents=True, exist_ok=True)
+        temp = path.with_suffix(path.suffix + ".tmp")
+        temp.write_text(json.dumps(payload, ensure_ascii=False, indent=2), encoding="utf-8")
+        os.replace(temp, path)
+    except OSError as exc:
+        console_print(f"Compendium cache write failed: {exc}")
+
+
+def cache_is_fresh(path: Path, max_age_seconds: int = SRD_CACHE_MAX_AGE_SECONDS) -> bool:
+    try:
+        return path.exists() and (time.time() - path.stat().st_mtime) <= max_age_seconds
+    except OSError:
+        return False
+
+
+def fetch_srd_json(path: str, timeout: int = 15):
+    upstream = f"{SRD_BASE_URL}{path}"
+    request = urllib.request.Request(
+        upstream,
+        headers={
+            "Accept": "application/json",
+            "User-Agent": f"{APP_NAME}/{APP_VERSION}",
+        },
+        method="GET",
+    )
+    with urllib.request.urlopen(request, timeout=timeout) as response:
+        return json.loads(response.read().decode("utf-8"))
 
 
 class EnCounterHandler(http.server.SimpleHTTPRequestHandler):
@@ -278,6 +331,128 @@ class EnCounterHandler(http.server.SimpleHTTPRequestHandler):
             self.send_header("Cache-Control", "no-store")
             self.end_headers()
             return
+
+        # ============================================================
+        # D&D 5E SRD Compendium API — Phase 3.1.12 production proxy
+        # ============================================================
+
+        if path == "/api/compendium/dnd5e/status":
+            index_cache = compendium_cache_path("monsters-index")
+            return self.send_json(
+                {
+                    "ok": True,
+                    "provider": "dnd5eapi-srd-2014",
+                    "apiVersion": "2014",
+                    "proxyVersion": COMPENDIUM_PROXY_VERSION,
+                    "upstream": f"{SRD_BASE_URL}{SRD_INDEX_PATH}",
+                    "port": PORT,
+                    "indexCached": index_cache.exists(),
+                    "indexCacheFresh": cache_is_fresh(index_cache),
+                    "indexCacheAgeSeconds": round(max(0, time.time() - index_cache.stat().st_mtime), 1)
+                    if index_cache.exists()
+                    else None,
+                    "detailCacheCount": len(
+                        list(COMPENDIUM_CACHE_DIR.glob("dnd5e-2014-monster-*.json"))
+                    ),
+                    "cacheMaxAgeHours": round(SRD_CACHE_MAX_AGE_SECONDS / 3600, 1),
+                }
+            )
+
+        if path == "/api/compendium/dnd5e/monsters":
+            cache_path = compendium_cache_path("monsters-index")
+            cached = read_json_cache(cache_path)
+
+            if cached is not None and cache_is_fresh(cache_path):
+                return self.send_json(
+                    {
+                        **cached,
+                        "_encounter": {"source": "disk-cache", "stale": False},
+                    }
+                )
+
+            try:
+                payload = fetch_srd_json(SRD_INDEX_PATH)
+                if not isinstance(payload, dict) or not isinstance(payload.get("results"), list):
+                    raise ValueError("Upstream returned an invalid monster index.")
+                write_json_cache(cache_path, payload)
+                return self.send_json(
+                    {
+                        **payload,
+                        "_encounter": {"source": "live-api", "stale": False},
+                    }
+                )
+            except urllib.error.HTTPError as exc:
+                reason = f"D&D 5e SRD API returned HTTP {exc.code}."
+            except urllib.error.URLError as exc:
+                reason = f"Could not reach D&D 5e SRD API: {getattr(exc, 'reason', exc)}"
+            except (ValueError, json.JSONDecodeError, UnicodeDecodeError) as exc:
+                reason = f"SRD index request failed: {exc}"
+            except Exception as exc:
+                reason = f"SRD index request failed: {exc}"
+
+            if cached is not None:
+                return self.send_json(
+                    {
+                        **cached,
+                        "_encounter": {
+                            "source": "disk-cache",
+                            "stale": True,
+                            "warning": reason,
+                        },
+                    }
+                )
+            return self.send_json({"error": reason}, 502)
+
+        if path.startswith("/api/compendium/dnd5e/monsters/"):
+            key = urllib.parse.unquote(path.rsplit("/", 1)[-1]).strip().lower()
+            if not re.fullmatch(r"[a-z0-9-]+", key):
+                return self.send_json({"error": "Invalid SRD monster index."}, 400)
+
+            cache_path = compendium_cache_path(f"monster-{key}")
+            cached = read_json_cache(cache_path)
+
+            if cached is not None and cache_is_fresh(cache_path):
+                return self.send_json(
+                    {
+                        **cached,
+                        "_encounter": {"source": "disk-cache", "stale": False},
+                    }
+                )
+
+            try:
+                payload = fetch_srd_json(
+                    f"{SRD_INDEX_PATH}/{urllib.parse.quote(key, safe='')}"
+                )
+                if not isinstance(payload, dict) or not payload.get("name"):
+                    raise ValueError("Upstream returned an invalid monster record.")
+                write_json_cache(cache_path, payload)
+                return self.send_json(
+                    {
+                        **payload,
+                        "_encounter": {"source": "live-api", "stale": False},
+                    }
+                )
+            except urllib.error.HTTPError as exc:
+                reason = f"D&D 5e SRD API returned HTTP {exc.code}."
+            except urllib.error.URLError as exc:
+                reason = f"Could not reach D&D 5e SRD API: {getattr(exc, 'reason', exc)}"
+            except (ValueError, json.JSONDecodeError, UnicodeDecodeError) as exc:
+                reason = f"SRD monster request failed: {exc}"
+            except Exception as exc:
+                reason = f"SRD monster request failed: {exc}"
+
+            if cached is not None:
+                return self.send_json(
+                    {
+                        **cached,
+                        "_encounter": {
+                            "source": "disk-cache",
+                            "stale": True,
+                            "warning": reason,
+                        },
+                    }
+                )
+            return self.send_json({"error": reason}, 502)
 
         if path == "/api/assets":
             assets = []
@@ -475,16 +650,80 @@ class EnCounterHandler(http.server.SimpleHTTPRequestHandler):
 
         return self.send_text("Unknown API endpoint.", 404)
 
+
+    def do_DELETE(self):
+        if self._reject_nonlocal_request():
+            return
+        if not self._origin_is_local():
+            return self.send_text("Cross-origin requests are not allowed.", 403)
+
+        path = self._request_path()
+        if path != "/api/assets/delete":
+            return self.send_text("Unknown API endpoint.", 404)
+
+        params = urllib.parse.parse_qs(urllib.parse.urlparse(self.path).query)
+        requested_url = params.get("url", [""])[0]
+        if not requested_url.startswith("/assets/"):
+            return self.send_text("Only local enCounter assets can be deleted.", 400)
+
+        try:
+            relative = urllib.parse.unquote(requested_url[len("/assets/"):]).replace("\\", "/")
+            asset_root = (ROOT / "assets").resolve()
+            target = (asset_root / Path(relative)).resolve()
+        except (OSError, ValueError):
+            return self.send_text("That asset path is invalid.", 400)
+
+        if target == asset_root or asset_root not in target.parents:
+            return self.send_text("That asset path is outside the Asset Library.", 403)
+
+        try:
+            category = target.parent.relative_to(asset_root).as_posix()
+        except ValueError:
+            return self.send_text("That asset path is outside the Asset Library.", 403)
+
+        if category == "branding" or category.startswith("branding/"):
+            return self.send_text("Application branding assets cannot be deleted.", 403)
+        if category not in ALLOWED_ASSET_CATEGORIES:
+            return self.send_text("That asset folder is not managed by enCounter.", 403)
+        if target.suffix.lower() not in PUBLIC_ASSET_EXTENSIONS or target.suffix.lower() == ".ico":
+            return self.send_text("That file type cannot be deleted from the Asset Library.", 400)
+        if not target.exists() or not target.is_file():
+            return self.send_text("The asset file no longer exists.", 404)
+
+        try:
+            target.unlink()
+        except OSError as exc:
+            console_print(f"Asset deletion failed: {exc}")
+            return self.send_text("The asset file could not be deleted.", 500)
+
+        return self.send_json({
+            "ok": True,
+            "name": target.name,
+            "category": category,
+            "url": requested_url,
+        })
+
     def do_OPTIONS(self):
         # enCounter does not expose a cross-origin API.
         self.send_response(405)
-        self.send_header("Allow", "GET, HEAD, POST")
+        self.send_header("Allow", "GET, HEAD, POST, DELETE")
         self.end_headers()
 
 
 class ReusableTCPServer(socketserver.ThreadingTCPServer):
-    allow_reuse_address = True
+    # On Windows, SO_REUSEADDR can allow multiple processes to bind the same
+    # local port. enCounter must have one exclusive owner of port 5500.
+    allow_reuse_address = os.name != "nt"
     daemon_threads = True
+
+    def server_bind(self):
+        if os.name == "nt" and hasattr(socket, "SO_EXCLUSIVEADDRUSE"):
+            self.socket.setsockopt(
+                socket.SOL_SOCKET,
+                socket.SO_EXCLUSIVEADDRUSE,
+                1,
+            )
+        super().server_bind()
 
 
 def open_browser():
@@ -509,8 +748,11 @@ if __name__ == "__main__":
             server.serve_forever()
     except OSError as exc:
         message = (
-            f"Could not start enCounter on port {PORT}: {exc}\n"
-            "Close another enCounter/Live Server instance and try again.\n"
+            f"Could not start enCounter on port {PORT}: {exc}\n\n"
+            "Another enCounter, Python server, Live Server, or other program is already "
+            "using this port. Close the older process and start enCounter again.\n\n"
+            "For Phase 3.1.12.4 the normal server must report Compendium proxy version "
+            f"{COMPENDIUM_PROXY_VERSION}."
         )
         try:
             log_path = ROOT / "data" / "enCounter-startup-error.log"
@@ -519,3 +761,14 @@ if __name__ == "__main__":
         except OSError:
             pass
         console_print(message)
+        if os.name == "nt":
+            try:
+                import ctypes
+                ctypes.windll.user32.MessageBoxW(
+                    None,
+                    message,
+                    f"{APP_NAME} startup error",
+                    0x10,
+                )
+            except Exception:
+                pass

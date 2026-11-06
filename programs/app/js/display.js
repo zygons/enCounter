@@ -17,6 +17,26 @@ ENC.display = {
   displayMode: "standby",
   paused: true,
   awaitingDmState: true,
+  currentUiTheme: null,
+  lastInitiativeSignature: null,
+  lastCenteredCurrentId: null,
+
+  applyTheme(theme = null) {
+    /*
+     * UI theme and presentation mode are independent state.
+     * Once a Player Display theme is established, Scene / Combat / Standby
+     * transitions must never replace it. Only an explicit theme update
+     * (Settings or cross-window storage change) may change the theme.
+     */
+    const requested =
+      theme ||
+      this.currentUiTheme ||
+      document.body?.dataset?.uiTheme ||
+      localStorage.getItem("encounter-ui-theme") ||
+      "scifi";
+    this.currentUiTheme = ENC.applyUiTheme(requested);
+    return this.currentUiTheme;
+  },
 
   /* ========================================
        LOAD ACTIVE ENCOUNTER
@@ -70,21 +90,38 @@ ENC.display = {
     ======================================== */
 
   setDisplayMode(mode) {
+    /*
+     * Presentation changes do not touch the UI theme.
+     * This prevents Show Scene / Show Combat / End Combat from ever
+     * switching a Fantasy display back to Sci-Fi.
+     */
     this.displayMode = ENC.PLAYER_DISPLAY_MODES.has(mode) ? mode : "standby";
     this.paused = this.displayMode === "standby";
     document.body.dataset.displayMode = this.displayMode;
 
+    if (this.displayMode !== "scene") this.hideScenePresentation();
+
     const overlay = document.getElementById("playerDisplayPrivacyOverlay");
-    if (overlay) overlay.classList.toggle("show", this.paused || this.awaitingDmState);
+    if (overlay)
+      overlay.classList.toggle("show", this.paused || this.awaitingDmState);
 
     this.updateTimerLayer();
     if (!this.paused && !this.awaitingDmState) this.render();
+
+    // Acknowledge the applied presentation mode so the DM Console can show
+    // whether Scene / Combat / Stand By has actually reached this display.
+    ENC.sync.broadcast("display-mode-applied", {
+      sentAt: Date.now(),
+      mode: this.displayMode,
+    });
   },
 
   setPaused(paused) {
     this.paused = Boolean(paused);
     if (this.paused) this.displayMode = "standby";
-    else if (this.displayMode === "standby") this.displayMode = this.encounter?.phase === "combat" ? "combat" : "scene";
+    else if (this.displayMode === "standby")
+      this.displayMode =
+        this.encounter?.phase === "combat" ? "combat" : "scene";
     document.body.dataset.displayMode = this.displayMode;
 
     const overlay = document.getElementById("playerDisplayPrivacyOverlay");
@@ -333,10 +370,62 @@ ENC.display = {
   },
 
   /* ========================================
+       SCENE PRESENTATION CONTENT
+    ======================================== */
+
+  updateScenePresentation(sceneImage = "") {
+    const presentation = document.getElementById("scenePresentation");
+    const title = document.getElementById("scenePresentationTitle");
+    const subtitle = document.getElementById("scenePresentationSubtitle");
+
+    if (!presentation) return;
+
+    const hasBackground = Boolean(sceneImage);
+    presentation.classList.add("show");
+    presentation.classList.toggle("has-background", hasBackground);
+
+    if (title) title.textContent = this.encounter?.name || "Encounter Scene";
+    if (subtitle) {
+      subtitle.textContent = hasBackground
+        ? "Scene"
+        : "Scene • No background configured";
+    }
+  },
+
+  hideScenePresentation() {
+    const presentation = document.getElementById("scenePresentation");
+    presentation?.classList.remove("show", "has-background");
+  },
+
+
+  /* ========================================
+       ENCOUNTER BACKGROUND PRESENTATION
+
+       Always set sizing explicitly instead of relying on the CSS cascade.
+       This prevents Scene mode from falling back to the browser default
+       repeating background behavior when themes or presentation rules change.
+    ======================================== */
+
+  applyEncounterBackground(image = "") {
+    const background = document.getElementById("displayBackground");
+    if (!background) return;
+
+    const safeImage = typeof image === "string" ? image.trim() : "";
+    background.style.backgroundImage = safeImage
+      ? `url("${safeImage.replace(/"/g, "%22")}")`
+      : "";
+    background.style.backgroundRepeat = "no-repeat";
+    background.style.backgroundPosition = "center center";
+    background.style.backgroundSize = "cover";
+  },
+
+  /* ========================================
        RENDER EMPTY / STANDBY DISPLAY
     ======================================== */
 
   renderStandby() {
+    this.hideScenePresentation();
+
     const track = document.getElementById("initiativeTrack");
 
     const background = document.getElementById("displayBackground");
@@ -346,8 +435,10 @@ ENC.display = {
     }
 
     if (background) {
-      background.style.backgroundImage = "";
+      this.applyEncounterBackground("");
     }
+
+    document.body.classList.remove("scene-has-image", "scene-no-image");
 
     document.getElementById("displayEncounterName").textContent =
       "Awaiting Encounter";
@@ -375,8 +466,18 @@ ENC.display = {
 
     document.body.dataset.displayMode = "scene";
     const background = document.getElementById("displayBackground");
-    const sceneImage = this.encounter.display?.sceneImage || this.encounter.background || "";
-    if (background) background.style.backgroundImage = sceneImage ? `url("${sceneImage}")` : "";
+    const sceneImage =
+      this.encounter.display?.sceneImage || this.encounter.background || "";
+    if (background) this.applyEncounterBackground(sceneImage);
+
+    // Scene presentation deliberately hides the combat shell. Preserve a
+    // theme-aware fallback and edge treatment so Fantasy does not appear to
+    // switch back to the old blue/black Player Display when no scene artwork
+    // is configured.
+    document.body.classList.toggle("scene-has-image", Boolean(sceneImage));
+    document.body.classList.toggle("scene-no-image", !sceneImage);
+    this.updateScenePresentation(sceneImage);
+
     const name = document.getElementById("displayEncounterName");
     if (name) name.textContent = this.encounter.name || "Scene";
     this.updateIdleLogo(Boolean(sceneImage));
@@ -401,6 +502,7 @@ ENC.display = {
     }
 
     document.body.dataset.displayMode = "combat";
+    this.hideScenePresentation();
 
     /* ----------------------------------------
        No active encounter
@@ -459,12 +561,11 @@ ENC.display = {
 
     const background = document.getElementById("displayBackground");
 
-    const combatImage = this.encounter.display?.combatImage || this.encounter.background || "";
-    if (combatImage) {
-      background.style.backgroundImage = `url("${combatImage}")`;
-    } else {
-      background.style.backgroundImage = "";
-    }
+    document.body.classList.remove("scene-has-image", "scene-no-image");
+
+    const combatImage =
+      this.encounter.display?.combatImage || this.encounter.background || "";
+    this.applyEncounterBackground(combatImage);
 
     /* ----------------------------------------
        Initiative track
@@ -472,13 +573,17 @@ ENC.display = {
 
     const track = document.getElementById("initiativeTrack");
 
-    track.innerHTML = "";
-
     /* ----------------------------------------
        No combatants yet
        ---------------------------------------- */
 
     if (!hasVisibleCombatants) {
+      if (this.lastInitiativeSignature !== "empty") {
+        track.replaceChildren();
+        this.lastInitiativeSignature = "empty";
+        this.lastCenteredCurrentId = null;
+      }
+
       document.getElementById("currentName").textContent =
         "Awaiting Encounter…";
 
@@ -495,141 +600,131 @@ ENC.display = {
       (combatant) => combatant.id === this.encounter.currentId,
     );
 
-    /* ========================================
-       BUILD INITIATIVE CARDS
-       ======================================== */
+    // Only rebuild the initiative DOM when information that is actually shown
+    // on the Player Display changes. Audio, timer, save, and other encounter
+    // broadcasts must not reload portrait images or disturb card geometry.
+    const initiativeSignature = JSON.stringify({
+      currentId: this.encounter.currentId || null,
+      combatants: visibleCombatants.map((combatant) => ({
+        id: combatant.id,
+        type: combatant.type,
+        combatState: combatant.combatState,
+        name: combatant.name,
+        initiative: combatant.initiative,
+        portrait: combatant.portrait || "",
+        systemId: combatant.systemId,
+        conditionTrack: combatant.conditionTrack || "",
+        dnd5eConditions: combatant.dnd5eConditions || [],
+        dnd5eExhaustion: Number(combatant.dnd5eExhaustion || 0),
+        visibleStatus: combatant.visibleStatus || "",
+        delayed: Boolean(combatant.delayed),
+        ready: Boolean(combatant.ready),
+      })),
+    });
 
-    for (const combatant of visibleCombatants) {
-      /* ------------------------------------
-         Card
-         ------------------------------------ */
+    const rebuildInitiative = this.lastInitiativeSignature !== initiativeSignature;
 
-      const card = document.createElement("article");
+    if (rebuildInitiative) {
+      track.replaceChildren();
 
-      card.className =
-        `initiative-card ` + `${combatant.type} ` + `${combatant.combatState}`;
+      /* ========================================
+         BUILD INITIATIVE CARDS
+         ======================================== */
 
-      /* ------------------------------------
-         Current turn highlighting
-         ------------------------------------ */
+      for (const combatant of visibleCombatants) {
+        const card = document.createElement("article");
+        card.className =
+          `initiative-card ` + `${combatant.type} ` + `${combatant.combatState}`;
+        card.dataset.combatantId = combatant.id;
 
-      if (
-        combatant.id === this.encounter.currentId &&
-        this.isTurnEligible(combatant)
-      ) {
-        card.classList.add("current");
-      }
-
-      /* ------------------------------------
-         Portrait
-         ------------------------------------ */
-
-      const portrait = document.createElement("div");
-
-      portrait.className = "display-portrait";
-
-      if (combatant.portrait) {
-        const img = document.createElement("img");
-
-        img.src = combatant.portrait;
-
-        img.alt = combatant.name || "";
-
-        portrait.appendChild(img);
-      } else {
-        portrait.textContent = combatant.name?.charAt(0).toUpperCase() || "?";
-      }
-
-      /* ------------------------------------
-         Name
-         ------------------------------------ */
-
-      const name = document.createElement("div");
-
-      name.className = "display-card-name";
-
-      name.textContent = combatant.name;
-
-      /* ------------------------------------
-         Initiative
-         ------------------------------------ */
-
-      const initiative = document.createElement("div");
-
-      initiative.className = "display-init";
-
-      const initiativeLabel = document.createElement("small");
-
-      initiativeLabel.textContent = "INIT";
-
-      initiative.appendChild(initiativeLabel);
-
-      initiative.append(document.createTextNode(combatant.initiative));
-
-      /* ------------------------------------
-         Status badges
-         ------------------------------------ */
-
-      const badges = document.createElement("div");
-
-      badges.className = "display-badges";
-
-      /* SWSE Condition Track */
-
-      if (
-        combatant.systemId === "swse" &&
-        combatant.conditionTrack &&
-        combatant.conditionTrack !== "Normal"
-      ) {
-        badges.appendChild(
-          this.badge(`CT ${combatant.conditionTrack}`, "condition"),
-        );
-      }
-
-      /* Visible statuses */
-
-      if (combatant.visibleStatus) {
-        const statuses = combatant.visibleStatus
-          .split(",")
-          .map((status) => status.trim())
-          .filter(Boolean);
-
-        for (const status of statuses) {
-          badges.appendChild(this.badge(status));
+        if (
+          combatant.id === this.encounter.currentId &&
+          this.isTurnEligible(combatant)
+        ) {
+          card.classList.add("current");
         }
+
+        const portrait = document.createElement("div");
+        portrait.className = "display-portrait";
+
+        if (combatant.portrait) {
+          const img = document.createElement("img");
+          img.src = combatant.portrait;
+          img.alt = combatant.name || "";
+          img.decoding = "async";
+          portrait.appendChild(img);
+        } else {
+          portrait.textContent = combatant.name?.charAt(0).toUpperCase() || "?";
+        }
+
+        const name = document.createElement("div");
+        name.className = "display-card-name";
+        name.textContent = combatant.name;
+
+        const initiative = document.createElement("div");
+        initiative.className = "display-init";
+        const initiativeLabel = document.createElement("small");
+        initiativeLabel.textContent = "INIT";
+        initiative.appendChild(initiativeLabel);
+        initiative.append(document.createTextNode(combatant.initiative));
+
+        const badges = document.createElement("div");
+        badges.className = "display-badges";
+
+        if (
+          combatant.systemId === "swse" &&
+          combatant.conditionTrack &&
+          combatant.conditionTrack !== "Normal"
+        ) {
+          badges.appendChild(
+            this.badge(`CT ${combatant.conditionTrack}`, "condition"),
+          );
+        }
+
+        if (
+          combatant.systemId === "dnd5e" &&
+          Array.isArray(combatant.dnd5eConditions)
+        ) {
+          for (const condition of combatant.dnd5eConditions) {
+            badges.appendChild(this.badge(condition, "condition"));
+          }
+        }
+
+        if (
+          combatant.systemId === "dnd5e" &&
+          Number(combatant.dnd5eExhaustion) > 0
+        ) {
+          badges.appendChild(
+            this.badge(`Exhaustion ${combatant.dnd5eExhaustion}`, "exhaustion"),
+          );
+        }
+
+        if (combatant.visibleStatus) {
+          const statuses = combatant.visibleStatus
+            .split(",")
+            .map((status) => status.trim())
+            .filter(Boolean);
+          for (const status of statuses) badges.appendChild(this.badge(status));
+        }
+
+        if (combatant.combatState === "defeated") {
+          badges.appendChild(this.badge("DEFEATED", "defeated"));
+        }
+        if (combatant.combatState === "inactive") {
+          badges.appendChild(this.badge("INACTIVE"));
+        }
+        if (combatant.delayed || combatant.combatState === "delayed") {
+          badges.appendChild(this.badge("DELAYED"));
+        }
+        if (combatant.ready || combatant.combatState === "ready") {
+          badges.appendChild(this.badge("READIED"));
+        }
+
+        card.append(portrait, name, initiative, badges);
+        track.appendChild(card);
       }
 
-      /* Defeated */
-
-      if (combatant.combatState === "defeated") {
-        badges.appendChild(this.badge("DEFEATED", "defeated"));
-      }
-
-      /* Inactive */
-
-      if (combatant.combatState === "inactive") {
-        badges.appendChild(this.badge("INACTIVE"));
-      }
-
-      /* Delayed */
-
-      if (combatant.delayed || combatant.combatState === "delayed") {
-        badges.appendChild(this.badge("DELAYED"));
-      }
-
-      /* Readied */
-
-      if (combatant.ready || combatant.combatState === "ready") {
-        badges.appendChild(this.badge("READIED"));
-      }
-
-      /* ------------------------------------
-         Assemble card
-         ------------------------------------ */
-
-      card.append(portrait, name, initiative, badges);
-
-      track.appendChild(card);
+      this.lastInitiativeSignature = initiativeSignature;
     }
 
     /* ========================================
@@ -661,13 +756,16 @@ ENC.display = {
        CENTER CURRENT CARD
        ======================================== */
 
-    setTimeout(() => {
-      document.querySelector(".initiative-card.current")?.scrollIntoView({
-        behavior: "smooth",
-        inline: "center",
-        block: "nearest",
+    if (this.lastCenteredCurrentId !== this.encounter.currentId) {
+      this.lastCenteredCurrentId = this.encounter.currentId || null;
+      requestAnimationFrame(() => {
+        document.querySelector(".initiative-card.current")?.scrollIntoView({
+          behavior: "auto",
+          inline: "center",
+          block: "nearest",
+        });
       });
-    }, 80);
+    }
   },
 
   /* ========================================
@@ -686,6 +784,9 @@ ENC.display = {
 
       if (message.type === "dm-presence") {
         this.markDmSeen();
+        if (message.uiTheme) {
+          this.applyTheme(message.uiTheme);
+        }
 
         /*
          * We now know whether the DM wants
@@ -733,7 +834,9 @@ ENC.display = {
       if (message.type === "player-display-mode") {
         this.markDmSeen();
         this.awaitingDmState = false;
-        if (message.encounter) this.encounter = ENC.normalizeEncounter(message.encounter);
+        if (message.uiTheme) this.applyTheme(message.uiTheme);
+        if (message.encounter)
+          this.encounter = ENC.normalizeEncounter(message.encounter);
         if (message.timer) this.applyTimerState(message.timer);
         this.setDisplayMode(message.mode || "standby");
         return;
@@ -780,6 +883,18 @@ ENC.display = {
       }
 
       // =====================================
+      // INTERFACE THEME UPDATES
+      // =====================================
+
+      if (message.type === "settings-updated") {
+        if (message.settings) {
+          const settings = ENC.normalizeSettings(message.settings);
+          this.applyTheme(settings.uiTheme);
+        }
+        return;
+      }
+
+      // =====================================
       // VISUAL TIMER UPDATES
       // =====================================
 
@@ -818,6 +933,12 @@ ENC.display = {
       }
     });
 
+    window.addEventListener("storage", (event) => {
+      if (event.key === "encounter-ui-theme" && event.newValue) {
+        this.applyTheme(event.newValue);
+      }
+    });
+
     this.startConnectionMonitor();
 
     /* ----------------------------------------
@@ -849,6 +970,20 @@ document.addEventListener("DOMContentLoaded", async () => {
   }
 
   await ENC.db.open();
+
+  try {
+    const settings = await ENC.db.getSettings();
+    const storedTheme = localStorage.getItem("encounter-ui-theme");
+    ENC.display.currentUiTheme = ENC.applyUiTheme(
+      settings?.uiTheme || storedTheme || "scifi",
+    );
+  } catch (error) {
+    console.warn("Unable to load Player Display theme:", error);
+    ENC.display.currentUiTheme = ENC.applyUiTheme(
+      localStorage.getItem("encounter-ui-theme") || "scifi",
+    );
+  }
+
   document.body.dataset.displayMode = "standby";
 
   /*

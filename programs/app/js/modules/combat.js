@@ -7,6 +7,10 @@
 ENC.combat = {
   encounter: null,
   saveTimer: null,
+  expandedCombatantIds: new Set(),
+  conditionEditorIds: new Set(),
+  libraryPickerType: "player",
+  addCombatantSource: "library",
 
   settings() {
     return ENC.settingsUI.settings || ENC.DEFAULT_SETTINGS;
@@ -18,8 +22,134 @@ ENC.combat = {
 
   async load() {
     this.encounter = await ENC.db.getActiveEncounter();
+    await this.syncLinkedIdentities({ persist: true, broadcast: false });
     ENC.sortCombatants(this.encounter.combatants);
     return this.encounter;
+  },
+
+  async getLibraryEntriesForSync() {
+    const loaded = ENC.libraryUI?.entries;
+    if (Array.isArray(loaded) && loaded.length) return loaded;
+    return ENC.db.getAll("library");
+  },
+
+  compendiumIdentity(entry) {
+    const source = entry?.compendiumSource;
+    if (!source?.provider) return "";
+    const key = source.key || source.documentKey;
+    if (!key) return "";
+    return `${String(source.provider)}::${String(key)}`;
+  },
+
+  async syncLinkedIdentities({ persist = true, broadcast = false, full = false } = {}) {
+    if (!this.encounter?.combatants?.length) return 0;
+
+    const libraryEntries = await this.getLibraryEntriesForSync();
+    const normalizedLibraryEntries = libraryEntries.map((entry) => ENC.normalizeLibraryEntry(entry));
+    const libraryById = new Map(
+      normalizedLibraryEntries.map((entry) => [String(entry.id), entry]),
+    );
+    const libraryByCompendium = new Map(
+      normalizedLibraryEntries
+        .map((entry) => [this.compendiumIdentity(entry), entry])
+        .filter(([identity]) => Boolean(identity)),
+    );
+
+    let changed = 0;
+    for (let index = 0; index < this.encounter.combatants.length; index += 1) {
+      const combatant = this.encounter.combatants[index];
+      const libraryEntry = combatant.sourceLibraryId
+        ? libraryById.get(String(combatant.sourceLibraryId))
+        : libraryByCompendium.get(this.compendiumIdentity(combatant));
+      if (!libraryEntry) continue;
+
+      const before = full
+        ? JSON.stringify(combatant)
+        : JSON.stringify({
+            name: combatant.name,
+            type: combatant.type,
+            portrait: combatant.portrait,
+            sourceLibraryId: combatant.sourceLibraryId || null,
+          });
+      const synced = full
+        ? ENC.syncCombatantDetailsFromLibrary(combatant, libraryEntry)
+        : ENC.syncCombatantIdentityFromLibrary(combatant, libraryEntry);
+      const after = full
+        ? JSON.stringify(synced)
+        : JSON.stringify({
+            name: synced.name,
+            type: synced.type,
+            portrait: synced.portrait,
+            sourceLibraryId: synced.sourceLibraryId || null,
+          });
+
+      if (before !== after) {
+        this.encounter.combatants[index] = synced;
+        changed += 1;
+      }
+    }
+
+    if (changed && persist) {
+      await ENC.db.saveActiveEncounter(this.encounter);
+      if (broadcast) {
+        ENC.sync.broadcast("encounter-updated", { encounter: this.encounter });
+      }
+    }
+
+    return changed;
+  },
+
+  async syncLinkedLibraryEntry(entry, { full = false } = {}) {
+    if (!this.encounter?.combatants?.length || !entry?.id) return 0;
+    const libraryEntry = ENC.normalizeLibraryEntry(entry);
+    let changed = 0;
+
+    const libraryCompendiumIdentity = this.compendiumIdentity(libraryEntry);
+
+    this.encounter.combatants = this.encounter.combatants.map((combatant) => {
+      const linkedByLibraryId =
+        String(combatant.sourceLibraryId || "") === String(libraryEntry.id);
+      const linkedByCompendium =
+        !combatant.sourceLibraryId &&
+        Boolean(libraryCompendiumIdentity) &&
+        this.compendiumIdentity(combatant) === libraryCompendiumIdentity;
+
+      if (!linkedByLibraryId && !linkedByCompendium) {
+        return combatant;
+      }
+
+      const synced = full
+        ? ENC.syncCombatantDetailsFromLibrary(combatant, libraryEntry)
+        : ENC.syncCombatantIdentityFromLibrary(combatant, libraryEntry);
+      if (JSON.stringify(combatant) !== JSON.stringify(synced)) changed += 1;
+      return synced;
+    });
+
+    if (changed) {
+      await this.save(full ? "combatant synced from library" : null);
+      this.render();
+    }
+
+    return changed;
+  },
+
+  async syncCombatantFromLibrary(combatant) {
+    if (!combatant?.sourceLibraryId) {
+      return ENC.app.toast("This combatant is not linked to a Library entry.");
+    }
+
+    const libraryEntry = await ENC.db.get("library", combatant.sourceLibraryId);
+    if (!libraryEntry) {
+      return ENC.app.toast("The linked Library entry could not be found.");
+    }
+
+    const synced = ENC.syncCombatantDetailsFromLibrary(combatant, libraryEntry);
+    Object.assign(combatant, synced);
+    await this.save("combatant synced from library");
+    this.render();
+    ENC.app.toast(
+      `${combatant.name} synced from Library. Current HP and live combat state were preserved.`,
+    );
   },
 
   async save(reason = null) {
@@ -53,6 +183,8 @@ ENC.combat = {
         initiative,
         hp: entry.maxHp ?? "",
         conditionTrack: "Normal",
+        dnd5eConditions: [],
+        dnd5eExhaustion: 0,
         visibleStatus: "",
         combatState: "active",
         hidden: false,
@@ -70,7 +202,67 @@ ENC.combat = {
         this.encounter.combatants.find((c) => c.combatState === "active")?.id ||
         combatant.id;
     await this.save("combatant added");
+
+    // Phase 3.1.10: verify that the combatant was actually persisted to the
+    // active encounter before reporting success to the Compendium workflow.
+    const persistedEncounter = await ENC.db.getActiveEncounter();
+    const persistedCombatant = persistedEncounter?.combatants?.find((item) => item.id === combatant.id);
+    if (!persistedCombatant) {
+      throw new Error(`${combatant.name || "Combatant"} was not found after saving the encounter.`);
+    }
+
+    this.encounter = persistedEncounter;
+    ENC.sortCombatants(this.encounter.combatants);
     this.render();
+    return persistedCombatant;
+  },
+
+  async addCompendiumEntry(entry, initiative = 10) {
+    const normalizedEntry = ENC.normalizeLibraryEntry({
+      ...ENC.deepClone(entry),
+      id: entry.id || ENC.makeId("cmp"),
+    });
+    const combatant = ENC.normalizeCombatant(
+      {
+        ...normalizedEntry,
+        id: ENC.makeId("cmb"),
+        sourceLibraryId: null,
+        initiative,
+        hp: normalizedEntry.maxHp ?? "",
+        conditionTrack: "Normal",
+        dnd5eConditions: [],
+        dnd5eExhaustion: 0,
+        visibleStatus: "",
+        combatState: "active",
+        hidden: false,
+        delayed: false,
+        ready: false,
+        createdOrder: Date.now() + Math.random(),
+      },
+      normalizedEntry.systemId,
+      normalizedEntry.customProfile,
+    );
+    this.encounter.combatants.push(combatant);
+    ENC.sortCombatants(this.encounter.combatants);
+    if (!this.encounter.currentId) {
+      this.encounter.currentId =
+        this.encounter.combatants.find((c) => c.combatState === "active")?.id ||
+        combatant.id;
+    }
+    await this.save("compendium combatant added");
+
+    // Phase 3.1.10: read the encounter back from IndexedDB so Add to Encounter
+    // only reports success after persistence has been confirmed.
+    const persistedEncounter = await ENC.db.getActiveEncounter();
+    const persistedCombatant = persistedEncounter?.combatants?.find((item) => item.id === combatant.id);
+    if (!persistedCombatant) {
+      throw new Error(`${combatant.name || "Combatant"} was not found after saving the encounter.`);
+    }
+
+    this.encounter = persistedEncounter;
+    ENC.sortCombatants(this.encounter.combatants);
+    this.render();
+    return persistedCombatant;
   },
 
   async quickAdd() {
@@ -86,6 +278,8 @@ ENC.combat = {
         initiative: Number(
           document.getElementById("quickInitiative").value || 10,
         ),
+        maxHp: document.getElementById("quickMaxHp")?.value ?? "",
+        hp: document.getElementById("quickMaxHp")?.value ?? "",
         createdOrder: Date.now() + Math.random(),
       },
       this.encounter.systemId,
@@ -95,6 +289,8 @@ ENC.combat = {
     ENC.sortCombatants(this.encounter.combatants);
     if (!this.encounter.currentId) this.encounter.currentId = combatant.id;
     document.getElementById("quickName").value = "";
+    const quickMaxHp = document.getElementById("quickMaxHp");
+    if (quickMaxHp) quickMaxHp.value = "";
     await this.save("quick combatant added");
     this.render();
   },
@@ -151,16 +347,26 @@ ENC.combat = {
     this.followCurrentTurn();
   },
 
+  async setHp(combatant, value) {
+    const parsed = Number(value);
+    if (!Number.isFinite(parsed)) return false;
+
+    const max =
+      combatant.maxHp === "" ? null : ENC.finiteNumber(combatant.maxHp, null);
+    let next = Math.max(0, parsed);
+    if (max !== null && Number.isFinite(max)) next = Math.min(max, next);
+
+    if (combatant.hp === next) return true;
+    combatant.hp = next;
+    await this.save();
+    this.render();
+    return true;
+  },
+
   async changeHp(combatant, amount) {
     const current = ENC.finiteNumber(combatant.hp, 0);
     const delta = ENC.finiteNumber(amount, 0);
-    const max =
-      combatant.maxHp === "" ? null : ENC.finiteNumber(combatant.maxHp, null);
-    let next = current + delta;
-    if (max !== null && Number.isFinite(max)) next = Math.min(max, next);
-    combatant.hp = Math.max(0, Number.isFinite(next) ? next : 0);
-    await this.save();
-    this.render();
+    await this.setHp(combatant, current + delta);
   },
 
   async customHp(combatant, heal = false) {
@@ -220,6 +426,60 @@ ENC.combat = {
       .join(" | ");
   },
 
+  primaryDefenseSummary(combatant) {
+    const stats = combatant.stats || {};
+
+    if (combatant.systemId === "dnd5e") {
+      return [{ label: "AC", value: stats.armorClass }];
+    }
+
+    if (combatant.systemId === "swse") {
+      return [
+        { label: "REF", value: stats.refDefense },
+        { label: "FORT", value: stats.fortDefense },
+        { label: "WILL", value: stats.willDefense },
+      ];
+    }
+
+    if (combatant.systemId === "generic") {
+      return [{ label: "DEF", value: stats.defense }];
+    }
+
+    const profile = ENC.getSystemProfile(
+      combatant.systemId,
+      combatant.customProfile,
+    );
+
+    return (profile.stats || []).slice(0, 3).map((stat) => ({
+      label: stat.label,
+      value: stats[stat.key],
+    }));
+  },
+
+  hpMetrics(combatant) {
+    const hasCurrent = combatant.hp !== "" && combatant.hp !== null;
+    const hasMax = combatant.maxHp !== "" && combatant.maxHp !== null;
+    const current = hasCurrent ? ENC.finiteNumber(combatant.hp, 0) : null;
+    const max = hasMax ? ENC.finiteNumber(combatant.maxHp, 0) : null;
+
+    if (current === null || max === null || max <= 0) {
+      return {
+        current,
+        max,
+        percent: null,
+        state: "unknown",
+      };
+    }
+
+    const percent = Math.max(0, Math.min(100, (current / max) * 100));
+    let state = "healthy";
+    if (current <= 0) state = "defeated";
+    else if (percent <= 25) state = "critical";
+    else if (percent <= 50) state = "wounded";
+
+    return { current, max, percent, state };
+  },
+
   portraitElement(combatant) {
     const box = document.createElement("div");
     box.className = "combatant-portrait";
@@ -245,6 +505,24 @@ ENC.combat = {
     input.addEventListener("change", async () => onChange(input.value));
     label.append(span, input);
     return label;
+  },
+
+  createActionButton(text, onClick, options = {}) {
+    const button = document.createElement("button");
+    button.type = "button";
+    button.textContent = text;
+    if (options.className) button.className = options.className;
+    if (options.title) button.title = options.title;
+    if (options.disabled) button.disabled = true;
+    button.addEventListener("click", onClick);
+    return button;
+  },
+
+  createStatusBadge(text, variant = "status") {
+    const badge = document.createElement("span");
+    badge.className = `combatant-status-badge ${variant}`;
+    badge.textContent = text;
+    return badge;
   },
 
   renderAbilities(container, combatant) {
@@ -320,107 +598,230 @@ ENC.combat = {
     container.appendChild(box);
   },
 
-  renderCombatant(combatant) {
-    const modules = this.modules();
-    const card = document.createElement("article");
-    card.className = `combatant-card ${combatant.combatState || "active"}`;
-    if (combatant.id === this.encounter.currentId)
-      card.classList.add("current");
-    card.appendChild(this.portraitElement(combatant));
+  renderHpCell(combatant) {
+    const metrics = this.hpMetrics(combatant);
+    const cell = document.createElement("div");
+    cell.className = "combatant-hp-cell";
 
-    const identity = document.createElement("div");
-    const nameRow = document.createElement("div");
-    nameRow.className = "combatant-name-row";
-    const name = document.createElement("h3");
-    name.textContent = combatant.name;
-    const type = document.createElement("span");
-    type.className = "type-pill";
-    type.textContent = combatant.type;
-    const statePill = document.createElement("span");
-    statePill.className = "state-pill";
-    statePill.textContent = combatant.combatState;
-    nameRow.append(name, type, statePill);
-    if (combatant.hidden) {
-      const visibilityPill = document.createElement("span");
-      visibilityPill.className = "state-pill hidden-from-players-pill";
-      visibilityPill.textContent = "Hidden from Players";
-      nameRow.appendChild(visibilityPill);
+    const value = document.createElement("div");
+    value.className = "combatant-hp-value combatant-hp-editor";
+
+    const input = document.createElement("input");
+    input.className = "combatant-hp-input";
+    input.type = "number";
+    input.min = "0";
+    input.step = "1";
+    input.inputMode = "numeric";
+    input.value = metrics.current === null ? "" : String(metrics.current);
+    input.placeholder = "—";
+    input.setAttribute("aria-label", `Current HP for ${combatant.name}`);
+    input.title = "Enter exact current HP and press Enter or click away";
+    if (metrics.max !== null && Number.isFinite(metrics.max)) {
+      input.max = String(metrics.max);
     }
-    identity.appendChild(nameRow);
-    const system = document.createElement("div");
-    system.className = "stat-line";
-    system.textContent = ENC.getSystemLabel(
+
+    const originalValue = input.value;
+    input.addEventListener("keydown", (event) => {
+      if (event.key === "Enter") {
+        event.preventDefault();
+        input.blur();
+      } else if (event.key === "Escape") {
+        input.value = originalValue;
+        input.blur();
+      }
+    });
+    input.addEventListener("change", async () => {
+      if (input.value.trim() === "") {
+        input.value = originalValue;
+        return;
+      }
+      const accepted = await this.setHp(combatant, input.value);
+      if (!accepted) input.value = originalValue;
+    });
+
+    value.appendChild(input);
+    if (metrics.max !== null && metrics.max > 0) {
+      const max = document.createElement("span");
+      max.className = "combatant-hp-max";
+      max.textContent = `/ ${metrics.max}`;
+      value.appendChild(max);
+    }
+    cell.appendChild(value);
+
+    const track = document.createElement("div");
+    track.className = `combatant-hp-track ${metrics.state}`;
+    const fill = document.createElement("div");
+    fill.className = "combatant-hp-fill";
+    fill.style.width = `${metrics.percent ?? 0}%`;
+    track.appendChild(fill);
+    if (metrics.percent === null) track.classList.add("no-meter");
+    cell.appendChild(track);
+
+    return cell;
+  },
+
+  renderDefenseCell(combatant) {
+    const cell = document.createElement("div");
+    cell.className = "combatant-defense-cell";
+
+    const defenses = this.primaryDefenseSummary(combatant).filter(
+      (item) => item.value !== "" && item.value !== undefined && item.value !== null,
+    );
+
+    if (!defenses.length) {
+      cell.textContent = "—";
+      return cell;
+    }
+
+    for (const item of defenses) {
+      const pill = document.createElement("span");
+      pill.className = "defense-stat-pill";
+      const label = document.createElement("small");
+      label.textContent = item.label;
+      const value = document.createElement("strong");
+      value.textContent = item.value;
+      pill.append(label, value);
+      cell.appendChild(pill);
+    }
+
+    return cell;
+  },
+
+  renderStatusCell(combatant) {
+    const cell = document.createElement("div");
+    cell.className = "combatant-status-cell";
+    let count = 0;
+
+    const add = (text, variant) => {
+      if (!text) return;
+      cell.appendChild(this.createStatusBadge(text, variant));
+      count += 1;
+    };
+
+    if (combatant.systemId === "dnd5e") {
+      for (const condition of combatant.dnd5eConditions || []) {
+        add(condition, "condition");
+      }
+      if (Number(combatant.dnd5eExhaustion) > 0) {
+        add(`Exhaustion ${combatant.dnd5eExhaustion}`, "exhaustion");
+      }
+    }
+
+    const profile = ENC.getSystemProfile(
       combatant.systemId,
       combatant.customProfile,
     );
-    identity.appendChild(system);
-    if (modules.systemStats) {
-      const stats = document.createElement("div");
-      stats.className = "stat-line";
-      stats.textContent = this.statSummary(combatant) || "No system stats";
-      identity.appendChild(stats);
+    if (profile.usesConditionTrack && combatant.conditionTrack !== "Normal") {
+      add(`CT ${combatant.conditionTrack}`, "warning");
     }
-    if (modules.notes && combatant.notes) {
-      const notes = document.createElement("div");
-      notes.className = "module-box";
-      const strong = document.createElement("strong");
-      strong.textContent = "DM Notes";
-      const text = document.createElement("div");
-      text.className = "stat-line";
-      text.textContent = combatant.notes;
-      notes.append(strong, text);
-      identity.appendChild(notes);
-    }
-    card.appendChild(identity);
 
-    const fields = document.createElement("div");
-    fields.className = "combatant-fields";
-    fields.appendChild(
-      this.createField(
-        "Initiative",
-        combatant.initiative,
-        async (value) => {
-          combatant.initiative = Number(value || 0);
-          ENC.sortCombatants(this.encounter.combatants);
-          await this.save();
-          this.render();
-        },
-        "number",
-      ),
+    add(combatant.visibleStatus, "status");
+
+    if (combatant.combatState && combatant.combatState !== "active") {
+      add(combatant.combatState, "state");
+    }
+    if (combatant.hidden) add("Hidden", "muted");
+
+    if (!count) {
+      const empty = document.createElement("span");
+      empty.className = "combatant-status-empty";
+      empty.textContent = "—";
+      cell.appendChild(empty);
+    }
+
+    return cell;
+  },
+
+  renderConditionEditor(combatant) {
+    const modules = this.modules();
+    const panel = document.createElement("div");
+    panel.className = "combatant-inline-editor combatant-condition-editor";
+
+    const heading = document.createElement("div");
+    heading.className = "combatant-inline-editor-heading";
+    const title = document.createElement("strong");
+    title.textContent = "Conditions & Status";
+    const close = this.createActionButton("Close", () => {
+      this.conditionEditorIds.delete(combatant.id);
+      this.render();
+    }, { className: "text-button" });
+    heading.append(title, close);
+    panel.appendChild(heading);
+
+    const controls = document.createElement("div");
+    controls.className = "combatant-inline-control-grid";
+
+    if (modules.conditions && combatant.systemId === "dnd5e") {
+      const conditionLabel = document.createElement("label");
+      conditionLabel.className = "compact-control";
+      const conditionLabelText = document.createElement("span");
+      conditionLabelText.textContent = "Add 5E Condition";
+      const conditionSelect = document.createElement("select");
+      const placeholder = document.createElement("option");
+      placeholder.value = "";
+      placeholder.textContent = "Choose condition…";
+      conditionSelect.appendChild(placeholder);
+
+      const activeConditions = Array.isArray(combatant.dnd5eConditions)
+        ? combatant.dnd5eConditions
+        : [];
+      for (const condition of ENC.DND5E_CONDITIONS) {
+        if (activeConditions.includes(condition)) continue;
+        const option = document.createElement("option");
+        option.value = condition;
+        option.textContent = condition;
+        conditionSelect.appendChild(option);
+      }
+      conditionSelect.addEventListener("change", async () => {
+        const condition = conditionSelect.value;
+        if (!condition) return;
+        if (!Array.isArray(combatant.dnd5eConditions)) {
+          combatant.dnd5eConditions = [];
+        }
+        if (!combatant.dnd5eConditions.includes(condition)) {
+          combatant.dnd5eConditions.push(condition);
+        }
+        await this.save();
+        this.render();
+      });
+      conditionLabel.append(conditionLabelText, conditionSelect);
+      controls.appendChild(conditionLabel);
+
+      const exhaustionLabel = document.createElement("label");
+      exhaustionLabel.className = "compact-control";
+      const exhaustionText = document.createElement("span");
+      exhaustionText.textContent = "Exhaustion";
+      const exhaustionSelect = document.createElement("select");
+      for (
+        let level = ENC.DND5E_EXHAUSTION_MIN;
+        level <= ENC.DND5E_EXHAUSTION_MAX;
+        level += 1
+      ) {
+        const option = document.createElement("option");
+        option.value = String(level);
+        option.textContent = level === 0 ? "None" : `Level ${level}`;
+        exhaustionSelect.appendChild(option);
+      }
+      exhaustionSelect.value = String(combatant.dnd5eExhaustion ?? 0);
+      exhaustionSelect.addEventListener("change", async () => {
+        combatant.dnd5eExhaustion =
+          Number.parseInt(exhaustionSelect.value, 10) || 0;
+        await this.save();
+        this.render();
+      });
+      exhaustionLabel.append(exhaustionText, exhaustionSelect);
+      controls.appendChild(exhaustionLabel);
+    }
+
+    const profile = ENC.getSystemProfile(
+      combatant.systemId,
+      combatant.customProfile,
     );
-    if (modules.hp)
-      fields.appendChild(
-        this.createField(
-          "HP",
-          combatant.hp,
-          async (value) => {
-            combatant.hp = value;
-            await this.save();
-          },
-          "number",
-        ),
-      );
-    if (modules.status)
-      fields.appendChild(
-        this.createField(
-          "Visible Status",
-          combatant.visibleStatus,
-          async (value) => {
-            combatant.visibleStatus = value.trim();
-            await this.save();
-            this.render();
-          },
-        ),
-      );
-    if (
-      modules.conditions &&
-      ENC.getSystemProfile(combatant.systemId, combatant.customProfile)
-        .usesConditionTrack
-    ) {
-      const label = document.createElement("label");
-      label.className = "compact-control";
-      const span = document.createElement("span");
-      span.textContent = "Condition Track";
+    if (modules.conditions && profile.usesConditionTrack) {
+      const conditionTrackLabel = document.createElement("label");
+      conditionTrackLabel.className = "compact-control";
+      const label = document.createElement("span");
+      label.textContent = "Condition Track";
       const select = document.createElement("select");
       for (const value of ["Normal", "-1", "-2", "-5", "-10", "Helpless"]) {
         const option = document.createElement("option");
@@ -434,118 +835,436 @@ ENC.combat = {
         await this.save();
         this.render();
       });
-      label.append(span, select);
-      fields.appendChild(label);
+      conditionTrackLabel.append(label, select);
+      controls.appendChild(conditionTrackLabel);
     }
-    card.appendChild(fields);
 
+    if (modules.status) {
+      controls.appendChild(
+        this.createField(
+          "Visible Status",
+          combatant.visibleStatus,
+          async (value) => {
+            combatant.visibleStatus = value.trim();
+            await this.save();
+            this.render();
+          },
+        ),
+      );
+    }
+
+    panel.appendChild(controls);
+
+    if (combatant.systemId === "dnd5e" && combatant.dnd5eConditions?.length) {
+      const tags = document.createElement("div");
+      tags.className = "dnd5e-condition-tags compact-condition-tags";
+      for (const condition of combatant.dnd5eConditions) {
+        const chip = document.createElement("button");
+        chip.type = "button";
+        chip.className = "dnd5e-condition-chip";
+        chip.textContent = `${condition} ×`;
+        chip.title = `Remove ${condition}`;
+        chip.addEventListener("click", async () => {
+          combatant.dnd5eConditions = combatant.dnd5eConditions.filter(
+            (activeCondition) => activeCondition !== condition,
+          );
+          await this.save();
+          this.render();
+        });
+        tags.appendChild(chip);
+      }
+      panel.appendChild(tags);
+    }
+
+    return panel;
+  },
+
+  renderAdvancedDetails(combatant) {
+    const modules = this.modules();
     const detail = document.createElement("div");
-    detail.className = "combatant-detail";
-    const actions = document.createElement("div");
-    actions.className = "combat-actions";
+    detail.className = "combatant-expanded-detail";
 
-    const setTurn = document.createElement("button");
-    setTurn.textContent = "Set Turn";
-    setTurn.addEventListener("click", async () => {
-      await this.resumeCombatant(combatant, true);
-    });
-    actions.appendChild(setTurn);
+    const editGrid = document.createElement("div");
+    editGrid.className = "combatant-detail-grid";
+    editGrid.appendChild(
+      this.createField(
+        "Initiative",
+        combatant.initiative,
+        async (value) => {
+          combatant.initiative = Number(value || 0);
+          ENC.sortCombatants(this.encounter.combatants);
+          await this.save();
+          this.render();
+        },
+        "number",
+      ),
+    );
+
+    if (modules.hp) {
+      editGrid.appendChild(
+        this.createField(
+          "Current HP",
+          combatant.hp,
+          async (value) => {
+            combatant.hp = value;
+            await this.save();
+            this.render();
+          },
+          "number",
+        ),
+      );
+    }
+
+    const stats = document.createElement("div");
+    stats.className = "combatant-detail-summary";
+    stats.innerHTML = `<span>System</span><strong>${ENC.getSystemLabel(
+      combatant.systemId,
+      combatant.customProfile,
+    )}</strong><small>${this.statSummary(combatant) || "No system stats"}</small>`;
+    editGrid.appendChild(stats);
+    detail.appendChild(editGrid);
+
+    const actionGroups = document.createElement("div");
+    actionGroups.className = "combatant-secondary-actions";
 
     if (modules.combatControls && modules.hp) {
-      for (const damage of [1, 5, 10]) {
-        const button = document.createElement("button");
-        button.textContent = `−${damage}`;
-        button.addEventListener("click", () =>
-          this.changeHp(combatant, -damage),
-        );
-        actions.appendChild(button);
-      }
-      const customDamage = document.createElement("button");
-      customDamage.textContent = "Damage…";
-      customDamage.addEventListener("click", () =>
-        this.customHp(combatant, false),
+      actionGroups.append(
+        this.createActionButton("Damage…", () => this.customHp(combatant, false)),
+        this.createActionButton("Heal…", () => this.customHp(combatant, true)),
       );
-      actions.appendChild(customDamage);
-      for (const heal of [1, 5, 10]) {
-        const button = document.createElement("button");
-        button.textContent = `+${heal}`;
-        button.addEventListener("click", () => this.changeHp(combatant, heal));
-        actions.appendChild(button);
-      }
-      const customHeal = document.createElement("button");
-      customHeal.textContent = "Heal…";
-      customHeal.addEventListener("click", () =>
-        this.customHp(combatant, true),
-      );
-      actions.appendChild(customHeal);
     }
 
     if (modules.combatControls) {
-      const delay = document.createElement("button");
-      delay.textContent = "Delay";
-      delay.addEventListener("click", () =>
-        this.setState(combatant, "delayed"),
+      actionGroups.append(
+        this.createActionButton("Delay", () => this.setState(combatant, "delayed")),
+        this.createActionButton("Ready", () => this.setState(combatant, "ready")),
+        this.createActionButton("Defeated", () => this.setState(combatant, "defeated")),
+        this.createActionButton("Inactive", () => this.setState(combatant, "inactive")),
+        this.createActionButton(
+          combatant.delayed || combatant.ready ? "Trigger / Resume" : "Restore Active",
+          () => this.resumeCombatant(
+            combatant,
+            combatant.delayed || combatant.ready,
+          ),
+        ),
       );
-      const ready = document.createElement("button");
-      ready.textContent = "Ready";
-      ready.addEventListener("click", () => this.setState(combatant, "ready"));
-      const defeated = document.createElement("button");
-      defeated.textContent = "Defeated";
-      defeated.addEventListener("click", () =>
-        this.setState(combatant, "defeated"),
-      );
-      const inactive = document.createElement("button");
-      inactive.textContent = "Inactive";
-      inactive.addEventListener("click", () =>
-        this.setState(combatant, "inactive"),
-      );
-      const restore = document.createElement("button");
-      restore.textContent =
-        combatant.delayed || combatant.ready ? "Trigger / Resume" : "Restore";
-      restore.addEventListener("click", () =>
-        this.resumeCombatant(combatant, combatant.delayed || combatant.ready),
-      );
-      actions.append(delay, ready, defeated, inactive, restore);
     }
 
     if (modules.hiddenCombatants) {
-      const hidden = document.createElement("button");
-      hidden.textContent = combatant.hidden
-        ? "Reveal to Players"
-        : "Hide from Players";
-      hidden.addEventListener("click", async () => {
-        combatant.hidden = !combatant.hidden;
-        await this.save();
-        this.render();
-      });
-      actions.appendChild(hidden);
+      actionGroups.appendChild(
+        this.createActionButton(
+          combatant.hidden ? "Reveal to Players" : "Hide from Players",
+          async () => {
+            combatant.hidden = !combatant.hidden;
+            await this.save();
+            this.render();
+          },
+        ),
+      );
     }
 
-    const remove = document.createElement("button");
-    remove.textContent = "Remove";
-    remove.className = "danger-outline";
-    remove.addEventListener("click", async () => {
-      if (
-        !confirm(
-          `Remove ${combatant.name} from this encounter? The permanent library entry is not affected.`,
-        )
-      )
-        return;
-      this.encounter.combatants = this.encounter.combatants.filter(
-        (c) => c.id !== combatant.id,
+    if (combatant.sourceLibraryId) {
+      actionGroups.appendChild(
+        this.createActionButton(
+          "Sync from Library",
+          () => this.syncCombatantFromLibrary(combatant),
+          {
+            className: "library-sync-action",
+            title:
+              "Refresh Max HP, stats, abilities, notes, portrait, and identity from the Library while preserving Current HP and live combat state.",
+          },
+        ),
       );
-      if (this.encounter.currentId === combatant.id)
-        this.encounter.currentId = null;
-      await this.save("combatant removed");
-      this.render();
-    });
-    actions.appendChild(remove);
+    }
 
-    detail.appendChild(actions);
+    const remove = this.createActionButton(
+      "Remove from Encounter",
+      async () => {
+        if (
+          !confirm(
+            `Remove ${combatant.name} from this encounter? The permanent library entry is not affected.`,
+          )
+        )
+          return;
+        this.encounter.combatants = this.encounter.combatants.filter(
+          (c) => c.id !== combatant.id,
+        );
+        this.expandedCombatantIds.delete(combatant.id);
+        this.conditionEditorIds.delete(combatant.id);
+        if (this.encounter.currentId === combatant.id)
+          this.encounter.currentId = null;
+        await this.save("combatant removed");
+        this.render();
+      },
+      { className: "danger-outline" },
+    );
+    actionGroups.appendChild(remove);
+    detail.appendChild(actionGroups);
+
+    if (modules.notes && combatant.notes) {
+      const notes = document.createElement("div");
+      notes.className = "combatant-detail-notes";
+      const strong = document.createElement("strong");
+      strong.textContent = "DM Notes";
+      const text = document.createElement("div");
+      text.textContent = combatant.notes;
+      notes.append(strong, text);
+      detail.appendChild(notes);
+    }
+
     this.renderAbilities(detail, combatant);
     this.renderResources(detail, combatant);
-    card.appendChild(detail);
+    return detail;
+  },
+
+  renderCombatant(combatant) {
+    const modules = this.modules();
+    const card = document.createElement("article");
+    card.className = `combatant-card combatant-row ${combatant.combatState || "active"}`;
+    if (combatant.id === this.encounter.currentId) card.classList.add("current");
+    if (this.expandedCombatantIds.has(combatant.id)) card.classList.add("expanded");
+
+    const summary = document.createElement("div");
+    summary.className = "combatant-summary-grid";
+
+    const identity = document.createElement("div");
+    identity.className = "combatant-identity-cell";
+    identity.appendChild(this.portraitElement(combatant));
+    const identityText = document.createElement("div");
+    identityText.className = "combatant-identity-text";
+    const name = document.createElement("strong");
+    name.className = "combatant-display-name";
+    name.textContent = combatant.name;
+    const meta = document.createElement("span");
+    meta.className = "combatant-meta-line";
+    const metaText = document.createElement("span");
+    metaText.textContent = `${ENC.getSystemLabel(
+      combatant.systemId,
+      combatant.customProfile,
+    )} · ${combatant.type}`;
+    meta.appendChild(metaText);
+    if (combatant.sourceLibraryId) {
+      const linked = document.createElement("span");
+      linked.className = "combatant-library-link-badge";
+      linked.textContent = "Library linked";
+      linked.title = "Portrait and basic identity follow this combatant's Library entry.";
+      meta.appendChild(linked);
+    }
+    identityText.append(name, meta);
+    identity.appendChild(identityText);
+    summary.appendChild(identity);
+
+    const initiative = document.createElement("div");
+    initiative.className = "combatant-initiative-cell";
+    const initValue = document.createElement("strong");
+    initValue.textContent = combatant.initiative;
+    initiative.appendChild(initValue);
+    if (combatant.id === this.encounter.currentId) {
+      const current = document.createElement("span");
+      current.textContent = "TURN";
+      initiative.appendChild(current);
+    }
+    summary.appendChild(initiative);
+
+    summary.appendChild(modules.hp ? this.renderHpCell(combatant) : document.createElement("div"));
+    summary.appendChild(this.renderDefenseCell(combatant));
+    summary.appendChild(this.renderStatusCell(combatant));
+
+    const detailToggle = this.createActionButton(
+      this.expandedCombatantIds.has(combatant.id) ? "▴" : "⋯",
+      () => {
+        if (this.expandedCombatantIds.has(combatant.id)) {
+          this.expandedCombatantIds.delete(combatant.id);
+        } else {
+          this.expandedCombatantIds.add(combatant.id);
+        }
+        this.render();
+      },
+      {
+        className: "combatant-more-button",
+        title: this.expandedCombatantIds.has(combatant.id)
+          ? "Collapse details"
+          : "More combatant controls",
+      },
+    );
+    summary.appendChild(detailToggle);
+    card.appendChild(summary);
+
+    const quickActions = document.createElement("div");
+    quickActions.className = "combatant-quick-actions";
+
+    const setTurn = this.createActionButton(
+      combatant.id === this.encounter.currentId ? "Current Turn" : "Set Turn",
+      () => this.resumeCombatant(combatant, true),
+      {
+        className:
+          combatant.id === this.encounter.currentId
+            ? "combatant-action-current"
+            : "combatant-action-primary",
+        disabled: combatant.id === this.encounter.currentId,
+      },
+    );
+    quickActions.appendChild(setTurn);
+
+    if (modules.combatControls && modules.hp) {
+      for (const delta of [-10, -1, 1, 10]) {
+        quickActions.appendChild(
+          this.createActionButton(
+            delta > 0 ? `+${delta}` : String(delta).replace("-", "−"),
+            () => this.changeHp(combatant, delta),
+            {
+              className: delta < 0 ? "hp-action damage" : "hp-action heal",
+              title: delta < 0 ? `Apply ${Math.abs(delta)} damage` : `Heal ${delta} HP`,
+            },
+          ),
+        );
+      }
+    }
+
+    if (modules.conditions || modules.status) {
+      let conditionLabel = "Status";
+      if (combatant.systemId === "dnd5e") {
+        conditionLabel = "Conditions";
+      } else if (
+        ENC.getSystemProfile(combatant.systemId, combatant.customProfile)
+          .usesConditionTrack
+      ) {
+        conditionLabel = "Condition";
+      }
+
+      quickActions.appendChild(
+        this.createActionButton(conditionLabel, () => {
+          if (this.conditionEditorIds.has(combatant.id)) {
+            this.conditionEditorIds.delete(combatant.id);
+          } else {
+            this.conditionEditorIds.add(combatant.id);
+          }
+          this.render();
+        }, {
+          className: this.conditionEditorIds.has(combatant.id)
+            ? "combatant-action-toggle active"
+            : "combatant-action-toggle",
+        }),
+      );
+    }
+
+    if (modules.conditions && combatant.systemId === "dnd5e") {
+      const exhaustion = Number(combatant.dnd5eExhaustion) || 0;
+      quickActions.appendChild(
+        this.createActionButton(
+          exhaustion ? `Exhaustion ${exhaustion}` : "Exhaustion",
+          () => {
+            this.conditionEditorIds.add(combatant.id);
+            this.render();
+          },
+          { className: exhaustion ? "combatant-action-toggle exhaustion" : "combatant-action-toggle" },
+        ),
+      );
+    }
+
+    card.appendChild(quickActions);
+
+    if (this.conditionEditorIds.has(combatant.id)) {
+      card.appendChild(this.renderConditionEditor(combatant));
+    }
+
+    if (this.expandedCombatantIds.has(combatant.id)) {
+      card.appendChild(this.renderAdvancedDetails(combatant));
+    }
+
     return card;
+  },
+
+  renderCurrentTurnFocus() {
+    if (!this.encounter) return;
+
+    const title = document.getElementById("runEncounterTitle");
+    if (title) title.textContent = this.encounter.name || "Active Encounter";
+
+    const subtitle = document.getElementById("runEncounterSubtitle");
+    if (subtitle) {
+      const phase = String(this.encounter.phase || "prepared").toUpperCase();
+      subtitle.textContent = `Round ${this.encounter.round || 1} // ${phase}`;
+    }
+
+    const label = document.getElementById("currentTurnFocusLabel");
+    const body = document.getElementById("currentTurnFocusBody");
+    const portraitHost = document.getElementById("currentTurnPortraitHost");
+    const name = document.getElementById("currentTurnName");
+    const meta = document.getElementById("currentTurnMeta");
+    const hp = document.getElementById("currentTurnHp");
+    const hpFill = document.getElementById("currentTurnHpFill");
+    const defenseLabel = document.getElementById("currentTurnDefenseLabel");
+    const defense = document.getElementById("currentTurnDefense");
+    const initiative = document.getElementById("currentTurnInitiative");
+    const statuses = document.getElementById("currentTurnStatuses");
+
+    const current = this.encounter.combatants.find(
+      (combatant) => combatant.id === this.encounter.currentId,
+    );
+
+    if (!current) {
+      if (label) label.textContent = "Awaiting combatant";
+      if (body) body.classList.add("is-empty");
+      if (portraitHost) {
+        portraitHost.innerHTML = "";
+        portraitHost.textContent = "?";
+      }
+      if (name) name.textContent = "No current turn";
+      if (meta) meta.textContent = "Start combat or set a combatant's turn.";
+      if (hp) hp.textContent = "—";
+      if (hpFill) {
+        hpFill.style.width = "0%";
+        hpFill.dataset.state = "unknown";
+      }
+      if (defenseLabel) defenseLabel.textContent = "DEF";
+      if (defense) defense.textContent = "—";
+      if (initiative) initiative.textContent = "—";
+      if (statuses) statuses.innerHTML = '<span class="combatant-status-empty">No active status</span>';
+      return;
+    }
+
+    if (label) label.textContent = current.name || "Current combatant";
+    if (body) body.classList.remove("is-empty");
+
+    if (portraitHost) {
+      portraitHost.innerHTML = "";
+      const portrait = this.portraitElement(current);
+      portrait.classList.add("current-turn-portrait-art");
+      portraitHost.appendChild(portrait);
+    }
+
+    if (name) name.textContent = current.name || "Unnamed combatant";
+    if (meta) {
+      meta.textContent = `${ENC.getSystemLabel(
+        current.systemId,
+        current.customProfile,
+      )} // ${current.type || "combatant"}`;
+    }
+
+    const metrics = this.hpMetrics(current);
+    if (hp) {
+      if (metrics.current === null) hp.textContent = "—";
+      else if (metrics.max !== null && metrics.max > 0) hp.textContent = `${metrics.current} / ${metrics.max}`;
+      else hp.textContent = String(metrics.current);
+    }
+    if (hpFill) {
+      hpFill.style.width = metrics.percent === null ? "0%" : `${metrics.percent}%`;
+      hpFill.dataset.state = metrics.state;
+    }
+
+    const defenses = this.primaryDefenseSummary(current).filter(
+      (item) => item.value !== "" && item.value !== undefined && item.value !== null,
+    );
+    if (defenseLabel) defenseLabel.textContent = defenses[0]?.label || "DEF";
+    if (defense) defense.textContent = defenses[0]?.value ?? "—";
+    if (initiative) initiative.textContent = current.initiative ?? "—";
+
+    if (statuses) {
+      statuses.innerHTML = "";
+      const source = this.renderStatusCell(current);
+      while (source.firstChild) statuses.appendChild(source.firstChild);
+    }
   },
 
   render() {
@@ -562,29 +1281,118 @@ ENC.combat = {
     ENC.sortCombatants(this.encounter.combatants);
     for (const combatant of this.encounter.combatants)
       list.appendChild(this.renderCombatant(combatant));
+
+    const combatantCount = this.encounter.combatants.length;
+    const countBadge = document.getElementById("encounterRosterCount");
+    if (countBadge) countBadge.textContent = String(combatantCount);
+    document
+      .getElementById("combatantTableHeader")
+      ?.classList.toggle("hidden", combatantCount === 0);
     document
       .getElementById("emptyEncounter")
-      .classList.toggle("hidden", this.encounter.combatants.length > 0);
+      .classList.toggle("hidden", combatantCount > 0);
     this.renderLibrarySelect();
     this.renderPresetControls();
     ENC.encounterUI?.renderPhase?.();
+    this.renderCurrentTurnFocus();
+  },
+
+  libraryEntryMatchesPicker(entry, pickerType = this.libraryPickerType) {
+    if (pickerType === "monster") {
+      return ["enemy", "creature", "monster"].includes(entry.type);
+    }
+    return entry.type === pickerType;
+  },
+
+  updateLibraryPickerTabs() {
+    const entries = ENC.libraryUI?.entries || [];
+    const counts = {
+      player: entries.filter((entry) => entry.type === "player").length,
+      npc: entries.filter((entry) => entry.type === "npc").length,
+      monster: entries.filter((entry) =>
+        ["enemy", "creature", "monster"].includes(entry.type),
+      ).length,
+    };
+
+    const countIds = {
+      player: "libraryPlayerCount",
+      npc: "libraryNpcCount",
+      monster: "libraryMonsterCount",
+    };
+
+    for (const [type, id] of Object.entries(countIds)) {
+      const count = document.getElementById(id);
+      if (count) count.textContent = String(counts[type]);
+    }
+
+    document.querySelectorAll("[data-library-picker-tab]").forEach((button) => {
+      const active = button.dataset.libraryPickerTab === this.libraryPickerType;
+      button.classList.toggle("active", active);
+      button.setAttribute("aria-selected", String(active));
+    });
   },
 
   renderLibrarySelect() {
     const select = document.getElementById("encounterLibrarySelect");
+    const addButton = document.getElementById("addLibraryCombatantBtn");
+    if (!select) return;
+
     const current = select.value;
-    select.innerHTML = '<option value="">Choose saved character…</option>';
-    const matches = (ENC.libraryUI?.entries || []).filter(
-      (entry) => entry.systemId === this.encounter.systemId,
-    );
-    for (const entry of matches) {
+    const pickerLabels = {
+      player: "player",
+      npc: "NPC",
+      monster: "monster or enemy",
+    };
+    const pickerLabel = pickerLabels[this.libraryPickerType] || "combatant";
+    select.innerHTML = `<option value="">Choose saved ${pickerLabel}…</option>`;
+
+    const entries = [...(ENC.libraryUI?.entries || [])]
+      .filter((entry) => this.libraryEntryMatchesPicker(entry))
+      .sort((a, b) => {
+        const aSameSystem = a.systemId === this.encounter.systemId ? 0 : 1;
+        const bSameSystem = b.systemId === this.encounter.systemId ? 0 : 1;
+        if (aSameSystem !== bSameSystem) return aSameSystem - bSameSystem;
+
+        return String(a.name || "").localeCompare(String(b.name || ""));
+      });
+
+    const currentSystemGroup = document.createElement("optgroup");
+    currentSystemGroup.label = `${ENC.getSystemLabel(
+      this.encounter.systemId,
+      this.encounter.customProfile,
+    )} — Current Encounter`;
+
+    const otherSystemsGroup = document.createElement("optgroup");
+    otherSystemsGroup.label = "Other Systems";
+
+    for (const entry of entries) {
       const option = document.createElement("option");
       option.value = entry.id;
-      option.textContent = `${entry.name} — ${entry.type}`;
-      select.appendChild(option);
+      const typeLabel = ENC.libraryUI?.typeLabel?.(entry.type) || entry.type || "Character";
+      const systemLabel = ENC.getSystemLabel(entry.systemId, entry.customProfile);
+      option.textContent = `${entry.name} — ${typeLabel} · ${systemLabel}`;
+
+      if (entry.systemId === this.encounter.systemId) {
+        currentSystemGroup.appendChild(option);
+      } else {
+        otherSystemsGroup.appendChild(option);
+      }
     }
-    if ([...select.options].some((option) => option.value === current))
+
+    if (currentSystemGroup.children.length) select.appendChild(currentSystemGroup);
+    if (otherSystemsGroup.children.length) select.appendChild(otherSystemsGroup);
+
+    const hasEntries = entries.length > 0;
+    select.disabled = !hasEntries;
+    if (addButton) addButton.disabled = !hasEntries;
+
+    if (!hasEntries) {
+      select.options[0].textContent = `No saved ${pickerLabel}s`;
+    } else if ([...select.options].some((option) => option.value === current)) {
       select.value = current;
+    }
+
+    this.updateLibraryPickerTabs();
   },
 
   async renderPresetControls() {
@@ -611,6 +1419,9 @@ ENC.combat = {
   async savePreset() {
     const name = prompt("Preset name:", this.encounter.name);
     if (!name?.trim()) return;
+    if (ENC.app?.getPreparedTimerConfig) {
+      this.encounter.timer = ENC.app.getPreparedTimerConfig();
+    }
     await ENC.db.savePreset(this.encounter, name.trim());
     ENC.backup.scheduleExternalBackup();
     await this.renderPresetControls();
@@ -628,6 +1439,7 @@ ENC.combat = {
       )
     )
       return;
+    await ENC.app?.clearRuntimeTimerCheckpoint?.();
     this.encounter = ENC.deepClone(preset);
     this.encounter.id = "active";
     this.encounter.kind = "active";
@@ -635,50 +1447,59 @@ ENC.combat = {
     this.encounter.currentId = null;
     this.encounter.combatants = (preset.combatants || []).map((c) =>
       ENC.normalizeCombatant(
-        {
+        ENC.resetCombatantTransientState({
           ...c,
           id: ENC.makeId("cmb"),
           initiative: 10,
-          hp: c.maxHp ?? c.hp ?? "",
-          conditionTrack: "Normal",
-          visibleStatus: "",
-          combatState: "active",
           hidden: false,
-          delayed: false,
-          ready: false,
           createdOrder: Date.now() + Math.random(),
-        },
+        }),
         preset.systemId,
         preset.customProfile,
       ),
     );
+    ENC.app?.applyPreparedTimerConfig?.(this.encounter.timer, {
+      broadcast: false,
+    });
     await this.save("preset loaded");
+    ENC.app?.broadcastTimerState?.();
     this.render();
     ENC.app?.refreshEncounterMediaControls?.();
     ENC.soundscapeUI?.render?.();
   },
 
-  async newEncounter() {
+  async resetActiveEncounter({
+    name = "Ad Hoc Encounter",
+    confirmReset = true,
+    snapshotReason = "before new encounter",
+    toastMessage = "Ad hoc encounter ready.",
+  } = {}) {
     if (
+      confirmReset &&
       !confirm(
-        "Start a new encounter? Permanent library data will not be deleted.",
+        "Start a clean encounter? The current Run encounter will be cleared. Permanent Library data and saved encounters will not be deleted.",
       )
-    )
-      return;
+    ) {
+      return false;
+    }
 
     const previousEncounter = this.encounter
       ? ENC.deepClone(this.encounter)
       : null;
+
     if (ENC.isMeaningfulEncounter(previousEncounter)) {
       await ENC.db.addSnapshot(
         previousEncounter,
-        "before new encounter",
+        snapshotReason,
         this.settings().snapshotLimit || 20,
       );
     }
 
     const systemId =
-      this.encounter?.systemId || this.settings().systemId || "generic";
+      document.getElementById("encounterSystem")?.value ||
+      this.encounter?.systemId ||
+      this.settings().systemId ||
+      "generic";
     const customProfile = ENC.deepClone(
       this.encounter?.customProfile ||
         this.settings().customProfile ||
@@ -686,22 +1507,85 @@ ENC.combat = {
     );
 
     ENC.audio?.stopAll(250);
-    this.encounter = ENC.createDefaultEncounter();
-    this.encounter.systemId = systemId;
-    this.encounter.customProfile = customProfile;
-    this.encounter.phase = "prepared";
-    this.encounter.playerDisplayMode = "standby";
+    await ENC.app?.clearRuntimeTimerCheckpoint?.();
+
+    const fresh = ENC.createDefaultEncounter();
+    fresh.name = String(name || "Ad Hoc Encounter").trim() || "Ad Hoc Encounter";
+    fresh.systemId = systemId;
+    fresh.customProfile = customProfile;
+    fresh.sourceEncounterId = null;
+    fresh.phase = "prepared";
+    fresh.playerDisplayMode = "standby";
+    fresh.round = 1;
+    fresh.currentId = null;
+    fresh.combatants = [];
+    fresh.background = "";
+    fresh.display = {
+      sceneImage: "",
+      combatImage: "",
+    };
+    fresh.soundscape = ENC.createDefaultSoundscape();
+    fresh.presentation = {
+      schemaVersion: 1,
+      sceneBackground: "",
+      combatBackground: "",
+      soundscape: ENC.createDefaultSoundscape(),
+    };
+    fresh.timer = ENC.createDefaultTimerConfig();
+
+    this.encounter = fresh;
     ENC.app.playerDisplayMode = "standby";
     ENC.app.playerDisplayPaused = true;
+    ENC.app?.applyPreparedTimerConfig?.(fresh.timer, {
+      broadcast: false,
+    });
 
-    await this.save();
-    ENC.app?.renderSnapshots?.();
+    await ENC.db.saveActiveEncounter(fresh);
+    ENC.sync.broadcast("encounter-updated", { encounter: fresh });
+    ENC.backup.scheduleExternalBackup();
+
+    const templateSelect = document.getElementById("quickTemplateSelect");
+    const stateSelect = document.getElementById("quickStateSelect");
+    if (templateSelect) templateSelect.value = "";
+    if (stateSelect) stateSelect.value = "";
 
     this.render();
+    ENC.encounterUI?.renderPhase?.();
+    ENC.app?.renderSnapshots?.();
     ENC.app?.refreshEncounterMediaControls?.();
     ENC.soundscapeUI?.render?.();
     ENC.app?.broadcastDisplayState?.();
-    ENC.app?.toast("New encounter ready.");
+    ENC.app?.broadcastTimerState?.();
+    if (toastMessage) ENC.app?.toast(toastMessage);
+    return true;
+  },
+
+  async newEncounter() {
+    return this.resetActiveEncounter({
+      name: "New Encounter",
+      confirmReset: true,
+      snapshotReason: "before new encounter",
+      toastMessage: "New encounter ready.",
+    });
+  },
+
+  showAddCombatantSource(source = "library") {
+    const allowed = new Set(["library", "compendium", "quick"]);
+    const target = allowed.has(source) ? source : "library";
+    this.addCombatantSource = target;
+
+    document.querySelectorAll("[data-add-source-tab]").forEach((button) => {
+      const active = button.dataset.addSourceTab === target;
+      button.classList.toggle("active", active);
+      button.setAttribute("aria-selected", String(active));
+    });
+
+    document.querySelectorAll("[data-add-source-panel]").forEach((panel) => {
+      panel.classList.toggle(
+        "active",
+        panel.dataset.addSourcePanel === target,
+      );
+    });
   },
 
   bind() {
@@ -728,6 +1612,19 @@ ENC.combat = {
         await this.save("system changed");
         this.render();
       });
+    document.querySelectorAll("[data-library-picker-tab]").forEach((button) => {
+      button.addEventListener("click", () => {
+        this.libraryPickerType = button.dataset.libraryPickerTab || "player";
+        this.renderLibrarySelect();
+      });
+    });
+
+    document.querySelectorAll("[data-add-source-tab]").forEach((button) => {
+      button.addEventListener("click", () => {
+        this.showAddCombatantSource(button.dataset.addSourceTab || "library");
+      });
+    });
+
     document
       .getElementById("addLibraryCombatantBtn")
       .addEventListener("click", async () => {
@@ -743,8 +1640,32 @@ ENC.combat = {
       .getElementById("quickAddBtn")
       .addEventListener("click", () => this.quickAdd());
     document
-      .getElementById("newEncounterBtn")
-      .addEventListener("click", () => this.newEncounter());
+      .getElementById("toggleAddCombatantBtn")
+      ?.addEventListener("click", async (event) => {
+        const panel = document.getElementById("encounterAddPanel");
+        if (!panel) return;
+        const isHidden = panel.classList.toggle("hidden");
+        event.currentTarget.setAttribute("aria-expanded", String(!isHidden));
+        event.currentTarget.textContent = isHidden ? "+ Add Combatant" : "Close Add Combatant";
+
+        if (!isHidden) {
+          this.showAddCombatantSource(this.addCombatantSource || "library");
+          await ENC.libraryUI?.load?.();
+          this.renderLibrarySelect();
+        }
+      });
+    document
+      .getElementById("startAdHocEncounterBtn")
+      ?.addEventListener("click", async () => {
+        const requested = prompt("Ad hoc encounter name:", "Ad Hoc Encounter");
+        if (requested === null) return;
+        await this.resetActiveEncounter({
+          name: requested.trim() || "Ad Hoc Encounter",
+          confirmReset: true,
+          snapshotReason: "before ad hoc encounter",
+          toastMessage: "Clean ad hoc encounter ready.",
+        });
+      });
     document
       .getElementById("savePresetBtn")
       .addEventListener("click", () => this.savePreset());
@@ -767,24 +1688,6 @@ ENC.combat = {
         this.encounter.display.sceneImage = event.target.value;
         await this.save();
         this.render();
-      });
-    document
-      .getElementById("uploadBackgroundBtn")
-      .addEventListener("click", async () => {
-        const file = document.getElementById("backgroundUpload").files[0];
-        if (!file) return ENC.app.toast("Choose a background image first.");
-        try {
-          const result = await ENC.assets.upload(file, "backgrounds/custom");
-          this.encounter.background = result.url;
-          this.encounter.display = this.encounter.display || {};
-          this.encounter.display.combatImage = result.url;
-          ENC.app?.refreshEncounterMediaControls?.();
-          await this.save();
-          this.render();
-          ENC.app.toast("Background imported.");
-        } catch (error) {
-          ENC.app.toast(error.message);
-        }
       });
   },
 };

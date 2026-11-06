@@ -6,6 +6,33 @@ All notable changes to enCounter will be documented here.
 
 No changes recorded yet.
 
+## 0.2.0-alpha.2 - 2026-10-01
+
+### Added
+
+- Structured D&D 5E conditions with multi-condition support and removable condition chips in the DM Console.
+- Player Display badges for D&D 5E conditions and Exhaustion.
+- Separate D&D 5E Exhaustion level tracking from 0 through 6.
+- Saved Encounter persistence for prepared Timer configuration, including timer name, duration, skin, display mode, player visibility, and numeric-display preferences.
+- Regression tests for D&D 5E condition normalization, Exhaustion limits, Timer configuration normalization, transient-state reset behavior, audio failure handling, and release-version consistency.
+
+### Fixed
+
+- Saved Encounters and presets now clear transient D&D 5E conditions and Exhaustion when creating or loading a fresh reusable encounter, matching existing HP/status/Condition Track reset behavior.
+- Saved Encounter Timer configuration now reloads in a fresh Ready state instead of being lost between sessions. Running, paused, completed, remaining-time, and end-timestamp state are intentionally not persisted as reusable encounter configuration.
+- Scene and Combat Soundscape playback no longer reports a playing state when every configured track fails to start.
+- Scene Audio now reports when no Scene audio is configured instead of reporting a successful start.
+- Corrected the Player Display fallback version text.
+- Removed accidental Markdown code fences from `.gitignore`.
+- Corrected the Windows build User Guide source path and aligned Windows/Linux release packaging.
+- Build scripts now read the release version from `docs/VERSION.txt`, reducing future package-version drift.
+
+### Notes
+
+- This is a maintenance release in the Alpha 2 line intended to replace `0.2.0-alpha.1` as the recommended download.
+- The IndexedDB schema version remains unchanged because the new Timer and 5E fields are properties within existing encounter/combatant records.
+- Existing Alpha 2 browser data is normalized automatically; users should still use **Export Everything** before upgrading.
+
 ## 0.2.0-alpha.1 - 2026-09-13
 
 ### Added

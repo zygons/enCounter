@@ -9,10 +9,24 @@ ENC.app = {
   playerDisplayPaused: true,
   playerDisplayMode: "standby",
   playerDisplayConnected: false,
+  playerDisplayAcknowledgedMode: null,
   playerDisplayWindow: null,
   playerDisplayWatchTimer: null,
   timerPreviewRenderer: null,
   timerController: null,
+  preparedTimerConfig: null,
+  timerConfigSaveTimer: null,
+  timerRailTicker: null,
+  runtimeTimerPersistTicker: null,
+  runtimeTimerPersistTimer: null,
+  runtimeTimerMetaKey: "active-timer-runtime",
+
+  getActiveUiTheme() {
+    const bodyTheme = document.body?.dataset?.uiTheme;
+    const storedTheme = localStorage.getItem("encounter-ui-theme");
+    const settingsTheme = ENC.settingsUI?.settings?.uiTheme;
+    return ENC.normalizeUiTheme(bodyTheme || storedTheme || settingsTheme || "scifi");
+  },
 
   toast(message) {
     const toast = document.getElementById("toast");
@@ -34,6 +48,7 @@ ENC.app = {
 
       playerDisplayPaused: this.playerDisplayMode === "standby",
       playerDisplayMode: this.playerDisplayMode,
+      uiTheme: this.getActiveUiTheme(),
 
       encounter:
         includeEncounter && ENC.combat?.encounter
@@ -47,6 +62,129 @@ ENC.app = {
        * at the correct point.
        */
       timer: this.getTimerSyncState(),
+    });
+  },
+
+  async getRuntimeTimerCheckpointRecord() {
+    try {
+      return await ENC.db.getMetaRecord(this.runtimeTimerMetaKey);
+    } catch (error) {
+      console.warn("Could not read runtime timer checkpoint", error);
+      return null;
+    }
+  },
+
+  runtimeTimerCheckpointIsMeaningful(checkpoint) {
+    if (!checkpoint) return false;
+    const durationMs = Math.max(1, Number(checkpoint.durationMs || 1));
+    const remainingMs = Math.max(0, Number(checkpoint.remainingMs ?? durationMs));
+    return checkpoint.status !== "idle" || remainingMs < durationMs;
+  },
+
+  async hasRuntimeTimerCheckpoint() {
+    const record = await this.getRuntimeTimerCheckpointRecord();
+    return this.runtimeTimerCheckpointIsMeaningful(record?.checkpoint);
+  },
+
+  async clearRuntimeTimerCheckpoint() {
+    clearTimeout(this.runtimeTimerPersistTimer);
+    this.runtimeTimerPersistTimer = null;
+    try {
+      await ENC.db.delete("meta", this.runtimeTimerMetaKey);
+      return true;
+    } catch (error) {
+      console.warn("Could not clear runtime timer checkpoint", error);
+      return false;
+    }
+  },
+
+  async persistRuntimeTimerCheckpoint(timerState = null) {
+    if (!this.timerController || !ENC.combat?.encounter) return false;
+
+    const state = timerState || this.timerController.getState();
+    if (!state) return false;
+
+    const checkpoint = ENC.normalizeTimerCheckpoint(
+      state,
+      ENC.combat.encounter.timer,
+    );
+
+    if (!this.runtimeTimerCheckpointIsMeaningful(checkpoint)) {
+      await this.clearRuntimeTimerCheckpoint();
+      return false;
+    }
+
+    try {
+      await ENC.db.saveMetaRecord(this.runtimeTimerMetaKey, {
+        checkpoint,
+        encounterSourceId: ENC.combat.encounter.sourceEncounterId || null,
+        encounterName: ENC.combat.encounter.name || "Encounter",
+      });
+      return true;
+    } catch (error) {
+      console.warn("Could not persist runtime timer checkpoint", error);
+      return false;
+    }
+  },
+
+  scheduleRuntimeTimerCheckpointPersist(timerState = null, delay = 120) {
+    clearTimeout(this.runtimeTimerPersistTimer);
+    this.runtimeTimerPersistTimer = setTimeout(() => {
+      this.runtimeTimerPersistTimer = null;
+      this.persistRuntimeTimerCheckpoint(timerState).catch((error) =>
+        console.warn("Could not persist runtime timer checkpoint", error),
+      );
+    }, Math.max(0, Number(delay) || 0));
+  },
+
+  async restoreRuntimeTimerCheckpoint(options = {}) {
+    if (!this.timerController || !ENC.combat?.encounter) return false;
+
+    const record = await this.getRuntimeTimerCheckpointRecord();
+    const checkpoint = record?.checkpoint;
+    if (!this.runtimeTimerCheckpointIsMeaningful(checkpoint)) return false;
+
+    // A checkpoint belongs only to the current working encounter. Saved-source
+    // IDs are stable across restart, so use them when available as a guard
+    // against a stale checkpoint after a different Template/State is loaded.
+    const activeSourceId = ENC.combat.encounter.sourceEncounterId || null;
+    const checkpointSourceId = record?.encounterSourceId || null;
+    if (checkpointSourceId && activeSourceId !== checkpointSourceId) {
+      await this.clearRuntimeTimerCheckpoint();
+      return false;
+    }
+
+    const restored = this.applySavedTimerCheckpoint(checkpoint, {
+      broadcast: options.broadcast !== false,
+      persistRuntime: false,
+    });
+
+    if (restored && options.toast === true) {
+      this.toast("Timer checkpoint restored paused at the last saved time.");
+    }
+
+    return restored;
+  },
+
+  bindRuntimeTimerPersistence() {
+    clearInterval(this.runtimeTimerPersistTicker);
+    this.runtimeTimerPersistTicker = setInterval(() => {
+      const state = this.timerController?.getState?.();
+      if (state?.status === "running") {
+        this.persistRuntimeTimerCheckpoint(state).catch((error) =>
+          console.warn("Could not checkpoint running timer", error),
+        );
+      }
+    }, 5000);
+
+    document.addEventListener("visibilitychange", () => {
+      if (document.hidden) {
+        this.persistRuntimeTimerCheckpoint().catch(() => {});
+      }
+    });
+
+    window.addEventListener?.("pagehide", () => {
+      this.persistRuntimeTimerCheckpoint().catch(() => {});
     });
   },
 
@@ -88,22 +226,106 @@ ENC.app = {
     ENC.sync.broadcast("player-display-mode", {
       sentAt: Date.now(),
       mode: this.playerDisplayMode,
+      uiTheme: this.getActiveUiTheme(),
       encounter: ENC.combat?.encounter ? ENC.deepClone(ENC.combat.encounter) : null,
       timer: this.getTimerSyncState(),
     });
+  },
+
+  getSafeStartupPlayerDisplayMode(encounter) {
+    const savedMode = ENC.PLAYER_DISPLAY_MODES.has(encounter?.playerDisplayMode)
+      ? encounter.playerDisplayMode
+      : "standby";
+
+    // Privacy-first startup behavior: outside active combat, always return
+    // the Player Display to the Stand By screen. This prevents a persisted
+    // Scene mode with no scene image from reopening as a black screen.
+    if (encounter?.phase !== "combat") return "standby";
+
+    return savedMode === "combat" ? "combat" : "standby";
   },
 
   setPlayerDisplayMode(mode) {
     const next = ENC.PLAYER_DISPLAY_MODES.has(mode) ? mode : "standby";
     this.playerDisplayMode = next;
     this.playerDisplayPaused = next === "standby";
+    this.playerDisplayAcknowledgedMode = null;
+
     if (ENC.combat?.encounter) {
       ENC.combat.encounter.playerDisplayMode = next;
-      ENC.db.saveActiveEncounter(ENC.combat.encounter).catch((error) => console.warn("Could not persist display mode", error));
+      ENC.db
+        .saveActiveEncounter(ENC.combat.encounter)
+        .catch((error) => console.warn("Could not persist display mode", error));
     }
+
+    // Broadcast immediately, then repeat briefly. A newly opened Player Display
+    // can still be loading its BroadcastChannel when the DM clicks Show Scene.
+    // The retries make the desired presentation deterministic without requiring
+    // the DM to click the button multiple times.
     this.broadcastDisplayState();
+    window.setTimeout(() => {
+      if (this.playerDisplayMode === next) this.broadcastDisplayState();
+    }, 120);
+    window.setTimeout(() => {
+      if (this.playerDisplayMode === next) this.broadcastDisplayState();
+    }, 360);
+
     this.updatePlayerDisplayButton();
     ENC.encounterUI?.renderPhase?.();
+  },
+
+  openPlayerDisplayWindow() {
+    try {
+      if (this.playerDisplayWindow && !this.playerDisplayWindow.closed) {
+        this.playerDisplayWindow.focus?.();
+        return true;
+      }
+    } catch (error) {
+      // Cross-window access may fail in unusual browser states; reopen by name.
+    }
+
+    const displayWindow = window.open(
+      "/programs/app/display.html",
+      "enCounterPlayerDisplay",
+    );
+
+    if (!displayWindow) {
+      this.toast(
+        "The Player Display could not be opened. Check your browser's pop-up settings.",
+      );
+      return false;
+    }
+
+    this.playerDisplayWindow = displayWindow;
+    this.playerDisplayConnected = false;
+    this.playerDisplayAcknowledgedMode = null;
+    this.startPlayerDisplayWatch();
+    this.updatePlayerDisplayButton();
+    return true;
+  },
+
+  presentPlayerDisplay(mode) {
+    const next = ENC.PLAYER_DISPLAY_MODES.has(mode) ? mode : "standby";
+
+    if (next !== "standby") {
+      const hasKnownWindow =
+        this.playerDisplayWindow && !this.playerDisplayWindow.closed;
+      if (!hasKnownWindow && !this.playerDisplayConnected) {
+        if (!this.openPlayerDisplayWindow()) return false;
+      }
+    }
+
+    this.setPlayerDisplayMode(next);
+
+    if (next === "scene") {
+      this.toast("Scene shown on Player Display.");
+    } else if (next === "combat") {
+      this.toast("Combat shown on Player Display.");
+    } else {
+      this.toast("Player Display hidden. Players see Stand By.");
+    }
+
+    return true;
   },
 
   refreshEncounterMediaControls() {
@@ -121,27 +343,67 @@ ENC.app = {
   },
 
   updatePlayerDisplayButton() {
-    const button = document.getElementById("openDisplayBtn");
+    const openButton = document.getElementById("openDisplayBtn");
+    const sceneButton = document.getElementById("showSceneDisplayBtn");
+    const combatButton = document.getElementById("showCombatDisplayBtn");
+    const hideButton = document.getElementById("hideEncounterDisplayBtn");
+    const status = document.getElementById("playerDisplayStatus");
 
-    if (!button) return;
+    const hasWindow = Boolean(
+      this.playerDisplayWindow && !this.playerDisplayWindow.closed,
+    );
+    const phase = ENC.combat?.encounter?.phase || "prepared";
+    const mode = this.playerDisplayMode || "standby";
+    const acknowledged = this.playerDisplayAcknowledgedMode === mode;
 
-    if (!this.playerDisplayConnected) {
-      button.textContent = "Start Player Display";
-
-      button.classList.remove("player-display-paused");
-
-      return;
+    if (openButton) {
+      openButton.textContent =
+        this.playerDisplayConnected || hasWindow ? "Focus Display" : "Open Display";
+      openButton.classList.toggle("player-display-paused", !this.playerDisplayConnected);
     }
 
-    if (this.playerDisplayMode === "standby") {
-      button.textContent = "Show Player Display";
-      button.classList.add("player-display-paused");
-      return;
+    if (sceneButton) {
+      sceneButton.classList.toggle("active", mode === "scene");
+      sceneButton.setAttribute("aria-pressed", String(mode === "scene"));
     }
 
-    button.textContent = "Hide Player Display";
+    if (combatButton) {
+      combatButton.disabled = phase !== "combat";
+      combatButton.classList.toggle("active", mode === "combat");
+      combatButton.setAttribute("aria-pressed", String(mode === "combat"));
+    }
 
-    button.classList.remove("player-display-paused");
+    if (hideButton) {
+      hideButton.disabled = mode === "standby" && this.playerDisplayConnected;
+      hideButton.classList.toggle("active", mode === "standby");
+      hideButton.setAttribute("aria-pressed", String(mode === "standby"));
+    }
+
+    if (status) {
+      status.classList.remove(
+        "display-status-closed",
+        "display-status-starting",
+        "display-status-standby",
+        "display-status-scene",
+        "display-status-combat",
+      );
+
+      if (!this.playerDisplayConnected) {
+        if (hasWindow) {
+          status.textContent = `STARTING · ${mode.toUpperCase()}`;
+          status.classList.add("display-status-starting");
+        } else {
+          status.textContent = "CLOSED";
+          status.classList.add("display-status-closed");
+        }
+      } else if (!acknowledged) {
+        status.textContent = `SYNCING · ${mode.toUpperCase()}`;
+        status.classList.add("display-status-starting");
+      } else {
+        status.textContent = mode.toUpperCase();
+        status.classList.add(`display-status-${mode}`);
+      }
+    }
   },
 
   startPlayerDisplayWatch() {
@@ -158,6 +420,7 @@ ENC.app = {
         this.playerDisplayWatchTimer = null;
         this.playerDisplayWindow = null;
         this.playerDisplayConnected = false;
+        this.playerDisplayAcknowledgedMode = null;
 
         this.updatePlayerDisplayButton();
       }
@@ -167,6 +430,117 @@ ENC.app = {
   // ========================================
   // VISUAL TIMER
   // ========================================
+
+  setTimerConfigInputs(config) {
+    const normalized = ENC.normalizeTimerConfig(config);
+    const timerName = document.getElementById("timerName");
+    const timerSkin = document.getElementById("timerSkin");
+    const timerDisplayMode = document.getElementById("timerDisplayMode");
+    const showNumericPlayers = document.getElementById(
+      "timerShowNumericPlayers",
+    );
+    const showNumericDM = document.getElementById("timerShowNumericDM");
+
+    if (timerName) timerName.value = normalized.name;
+    if (timerSkin) timerSkin.value = normalized.skin;
+    if (timerDisplayMode) timerDisplayMode.value = normalized.displayMode;
+    if (showNumericPlayers) {
+      showNumericPlayers.checked = normalized.showNumericToPlayers;
+    }
+    if (showNumericDM) showNumericDM.checked = normalized.showNumericToDM;
+    this.setTimerDurationInputs(normalized.durationMs);
+  },
+
+  getPreparedTimerConfig() {
+    if (this.preparedTimerConfig) {
+      return ENC.deepClone(this.preparedTimerConfig);
+    }
+
+    return ENC.normalizeTimerConfig(ENC.combat?.encounter?.timer);
+  },
+
+  queuePreparedTimerConfigSave(timerState) {
+    const normalized = ENC.normalizeTimerConfig(timerState);
+    this.preparedTimerConfig = ENC.deepClone(normalized);
+
+    if (ENC.combat?.encounter) {
+      ENC.combat.encounter.timer = ENC.deepClone(normalized);
+    }
+
+    clearTimeout(this.timerConfigSaveTimer);
+    this.timerConfigSaveTimer = setTimeout(() => {
+      this.timerConfigSaveTimer = null;
+      ENC.combat
+        ?.save?.()
+        .catch((error) => console.warn("Could not persist timer configuration", error));
+    }, 250);
+  },
+
+  applyPreparedTimerConfig(config, options = {}) {
+    const normalized = ENC.normalizeTimerConfig(config);
+    const shouldPersist = options.persist === true;
+    const shouldBroadcast = options.broadcast !== false;
+
+    clearTimeout(this.timerConfigSaveTimer);
+    this.timerConfigSaveTimer = null;
+    this.preparedTimerConfig = ENC.deepClone(normalized);
+
+    if (ENC.combat?.encounter) {
+      ENC.combat.encounter.timer = ENC.deepClone(normalized);
+    }
+
+    this.setTimerConfigInputs(normalized);
+
+    if (this.timerController) {
+      this.timerController.setState(
+        {
+          id: "primary-timer",
+          name: normalized.name,
+          mode: "countdown",
+          skin: normalized.skin,
+          durationMs: normalized.durationMs,
+          remainingMs: normalized.durationMs,
+          endAt: null,
+          status: "idle",
+          visibleToPlayers: normalized.visibleToPlayers,
+          showNumericToDM: normalized.showNumericToDM,
+          showNumericToPlayers: normalized.showNumericToPlayers,
+          displayMode: normalized.displayMode,
+        },
+        { notify: false },
+      );
+      this.updateTimerUI();
+      if (shouldBroadcast) this.broadcastTimerState();
+    }
+
+    if (shouldPersist) {
+      ENC.combat
+        ?.save?.()
+        .catch((error) => console.warn("Could not persist timer configuration", error));
+    }
+
+    return normalized;
+  },
+
+  applySavedTimerCheckpoint(checkpoint, options = {}) {
+    if (!this.timerController || !checkpoint) return false;
+
+    const state = ENC.normalizeTimerCheckpoint(
+      checkpoint,
+      ENC.combat?.encounter?.timer,
+    );
+    if (!state) return false;
+
+    const shouldBroadcast = options.broadcast !== false;
+    const shouldPersistRuntime = options.persistRuntime !== false;
+    this.preparedTimerConfig = ENC.normalizeTimerConfig(state);
+    this.setTimerConfigInputs(this.preparedTimerConfig);
+    this.timerController.setState(state, { notify: false });
+    this.updateTimerUI();
+    if (shouldBroadcast) this.broadcastTimerState();
+    if (shouldPersistRuntime) this.scheduleRuntimeTimerCheckpointPersist(state, 0);
+    return true;
+  },
 
   getTimerDurationFromInputs() {
     const minutesInput = document.getElementById("timerMinutes");
@@ -180,7 +554,7 @@ ENC.app = {
     const rawSeconds = Number(secondsInput.value);
 
     const minutes = Number.isFinite(rawMinutes)
-      ? Math.max(0, Math.floor(rawMinutes))
+      ? Math.min(999, Math.max(0, Math.floor(rawMinutes)))
       : 0;
 
     const seconds = Number.isFinite(rawSeconds)
@@ -237,6 +611,57 @@ ENC.app = {
     return "Ready";
   },
 
+  formatRunTimerCountdown(milliseconds) {
+    const totalSeconds = Math.max(
+      0,
+      Math.ceil(Number(milliseconds || 0) / 1000),
+    );
+
+    const hours = Math.floor(totalSeconds / 3600);
+    const minutes = Math.floor((totalSeconds % 3600) / 60);
+    const seconds = totalSeconds % 60;
+
+    if (hours > 0) {
+      return `${hours}:${String(minutes).padStart(2, "0")}:${String(seconds).padStart(2, "0")}`;
+    }
+
+    const totalMinutes = Math.floor(totalSeconds / 60);
+    return `${totalMinutes}:${String(seconds).padStart(2, "0")}`;
+  },
+
+  updateRunTimerReadout() {
+    if (!this.timerController) return;
+
+    const state = this.timerController.getState();
+    if (!state) return;
+
+    const remainingMs =
+      typeof this.timerController.getRemainingMs === "function"
+        ? this.timerController.getRemainingMs()
+        : state.remainingMs;
+
+    const durationMs = Math.max(1, Number(state.durationMs || 1));
+    const ratio = Math.max(0, Math.min(1, remainingMs / durationMs));
+    const percent = Math.round(ratio * 100);
+
+    const countdown = document.getElementById("encounterTimerCountdown");
+    const progress = document.getElementById("encounterTimerProgress");
+    const progressFill = document.getElementById("encounterTimerProgressFill");
+
+    if (countdown) {
+      countdown.textContent = this.formatRunTimerCountdown(remainingMs);
+      countdown.dataset.status = state.status || "idle";
+    }
+
+    if (progress) {
+      progress.setAttribute("aria-valuenow", String(percent));
+    }
+
+    if (progressFill) {
+      progressFill.style.width = `${percent}%`;
+    }
+  },
+
   updateTimerUI() {
     if (!this.timerController) {
       return;
@@ -247,6 +672,8 @@ ENC.app = {
     if (!state) {
       return;
     }
+
+    this.updateRunTimerReadout();
 
     const activeName = document.getElementById("timerActiveName");
     const statusText = document.getElementById("timerStatusText");
@@ -259,23 +686,71 @@ ENC.app = {
       statusText.textContent = this.formatTimerStatus(state);
     }
 
+    // Phase 3.1.13.2: mirror the prepared timer into the Run-screen
+    // utility rail so the DM can operate it without leaving the encounter.
+    const encounterTimerName = document.getElementById("encounterTimerName");
+    const encounterTimerStatus = document.getElementById("encounterTimerStatus");
+    const encounterTimerStartButton = document.getElementById("encounterTimerStartBtn");
+    const encounterTimerResetButton = document.getElementById("encounterTimerResetBtn");
+    const encounterTimerStopButton = document.getElementById("encounterTimerStopBtn");
+    const encounterTimerVisibilityButton = document.getElementById(
+      "encounterTimerVisibilityBtn",
+    );
+
+    if (encounterTimerName) {
+      encounterTimerName.textContent = state.name || "Countdown";
+    }
+
+    if (encounterTimerStatus) {
+      encounterTimerStatus.textContent = this.formatTimerStatus(state).toUpperCase();
+    }
+
+    if (encounterTimerStartButton) {
+      encounterTimerStartButton.disabled = state.status === "running";
+      encounterTimerStartButton.textContent =
+        state.status === "running"
+          ? "▶ Running"
+          : state.status === "paused"
+            ? "▶ Resume"
+            : "▶ Start";
+    }
+
+    if (encounterTimerResetButton) {
+      encounterTimerResetButton.disabled = false;
+    }
+
+    if (encounterTimerStopButton) {
+      encounterTimerStopButton.disabled =
+        state.status === "idle" || state.status === "complete";
+    }
+
+    if (encounterTimerVisibilityButton) {
+      const visibleToPlayers = Boolean(state.visibleToPlayers);
+      encounterTimerVisibilityButton.textContent = visibleToPlayers
+        ? "Hide from Display"
+        : "Show on Display";
+      encounterTimerVisibilityButton.setAttribute(
+        "aria-pressed",
+        String(visibleToPlayers),
+      );
+    }
+
     const startButton = document.getElementById("timerStartBtn");
-    const pauseButton = document.getElementById("timerPauseBtn");
-    const resumeButton = document.getElementById("timerResumeBtn");
     const resetButton = document.getElementById("timerResetBtn");
     const stopButton = document.getElementById("timerStopBtn");
 
+    // The Timer tool uses one adaptive primary action. Keeping the lifecycle
+    // on one button prevents hidden/nonexistent Pause and Resume controls from
+    // breaking the workflow after UI cleanup.
     if (startButton) {
-      startButton.disabled =
-        state.status === "running" || state.status === "paused";
-    }
-
-    if (pauseButton) {
-      pauseButton.disabled = state.status !== "running";
-    }
-
-    if (resumeButton) {
-      resumeButton.disabled = state.status !== "paused";
+      startButton.disabled = false;
+      startButton.textContent =
+        state.status === "running"
+          ? "Pause Timer"
+          : state.status === "paused"
+            ? "Resume Timer"
+            : "Start Timer";
+      startButton.dataset.timerState = state.status;
     }
 
     if (resetButton) {
@@ -328,10 +803,9 @@ ENC.app = {
       throw new Error("Timer preview container was not found.");
     }
 
-    const initialDuration =
-      this.getTimerDurationFromInputs() ||
-      ENC.timer.DEFAULT_DURATION_MS ||
-      300000;
+    const prepared = ENC.normalizeTimerConfig(ENC.combat?.encounter?.timer);
+    this.preparedTimerConfig = ENC.deepClone(prepared);
+    this.setTimerConfigInputs(prepared);
 
     this.timerPreviewRenderer = ENC.timerRenderer.create(previewContainer);
 
@@ -341,20 +815,16 @@ ENC.app = {
 
       initialState: {
         id: "primary-timer",
-        name: document.getElementById("timerName")?.value.trim() || "Countdown",
+        name: prepared.name,
         mode: "countdown",
-        skin: document.getElementById("timerSkin")?.value || "hourglass",
-        durationMs: initialDuration,
-        remainingMs: initialDuration,
+        skin: prepared.skin,
+        durationMs: prepared.durationMs,
+        remainingMs: prepared.durationMs,
         status: "idle",
-        visibleToPlayers:
-          document.getElementById("timerShowPlayers")?.checked === true,
-        showNumericToDM:
-          document.getElementById("timerShowNumericDM")?.checked !== false,
-        showNumericToPlayers:
-          document.getElementById("timerShowNumericPlayers")?.checked === true,
-        displayMode:
-          document.getElementById("timerDisplayMode")?.value || "overlay",
+        visibleToPlayers: prepared.visibleToPlayers,
+        showNumericToDM: prepared.showNumericToDM,
+        showNumericToPlayers: prepared.showNumericToPlayers,
+        displayMode: prepared.displayMode,
       },
 
       onStateChange: (timerState, reason) => {
@@ -373,6 +843,26 @@ ENC.app = {
          */
         this.broadcastTimerState(timerState);
 
+        if (
+          [
+            "duration",
+            "name",
+            "skin",
+            "visibility",
+            "player-numeric",
+            "dm-numeric",
+            "display-mode",
+          ].includes(reason)
+        ) {
+          this.queuePreparedTimerConfigSave(timerState);
+        }
+
+        // Runtime timer state is not part of reusable encounter configuration.
+        // Persist a lightweight paused checkpoint separately so a browser/app
+        // restart can recover the last remaining time without counting while
+        // enCounter is closed.
+        this.scheduleRuntimeTimerCheckpointPersist(timerState);
+
         console.debug("Timer state changed:", reason, timerState);
       },
 
@@ -390,6 +880,11 @@ ENC.app = {
     });
 
     this.updateTimerUI();
+
+    clearInterval(this.timerRailTicker);
+    this.timerRailTicker = setInterval(() => {
+      this.updateRunTimerReadout();
+    }, 250);
   },
 
   bindTimerControls() {
@@ -401,7 +896,6 @@ ENC.app = {
     const timerSkin = document.getElementById("timerSkin");
     const timerDisplayMode = document.getElementById("timerDisplayMode");
 
-    const showPlayers = document.getElementById("timerShowPlayers");
     const showNumericPlayers = document.getElementById(
       "timerShowNumericPlayers",
     );
@@ -411,8 +905,6 @@ ENC.app = {
     const secondsInput = document.getElementById("timerSeconds");
 
     const startButton = document.getElementById("timerStartBtn");
-    const pauseButton = document.getElementById("timerPauseBtn");
-    const resumeButton = document.getElementById("timerResumeBtn");
     const resetButton = document.getElementById("timerResetBtn");
     const stopButton = document.getElementById("timerStopBtn");
 
@@ -422,6 +914,18 @@ ENC.app = {
     const subtractTenButton = document.getElementById("timerSubtractTenBtn");
     const addTenButton = document.getElementById("timerAddTenBtn");
     const addMinuteButton = document.getElementById("timerAddMinuteBtn");
+
+    const encounterStartButton = document.getElementById("encounterTimerStartBtn");
+    const encounterResetButton = document.getElementById("encounterTimerResetBtn");
+    const encounterStopButton = document.getElementById("encounterTimerStopBtn");
+    const encounterVisibilityButton = document.getElementById(
+      "encounterTimerVisibilityBtn",
+    );
+    const openTimerToolButton = document.getElementById("openTimerToolBtn");
+    const presetButtons = document.querySelectorAll("[data-timer-preset-ms]");
+    const runTimerAdjustButtons = document.querySelectorAll(
+      "[data-run-timer-adjust-ms]",
+    );
 
     const applyDurationIfEditable = () => {
       const state = this.timerController.getState();
@@ -467,12 +971,6 @@ ENC.app = {
       });
     }
 
-    if (showPlayers) {
-      showPlayers.addEventListener("change", () => {
-        this.timerController.setVisibleToPlayers(showPlayers.checked);
-      });
-    }
-
     if (showNumericPlayers) {
       showNumericPlayers.addEventListener("change", () => {
         this.timerController.setShowNumericToPlayers(
@@ -495,15 +993,38 @@ ENC.app = {
       secondsInput.addEventListener("change", applyDurationIfEditable);
     }
 
+    for (const presetButton of presetButtons) {
+      presetButton.addEventListener("click", () => {
+        const state = this.timerController.getState();
+        if (!state) return;
+        if (state.status === "running" || state.status === "paused") {
+          this.toast("Pause or stop the timer before changing its duration.");
+          return;
+        }
+
+        const durationMs = Number(presetButton.dataset.timerPresetMs);
+        if (!Number.isFinite(durationMs) || durationMs <= 0) return;
+        this.timerController.setDuration(durationMs);
+        this.setTimerDurationInputs(durationMs);
+        this.updateTimerUI();
+      });
+    }
+
     if (startButton) {
       startButton.addEventListener("click", () => {
         const state = this.timerController.getState();
 
-        if (!state) {
+        if (!state) return;
+
+        if (state.status === "running") {
+          this.timerController.pause();
+          this.updateTimerUI();
           return;
         }
 
         if (state.status === "paused") {
+          this.timerController.resume();
+          this.updateTimerUI();
           return;
         }
 
@@ -529,20 +1050,6 @@ ENC.app = {
         }
 
         this.timerController.start();
-        this.updateTimerUI();
-      });
-    }
-
-    if (pauseButton) {
-      pauseButton.addEventListener("click", () => {
-        this.timerController.pause();
-        this.updateTimerUI();
-      });
-    }
-
-    if (resumeButton) {
-      resumeButton.addEventListener("click", () => {
-        this.timerController.resume();
         this.updateTimerUI();
       });
     }
@@ -588,6 +1095,70 @@ ENC.app = {
         this.updateTimerUI();
       });
     }
+
+    // Run-screen prepared timer controls deliberately delegate to the
+    // existing Timer tool buttons so duration validation and persistence stay
+    // in one place.
+    if (encounterStartButton) {
+      encounterStartButton.addEventListener("click", () => {
+        const state = this.timerController.getState();
+        if (state?.status === "paused") {
+          this.timerController.resume();
+          this.updateTimerUI();
+          return;
+        }
+        startButton?.click();
+      });
+    }
+
+    if (encounterResetButton) {
+      encounterResetButton.addEventListener("click", () => {
+        resetButton?.click();
+      });
+    }
+
+    if (encounterStopButton) {
+      encounterStopButton.addEventListener("click", () => {
+        stopButton?.click();
+      });
+    }
+
+    if (encounterVisibilityButton) {
+      encounterVisibilityButton.addEventListener("click", () => {
+        const state = this.timerController.getState();
+        if (!state) return;
+
+        const nextVisible = !Boolean(state.visibleToPlayers);
+        this.timerController.setVisibleToPlayers(nextVisible);
+        this.updateTimerUI();
+        this.toast(
+          nextVisible
+            ? "Timer shown on Player Display."
+            : "Timer hidden from Player Display.",
+        );
+      });
+    }
+
+    for (const adjustButton of runTimerAdjustButtons) {
+      adjustButton.addEventListener("click", () => {
+        const deltaMs = Number(adjustButton.dataset.runTimerAdjustMs);
+        if (!Number.isFinite(deltaMs) || deltaMs === 0) return;
+
+        if (deltaMs < 0) {
+          this.timerController.subtractTime(Math.abs(deltaMs));
+        } else {
+          this.timerController.addTime(deltaMs);
+        }
+
+        this.updateTimerUI();
+      });
+    }
+
+    if (openTimerToolButton) {
+      openTimerToolButton.addEventListener("click", () => {
+        document.querySelector('[data-section="timerSection"]')?.click();
+      });
+    }
   },
 
   bindAppControls() {
@@ -596,52 +1167,37 @@ ENC.app = {
     // ========================================
 
     const playerDisplayButton = document.getElementById("openDisplayBtn");
+    const showSceneDisplayButton = document.getElementById("showSceneDisplayBtn");
+    const showCombatDisplayButton = document.getElementById("showCombatDisplayBtn");
+    const hideDisplayButton = document.getElementById("hideEncounterDisplayBtn");
 
-    if (playerDisplayButton) {
-      this.updatePlayerDisplayButton();
+    this.updatePlayerDisplayButton();
 
-      playerDisplayButton.addEventListener("click", () => {
-        // ------------------------------------
-        // START PLAYER DISPLAY
-        // ------------------------------------
+    playerDisplayButton?.addEventListener("click", () => {
+      if (this.openPlayerDisplayWindow()) {
+        this.toast(
+          this.playerDisplayConnected
+            ? "Player Display focused."
+            : "Player Display starting...",
+        );
+      }
+    });
 
-        if (!this.playerDisplayConnected) {
-          const displayWindow = window.open(
-            "/programs/app/display.html",
-            "enCounterPlayerDisplay",
-          );
+    showSceneDisplayButton?.addEventListener("click", () => {
+      this.presentPlayerDisplay("scene");
+    });
 
-          if (!displayWindow) {
-            this.toast(
-              "The Player Display could not be opened. Check your browser's pop-up settings.",
-            );
+    showCombatDisplayButton?.addEventListener("click", () => {
+      if (ENC.combat?.encounter?.phase !== "combat") {
+        this.toast("Start combat before showing the Combat presentation.");
+        return;
+      }
+      this.presentPlayerDisplay("combat");
+    });
 
-            return;
-          }
-
-          this.playerDisplayWindow = displayWindow;
-
-          this.startPlayerDisplayWatch();
-
-          this.toast("Player Display starting...");
-
-          return;
-        }
-
-        // ------------------------------------
-        // HIDE / RESTORE EXISTING PLAYER DISPLAY
-        // ------------------------------------
-
-        if (this.playerDisplayMode === "standby") {
-          const phase = ENC.combat?.encounter?.phase;
-          this.setPlayerDisplayMode(phase === "combat" ? "combat" : "scene");
-          this.toast("Player Display restored.");
-        } else {
-          this.setPlayerDisplayMode("standby");
-          this.toast("Player Display hidden. DM changes are private.");
-        }
-      });
-    }
+    hideDisplayButton?.addEventListener("click", () => {
+      this.presentPlayerDisplay("standby");
+    });
 
     // ========================================
     // EXIT enCounter
@@ -662,6 +1218,7 @@ ENC.app = {
         exitButton.disabled = true;
 
         try {
+          await this.persistRuntimeTimerCheckpoint();
           await ENC.backup.writeExternalBackup();
 
           const response = await fetch("/api/shutdown", {
@@ -713,7 +1270,14 @@ ENC.app = {
   async chooseStartupEncounter() {
     const savedEncounter = await ENC.db.get("encounters", "active");
 
-    if (!ENC.isMeaningfulEncounter(savedEncounter)) {
+    if (!savedEncounter) {
+      await this.clearRuntimeTimerCheckpoint();
+      return "new";
+    }
+
+    const hasRuntimeTimer = await this.hasRuntimeTimerCheckpoint();
+
+    if (!ENC.isMeaningfulEncounter(savedEncounter) && !hasRuntimeTimer) {
       return "new";
     }
 
@@ -736,6 +1300,7 @@ ENC.app = {
       `${savedEncounter.name || "Encounter"} • ` +
       `Round ${savedEncounter.round || 1} • ` +
       `${combatantCount} combatant${combatantCount === 1 ? "" : "s"} • ` +
+      `${hasRuntimeTimer ? "Timer checkpoint available • " : ""}` +
       `Last saved ${updated}`;
 
     modal.classList.remove("hidden");
@@ -774,6 +1339,8 @@ ENC.app = {
         ENC.settingsUI.settings?.snapshotLimit || 20,
       );
     }
+
+    await this.clearRuntimeTimerCheckpoint();
 
     const freshEncounter = ENC.createDefaultEncounter();
 
@@ -858,22 +1425,35 @@ ENC.app = {
           return;
         }
 
-        ENC.combat.encounter = ENC.deepClone(snapshot.encounter);
+        await this.clearRuntimeTimerCheckpoint();
 
+        ENC.combat.encounter = ENC.normalizeEncounter(
+          ENC.deepClone(snapshot.encounter),
+        );
         ENC.combat.encounter.id = "active";
         ENC.combat.encounter.kind = "active";
+        ENC.combat.encounter.playerDisplayMode = "standby";
+
+        ENC.applyEncounterPresentation(ENC.combat.encounter);
+        ENC.audio?.stopAll?.(250);
+        ENC.audio?.setSoundscape?.(ENC.combat.encounter.soundscape);
+        this.applyPreparedTimerConfig(ENC.combat.encounter.timer, {
+          broadcast: false,
+        });
+
+        this.playerDisplayMode = "standby";
+        this.playerDisplayPaused = true;
 
         await ENC.combat.save("snapshot restored");
 
         ENC.combat.render();
+        this.refreshEncounterMediaControls();
+        ENC.soundscapeUI?.render?.();
+        ENC.encounterUI?.renderPhase?.();
+        this.broadcastDisplayState();
+        this.broadcastTimerState();
 
-        ENC.assets.fillSelect(
-          document.getElementById("backgroundSelect"),
-          "backgrounds/",
-          ENC.combat.encounter.background,
-        );
-
-        this.toast("Encounter snapshot restored.");
+        this.toast("Encounter snapshot restored. Player Display returned to Stand By.");
       });
 
       row.append(text, restore);
@@ -894,6 +1474,7 @@ ENC.app = {
     document
       .getElementById("exportEverythingBtn")
       .addEventListener("click", async () => {
+        await this.persistRuntimeTimerCheckpoint();
         await ENC.backup.exportEverything();
 
         this.toast("Full backup export created.");
@@ -977,12 +1558,62 @@ ENC.app = {
         this.toast("Asset folders refreshed.");
       });
 
+    const preferredAssetUploadCategory = (filter = "") => {
+      const normalized = String(filter || "");
+      const mapping = {
+        "backgrounds/": "backgrounds/custom",
+        "portraits/": "portraits/custom",
+        tokens: "tokens",
+        "sounds/music": "sounds/music",
+        "sounds/ambience": "sounds/ambience",
+        "sounds/sfx": "sounds/sfx",
+        "icons/": "icons/conditions",
+      };
+      return mapping[normalized] || "";
+    };
+
+    const syncAssetUploadCategoryToFilter = () => {
+      const filter = document.getElementById("assetFilter")?.value || "";
+      const preferred = preferredAssetUploadCategory(filter);
+      const categorySelect = document.getElementById("assetUploadCategory");
+      if (!preferred || !categorySelect) return;
+      if ([...categorySelect.options].some((option) => option.value === preferred)) {
+        categorySelect.value = preferred;
+      }
+    };
+
     document.getElementById("assetFilter").addEventListener("change", () => {
       ENC.assets.renderGrid(
         document.getElementById("assetGrid"),
         document.getElementById("assetFilter").value,
       );
+      syncAssetUploadCategoryToFilter();
     });
+
+    document.getElementById("assetSearch")?.addEventListener("input", () => {
+      ENC.assets.renderGrid(
+        document.getElementById("assetGrid"),
+        document.getElementById("assetFilter").value,
+      );
+    });
+
+    const toggleAssetImport = (show) => {
+      const panel = document.getElementById("assetImportPanel");
+      if (!panel) return;
+      panel.classList.toggle("hidden", !show);
+      if (show) document.getElementById("assetUploadCategory")?.focus();
+    };
+
+    document
+      .getElementById("toggleAssetImportBtn")
+      ?.addEventListener("click", () => {
+        syncAssetUploadCategoryToFilter();
+        toggleAssetImport(true);
+      });
+
+    document
+      .getElementById("closeAssetImportBtn")
+      ?.addEventListener("click", () => toggleAssetImport(false));
 
     document
       .getElementById("uploadAssetBtn")
@@ -999,6 +1630,7 @@ ENC.app = {
           await ENC.assets.upload(file, category);
 
           this.refreshAssetUI();
+          document.getElementById("assetUploadFile").value = "";
 
           this.toast("Asset imported.");
         } catch (error) {
@@ -1019,6 +1651,7 @@ ENC.app = {
       document.getElementById("assetFilter").value,
     );
     ENC.soundscapeUI?.refreshAudioSelects?.();
+    ENC.encounterSetupUI?.refreshAssetOptions?.();
   },
 
   bindCustomSystem() {
@@ -1065,12 +1698,16 @@ ENC.app = {
     ENC.libraryUI.render();
 
     await ENC.combat.load();
+    ENC.applyEncounterPresentation(ENC.combat.encounter);
 
-    this.playerDisplayMode = ENC.PLAYER_DISPLAY_MODES.has(ENC.combat.encounter?.playerDisplayMode)
-      ? ENC.combat.encounter.playerDisplayMode
-      : "standby";
+    this.playerDisplayMode = this.getSafeStartupPlayerDisplayMode(ENC.combat.encounter);
     this.playerDisplayPaused = this.playerDisplayMode === "standby";
+    if (ENC.combat.encounter) {
+      ENC.combat.encounter.playerDisplayMode = this.playerDisplayMode;
+    }
     ENC.audio.setSoundscape(ENC.combat.encounter?.soundscape);
+    this.applyPreparedTimerConfig(ENC.combat.encounter?.timer);
+    await this.restoreRuntimeTimerCheckpoint({ broadcast: false });
 
     ENC.combat.render();
 
@@ -1104,6 +1741,10 @@ ENC.app = {
 
     await ENC.db.open();
 
+    // Upgrade compatibility assistant. Existing Alpha 2 users are shown the
+    // new DM Workspace locations once; new installs continue without a prompt.
+    await ENC.migration?.initialize?.();
+
     await ENC.settingsUI.load();
 
     ENC.settingsUI.bind();
@@ -1118,15 +1759,20 @@ ENC.app = {
 
     await ENC.combat.load();
 
-    this.playerDisplayMode = ENC.PLAYER_DISPLAY_MODES.has(ENC.combat.encounter?.playerDisplayMode)
-      ? ENC.combat.encounter.playerDisplayMode
-      : "standby";
+    this.playerDisplayMode = this.getSafeStartupPlayerDisplayMode(ENC.combat.encounter);
     this.playerDisplayPaused = this.playerDisplayMode === "standby";
+    if (ENC.combat.encounter) {
+      ENC.combat.encounter.playerDisplayMode = this.playerDisplayMode;
+    }
     ENC.audio.setSoundscape(ENC.combat.encounter?.soundscape);
 
     this.bindNavigation();
+    ENC.dmWorkspace?.initialize?.();
+    ENC.compendiumUI?.initialize?.();
 
     this.initializeTimer();
+    await this.restoreRuntimeTimerCheckpoint({ broadcast: false });
+    this.bindRuntimeTimerPersistence();
 
     this.bindTimerControls();
 
@@ -1143,6 +1789,7 @@ ENC.app = {
     this.bindCustomSystem();
 
     await ENC.encounterUI.initialize();
+    ENC.encounterSetupUI?.initialize?.();
     ENC.soundscapeUI.initialize();
 
     ENC.libraryUI.resetForm();
@@ -1164,11 +1811,26 @@ ENC.app = {
     ENC.sync.onMessage(async (message) => {
       if (message.type === "display-hello") {
         this.playerDisplayConnected = true;
+        this.playerDisplayAcknowledgedMode = null;
 
         this.updatePlayerDisplayButton();
-
         this.announceDmPresence(true);
 
+        // Send the authoritative presentation once more after the Player Display
+        // has announced that its synchronization listener is ready.
+        window.setTimeout(() => this.broadcastDisplayState(), 60);
+
+        return;
+      }
+
+      if (message.type === "display-mode-applied") {
+        this.playerDisplayConnected = true;
+        this.playerDisplayAcknowledgedMode = ENC.PLAYER_DISPLAY_MODES.has(
+          message.mode,
+        )
+          ? message.mode
+          : "standby";
+        this.updatePlayerDisplayButton();
         return;
       }
 

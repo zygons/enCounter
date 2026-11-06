@@ -243,3 +243,240 @@ test("normalizeEncounter preserves scene/combat display modes and soundscape", (
   assert.equal(encounter.soundscape.scene.ambience[0].combatBehavior, "duck");
   assert.equal(encounter.soundscape.combat.music.asset, "/assets/sounds/music/battle.mp3");
 });
+
+test("normalizeCombatant keeps valid 5E conditions, removes duplicates, and clamps Exhaustion", () => {
+  const normalized = ENC.normalizeCombatant({
+    id: "fighter",
+    name: "Fighter",
+    systemId: "dnd5e",
+    dnd5eConditions: [
+      "Prone",
+      "Poisoned",
+      "Prone",
+      "Made Up Condition",
+    ],
+    dnd5eExhaustion: 99,
+  });
+
+  assert.deepEqual(Array.from(normalized.dnd5eConditions), ["Prone", "Poisoned"]);
+  assert.equal(normalized.dnd5eExhaustion, 6);
+});
+
+test("normalizeCombatant defaults invalid negative 5E Exhaustion to zero", () => {
+  const normalized = ENC.normalizeCombatant({
+    id: "fighter",
+    name: "Fighter",
+    systemId: "dnd5e",
+    dnd5eExhaustion: -4,
+  });
+
+  assert.equal(normalized.dnd5eExhaustion, 0);
+});
+
+test("resetCombatantTransientState clears reusable encounter combat state", () => {
+  const reset = ENC.resetCombatantTransientState({
+    id: "fighter",
+    maxHp: 42,
+    hp: 11,
+    conditionTrack: "-5",
+    dnd5eConditions: ["Prone", "Poisoned"],
+    dnd5eExhaustion: 2,
+    visibleStatus: "Concentrating",
+    combatState: "defeated",
+    delayed: true,
+    ready: true,
+    hidden: true,
+  });
+
+  assert.equal(reset.hp, 42);
+  assert.equal(reset.conditionTrack, "Normal");
+  assert.deepEqual(Array.from(reset.dnd5eConditions), []);
+  assert.equal(reset.dnd5eExhaustion, 0);
+  assert.equal(reset.visibleStatus, "");
+  assert.equal(reset.combatState, "active");
+  assert.equal(reset.delayed, false);
+  assert.equal(reset.ready, false);
+  assert.equal(reset.hidden, true);
+});
+
+test("normalizeEncounter preserves prepared Timer configuration but drops runtime state", () => {
+  const encounter = ENC.normalizeEncounter({
+    timer: {
+      name: "Reinforcements",
+      durationMs: 600000,
+      skin: "scifi-pixels",
+      visibleToPlayers: true,
+      showNumericToDM: true,
+      showNumericToPlayers: false,
+      displayMode: "featured",
+      status: "running",
+      remainingMs: 12345,
+      endAt: Date.now() + 12345,
+    },
+  });
+
+  assert.deepEqual(JSON.parse(JSON.stringify(encounter.timer)), {
+    name: "Reinforcements",
+    durationMs: 600000,
+    skin: "scifi-pixels",
+    visibleToPlayers: true,
+    showNumericToDM: true,
+    showNumericToPlayers: false,
+    displayMode: "featured",
+  });
+  assert.equal(Object.hasOwn(encounter.timer, "status"), false);
+  assert.equal(Object.hasOwn(encounter.timer, "remainingMs"), false);
+  assert.equal(Object.hasOwn(encounter.timer, "endAt"), false);
+});
+
+
+test("legacy saved encounters default to reusable template mode", () => {
+  const encounter = ENC.normalizeEncounter({
+    kind: "saved",
+    name: "Legacy Encounter",
+  });
+
+  assert.equal(encounter.saveMode, "template");
+  assert.equal(encounter.timerCheckpoint, null);
+});
+
+test("saved encounter state preserves live combat progress during normalization", () => {
+  const encounter = ENC.normalizeEncounter({
+    kind: "saved",
+    saveMode: "state",
+    phase: "combat",
+    playerDisplayMode: "combat",
+    round: 4,
+    currentId: "fighter",
+    combatants: [
+      {
+        id: "fighter",
+        name: "Fighter",
+        systemId: "dnd5e",
+        maxHp: 42,
+        hp: 11,
+        initiative: 18,
+        dnd5eConditions: ["Prone", "Poisoned"],
+        dnd5eExhaustion: 2,
+        visibleStatus: "Concentrating",
+        combatState: "active",
+      },
+    ],
+  });
+
+  assert.equal(encounter.saveMode, "state");
+  assert.equal(encounter.phase, "combat");
+  assert.equal(encounter.round, 4);
+  assert.equal(encounter.currentId, "fighter");
+  assert.equal(encounter.combatants[0].hp, 11);
+  assert.deepEqual(Array.from(encounter.combatants[0].dnd5eConditions), [
+    "Prone",
+    "Poisoned",
+  ]);
+  assert.equal(encounter.combatants[0].dnd5eExhaustion, 2);
+  assert.equal(encounter.combatants[0].visibleStatus, "Concentrating");
+});
+
+test("saved running timer checkpoints restore paused at the saved remaining time", () => {
+  const encounter = ENC.normalizeEncounter({
+    kind: "saved",
+    saveMode: "state",
+    timer: {
+      name: "Reinforcements",
+      durationMs: 600000,
+      skin: "scifi-pixels",
+      visibleToPlayers: true,
+      showNumericToDM: true,
+      showNumericToPlayers: false,
+      displayMode: "featured",
+    },
+    timerCheckpoint: {
+      name: "Reinforcements",
+      durationMs: 600000,
+      remainingMs: 272000,
+      status: "running",
+      endAt: Date.now() + 272000,
+      skin: "scifi-pixels",
+      visibleToPlayers: true,
+      showNumericToDM: true,
+      showNumericToPlayers: false,
+      displayMode: "featured",
+    },
+  });
+
+  assert.equal(encounter.timerCheckpoint.status, "paused");
+  assert.equal(encounter.timerCheckpoint.remainingMs, 272000);
+  assert.equal(encounter.timerCheckpoint.endAt, null);
+});
+
+
+test("normalizeEncounter preserves intentionally blank scene/combat image fields independently", () => {
+  const encounter = ENC.normalizeEncounter({
+    background: "/assets/backgrounds/custom/legacy.png",
+    display: {
+      sceneImage: "",
+      combatImage: "/assets/backgrounds/custom/battle.png",
+    },
+  });
+
+  assert.equal(encounter.display.sceneImage, "");
+  assert.equal(
+    encounter.display.combatImage,
+    "/assets/backgrounds/custom/battle.png",
+  );
+});
+
+test("prepared presentation becomes the canonical scene/combat media source", () => {
+  const normalized = ENC.normalizeEncounter({
+    id: "prepared-media",
+    kind: "saved",
+    saveMode: "template",
+    name: "Prepared Media",
+    display: {
+      sceneImage: "/assets/backgrounds/custom/old-scene.png",
+      combatImage: "/assets/backgrounds/custom/old-combat.png",
+    },
+    soundscape: ENC.createDefaultSoundscape(),
+    presentation: {
+      schemaVersion: 1,
+      sceneBackground: "/assets/backgrounds/custom/new-scene.png",
+      combatBackground: "/assets/backgrounds/custom/new-combat.png",
+      soundscape: {
+        scene: {
+          music: { asset: "/assets/sounds/music/scene.mp3", volume: 0.35 },
+          ambience: [],
+        },
+        combat: {
+          music: { asset: "/assets/sounds/music/combat.mp3", volume: 0.65 },
+          ambience: [],
+        },
+      },
+    },
+  });
+
+  assert.equal(normalized.display.sceneImage, "/assets/backgrounds/custom/new-scene.png");
+  assert.equal(normalized.display.combatImage, "/assets/backgrounds/custom/new-combat.png");
+  assert.equal(normalized.soundscape.scene.music.asset, "/assets/sounds/music/scene.mp3");
+  assert.equal(normalized.soundscape.combat.music.asset, "/assets/sounds/music/combat.mp3");
+  assert.equal(normalized.presentation.sceneBackground, normalized.display.sceneImage);
+});
+
+test("legacy encounter media is promoted into prepared presentation", () => {
+  const normalized = ENC.normalizeEncounter({
+    id: "legacy-media",
+    kind: "saved",
+    saveMode: "template",
+    display: {
+      sceneImage: "/assets/backgrounds/custom/scene.png",
+      combatImage: "/assets/backgrounds/custom/combat.png",
+    },
+    soundscape: {
+      scene: { music: { asset: "/assets/sounds/music/scene.mp3" }, ambience: [] },
+      combat: { music: { asset: "/assets/sounds/music/combat.mp3" }, ambience: [] },
+    },
+  });
+
+  assert.equal(normalized.presentation.sceneBackground, "/assets/backgrounds/custom/scene.png");
+  assert.equal(normalized.presentation.combatBackground, "/assets/backgrounds/custom/combat.png");
+  assert.equal(normalized.presentation.soundscape.scene.music.asset, "/assets/sounds/music/scene.mp3");
+});

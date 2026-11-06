@@ -128,7 +128,7 @@ ENC.soundscapeUI = {
     await ENC.combat.save("soundscape updated");
     this.renderStatus();
     ENC.encounterUI?.renderCues?.();
-    ENC.app.toast("Soundscape applied to the working encounter. Use Encounter → Save to update the Saved Encounter template.");
+    ENC.app.toast("Live mix applied to the active encounter. Use DM → Encounters to prepare reusable encounter audio before play.");
   },
 
   async previewScene() {

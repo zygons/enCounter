@@ -113,9 +113,30 @@ window.ENC = window.ENC || {};
     soundscape.scene.ambience.forEach((track, index) => {
       if (track.asset) tasks.push(startTrack(`scene:amb:${index}`, track));
     });
-    await Promise.allSettled(tasks);
+    if (!tasks.length) {
+      mode = "stopped";
+      emit("scene-no-audio");
+      throw new Error("No Scene audio is configured for this encounter.");
+    }
+
+    const results = await Promise.allSettled(tasks);
+    const started = results.filter(
+      (result) => result.status === "fulfilled" && result.value,
+    ).length;
+    const failed = results.length - started;
+
+    if (!started) {
+      mode = "stopped";
+      emit("scene-failed");
+      const firstFailure = results.find((result) => result.status === "rejected");
+      throw new Error(
+        firstFailure?.reason?.message || "Scene audio could not start.",
+      );
+    }
+
     mode = "scene";
-    emit("scene-started");
+    emit(failed ? "scene-started-partial" : "scene-started");
+    return { started, failed };
   }
 
   async function playCombat() {
@@ -129,7 +150,7 @@ window.ENC = window.ENC || {};
       if (track.combatBehavior === "continue") {
         setTrackVolume(key, effectiveVolume(track));
       } else if (track.combatBehavior === "duck") {
-        setTrackVolume(key, Math.min(1, Math.max(0, Number(track.combatVolume || 0.15) * soundscape.masterVolume)));
+        setTrackVolume(key, Math.min(1, Math.max(0, Number(track.combatVolume ?? 0.15) * soundscape.masterVolume)));
       } else {
         stopTrack(key);
       }
@@ -143,9 +164,33 @@ window.ENC = window.ENC || {};
     soundscape.combat.ambience.forEach((track, index) => {
       if (track.asset) tasks.push(startTrack(`combat:amb:${index}`, track));
     });
-    await Promise.allSettled(tasks);
+    const results = await Promise.allSettled(tasks);
+    const started = results.filter(
+      (result) => result.status === "fulfilled" && result.value,
+    ).length;
+    const failed = results.length - started;
+    const hasContinuingAudio = [...active.keys()].some(
+      (key) => key.startsWith("scene:amb:") || key.startsWith("combat:"),
+    );
+
+    if (tasks.length && !started && !hasContinuingAudio) {
+      mode = "stopped";
+      emit("combat-failed");
+      const firstFailure = results.find((result) => result.status === "rejected");
+      throw new Error(
+        firstFailure?.reason?.message || "Combat audio could not start.",
+      );
+    }
+
+    if (!hasContinuingAudio) {
+      mode = "stopped";
+      emit("combat-no-audio");
+      return { started: 0, failed };
+    }
+
     mode = "combat";
-    emit("combat-started");
+    emit(failed ? "combat-started-partial" : "combat-started");
+    return { started, failed };
   }
 
   async function returnToScene() {
@@ -207,7 +252,7 @@ window.ENC = window.ENC || {};
       if (mode === "combat" && key.startsWith("scene:amb:") && entry.track.combatBehavior === "duck") {
         const index = Number(key.split(":").pop());
         const configured = soundscape.scene.ambience[index];
-        const volume = Number(configured?.combatVolume || 0.15) * soundscape.masterVolume;
+        const volume = Number(configured?.combatVolume ?? 0.15) * soundscape.masterVolume;
         setTrackVolume(key, volume, 150);
         continue;
       }

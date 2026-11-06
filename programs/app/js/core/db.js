@@ -120,6 +120,30 @@ ENC.db = {
     return this.put("settings", ENC.normalizeSettings(settings));
   },
 
+  async getMetaRecord(key) {
+    if (!key) return null;
+    return this.get("meta", String(key));
+  },
+
+  async saveMetaRecord(key, value = {}) {
+    if (!key) throw new Error("Meta record key is required.");
+
+    const source =
+      value && typeof value === "object" && !Array.isArray(value) ? value : {};
+
+    const existing = await this.get("meta", String(key));
+    const record = {
+      ...(existing || {}),
+      ...ENC.deepClone(source),
+      key: String(key),
+      createdAt: existing?.createdAt || new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+    };
+
+    await this.put("meta", record);
+    return record;
+  },
+
   async getActiveEncounter() {
     const encounter = await this.get("encounters", "active");
     if (!encounter) return ENC.createDefaultEncounter();
@@ -139,33 +163,65 @@ ENC.db = {
 
   async saveEncounterTemplate(encounter, name = null, existingId = null) {
     const source = ENC.normalizeEncounter(ENC.deepClone(encounter));
-    const templateId = existingId || source.sourceEncounterId || ENC.makeId("enc");
+    const templateId = existingId || ENC.makeId("enc");
     const template = ENC.normalizeEncounter({
       ...source,
       id: templateId,
       kind: "saved",
+      saveMode: "template",
       sourceEncounterId: null,
       name: String(name || source.name || "Saved Encounter").trim() || "Saved Encounter",
       phase: "prepared",
       playerDisplayMode: "standby",
       currentId: null,
       round: 1,
-      combatants: (source.combatants || []).map((combatant) => ({
-        ...combatant,
-        hp: combatant.maxHp ?? combatant.hp ?? "",
-        conditionTrack: "Normal",
-        visibleStatus: "",
-        combatState: "active",
-        delayed: false,
-        ready: false,
-      })),
+      combatants: (source.combatants || []).map((combatant) =>
+        ENC.resetCombatantTransientState(combatant),
+      ),
       updatedAt: new Date().toISOString(),
     });
     template.id = templateId;
     template.kind = "saved";
+    template.saveMode = "template";
     template.sourceEncounterId = null;
     await this.put("encounters", template);
     return template;
+  },
+
+  async saveEncounterState(
+    encounter,
+    name = null,
+    existingId = null,
+    options = {},
+  ) {
+    const source = ENC.normalizeEncounter(ENC.deepClone(encounter));
+    const stateId = existingId || ENC.makeId("enc");
+    const timerCheckpoint = ENC.normalizeTimerCheckpoint(
+      options.timerState,
+      source.timer,
+    );
+
+    const savedState = ENC.normalizeEncounter({
+      ...source,
+      id: stateId,
+      kind: "saved",
+      saveMode: "state",
+      sourceEncounterId: null,
+      name:
+        String(name || source.name || "Saved Encounter State").trim() ||
+        "Saved Encounter State",
+      timerCheckpoint,
+      updatedAt: new Date().toISOString(),
+    });
+
+    savedState.id = stateId;
+    savedState.kind = "saved";
+    savedState.saveMode = "state";
+    savedState.sourceEncounterId = null;
+    savedState.timerCheckpoint = timerCheckpoint;
+
+    await this.put("encounters", savedState);
+    return savedState;
   },
 
   async getSavedEncounters() {
@@ -177,8 +233,26 @@ ENC.db = {
   },
 
   async loadSavedEncounter(id) {
-    const saved = await this.get("encounters", id);
-    if (!saved || saved.kind !== "saved") return null;
+    const stored = await this.get("encounters", id);
+    if (!stored || stored.kind !== "saved") return null;
+
+    const saved = ENC.normalizeEncounter(stored);
+
+    if (saved.saveMode === "state") {
+      const working = ENC.normalizeEncounter({
+        ...ENC.deepClone(saved),
+        id: "active",
+        kind: "active",
+        sourceEncounterId: saved.id,
+        // Loading never exposes the Player Display automatically.
+        playerDisplayMode: "standby",
+      });
+      working.id = "active";
+      working.kind = "active";
+      working.sourceEncounterId = saved.id;
+      await this.saveActiveEncounter(working);
+      return working;
+    }
 
     const working = ENC.normalizeEncounter({
       ...ENC.deepClone(saved),
@@ -189,18 +263,14 @@ ENC.db = {
       playerDisplayMode: "standby",
       currentId: null,
       round: 1,
-      combatants: (saved.combatants || []).map((combatant) => ({
-        ...combatant,
-        id: ENC.makeId("cmb"),
-        hp: combatant.maxHp ?? combatant.hp ?? "",
-        conditionTrack: "Normal",
-        visibleStatus: "",
-        combatState: "active",
-        hidden: Boolean(combatant.hidden),
-        delayed: false,
-        ready: false,
-        createdOrder: Date.now() + Math.random(),
-      })),
+      combatants: (saved.combatants || []).map((combatant) =>
+        ENC.resetCombatantTransientState({
+          ...combatant,
+          id: ENC.makeId("cmb"),
+          hidden: Boolean(combatant.hidden),
+          createdOrder: Date.now() + Math.random(),
+        }),
+      ),
     });
     working.id = "active";
     working.kind = "active";
@@ -212,7 +282,22 @@ ENC.db = {
   async duplicateSavedEncounter(id) {
     const saved = await this.get("encounters", id);
     if (!saved || saved.kind !== "saved") return null;
-    return this.saveEncounterTemplate(saved, `${saved.name} Copy`, null);
+
+    const normalized = ENC.normalizeEncounter(saved);
+    if (normalized.saveMode === "state") {
+      return this.saveEncounterState(
+        normalized,
+        `${normalized.name} Copy`,
+        null,
+        { timerState: normalized.timerCheckpoint },
+      );
+    }
+
+    return this.saveEncounterTemplate(
+      normalized,
+      `${normalized.name} Copy`,
+      null,
+    );
   },
 
   async savePreset(encounter, name) {
@@ -224,19 +309,15 @@ ENC.db = {
       currentId: null,
       round: 1,
       updatedAt: new Date().toISOString(),
-      combatants: (encounter.combatants || []).map((combatant) => ({
-        ...combatant,
-        id: ENC.makeId("cmb"),
-        initiative: 10,
-        hp: combatant.maxHp ?? combatant.hp ?? "",
-        conditionTrack: "Normal",
-        visibleStatus: "",
-        combatState: "active",
-        hidden: false,
-        delayed: false,
-        ready: false,
-        createdOrder: Date.now() + Math.random(),
-      })),
+      combatants: (encounter.combatants || []).map((combatant) =>
+        ENC.resetCombatantTransientState({
+          ...combatant,
+          id: ENC.makeId("cmb"),
+          initiative: 10,
+          hidden: false,
+          createdOrder: Date.now() + Math.random(),
+        }),
+      ),
     });
     await this.put("encounters", preset);
     return preset;
