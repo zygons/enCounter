@@ -28,7 +28,7 @@
 
     <link
       rel="stylesheet"
-      href="css/workspace-layout.css?v=alpha3-phase3-1-13-1b"
+      href="css/workspace-layout.css?v=alpha3-currentturn-6"
     />
   </head>
 
@@ -540,6 +540,103 @@
                 <div id="currentTurnStatuses" class="current-turn-statuses">
                   <span class="combatant-status-empty">No active status</span>
                 </div>
+
+                <div
+                  id="currentTurnActions"
+                  class="current-turn-actions hidden"
+                  aria-label="Current combatant actions"
+                >
+                  <div
+                    id="currentTurnHpActionGroup"
+                    class="current-turn-action-group"
+                  >
+                    <span class="current-turn-action-label">HP</span>
+
+                    <div
+                      class="current-turn-action-buttons current-turn-hp-actions"
+                    >
+                      <button
+                        id="currentTurnHpMinus10"
+                        class="hp-action damage"
+                        type="button"
+                        title="Apply 10 damage"
+                      >
+                        −10
+                      </button>
+
+                      <button
+                        id="currentTurnHpMinus1"
+                        class="hp-action damage"
+                        type="button"
+                        title="Apply 1 damage"
+                      >
+                        −1
+                      </button>
+
+                      <button
+                        id="currentTurnHpPlus1"
+                        class="hp-action heal"
+                        type="button"
+                        title="Heal 1 HP"
+                      >
+                        +1
+                      </button>
+
+                      <button
+                        id="currentTurnHpPlus10"
+                        class="hp-action heal"
+                        type="button"
+                        title="Heal 10 HP"
+                      >
+                        +10
+                      </button>
+                    </div>
+                  </div>
+
+                  <div
+                    id="currentTurnStatusActionGroup"
+                    class="current-turn-action-group"
+                  >
+                    <span class="current-turn-action-label">STATUS</span>
+
+                    <div
+                      class="current-turn-action-buttons current-turn-status-actions"
+                    >
+                      <button id="currentTurnConditionBtn" type="button">
+                        Conditions
+                      </button>
+
+                      <button
+                        id="currentTurnExhaustionBtn"
+                        class="hidden"
+                        type="button"
+                      >
+                        Exhaustion
+                      </button>
+
+                      <button
+                        id="currentTurnDefeatBtn"
+                        class="danger-outline"
+                        type="button"
+                      >
+                        Defeated
+                      </button>
+
+                      <button
+                        id="currentTurnVisibilityBtn"
+                        class="hidden"
+                        type="button"
+                      >
+                        Hide from Players
+                      </button>
+                    </div>
+                  </div>
+                </div>
+
+                <div
+                  id="currentTurnConditionEditor"
+                  class="current-turn-condition-editor hidden"
+                ></div>
               </div>
 
               <div class="current-turn-controls">
@@ -635,7 +732,7 @@
                 >
               </div>
 
-              <div class="rail-timer-readout" aria-label="TImer remaining time">
+              <div class="rail-timer-readout" aria-label="Timer remaining time">
                 <div id="encounterTimerCountdown" class="rail-timer-countdown">
                   00:00
                 </div>
@@ -1247,7 +1344,7 @@
                   <p class="hint">
                     Build reusable encounters here before play. Run is reserved
                     for loading a prepared encounter, resuming a saved state, or
-                    starting an ad hoc session.
+                    starting a Quick Encounter.
                   </p>
                 </div>
                 <div class="dm-page-header-actions">
@@ -1381,9 +1478,9 @@
                         >
                         <span class="hint">
                           Changes here update the saved reusable template only.
-                          Ad hoc changes made from the live Encounter tab remain
-                          session-specific until you intentionally update the
-                          template.
+                          Quick Encounter changes made from the live Encounter
+                          workspace remain session-specific until you
+                          intentionally update the template..
                         </span>
                       </div>
 
@@ -3003,7 +3100,7 @@
     <script src="js/modules/assets.js?v=alpha3-phase3-1-13-6k"></script>
     <script src="js/modules/settings.js?v=alpha3-phase3-1-13-6a"></script>
     <script src="js/modules/library.js?v=alpha3-phase3-1-14-3"></script>
-    <script src="js/modules/combat.js?v=alpha3-phase3-1-14-3"></script>
+    <script src="js/modules/combat.js?v=alpha3-currentturn-1"></script>
     <script src="js/modules/compendium.js?v=alpha3-phase3-1-14-3"></script>
     <script src="js/modules/audio.js?v=alpha3-phase3-compendium1"></script>
     <script src="js/modules/encounters.js?v=alpha3-phase3-1-14-4"></script>

@@ -1,6 +1,6 @@
 /* =========================================================
    enCounter Alpha 3
-   Phase 3.1.13.1 — Run Workspace Layout
+   Phase 3.1.13 — Run Workspace Layout
    ========================================================= */
 
 /* ---------------------------------------------------------
@@ -30,7 +30,6 @@
   min-width: 0;
 }
 
-
 /*
   Allow the command strip and roster inside
   encounter-console-main to participate directly
@@ -40,7 +39,6 @@
 #encounterSection .encounter-console-main {
   display: contents;
 }
-
 
 /* ---------------------------------------------------------
    COMMAND STRIP
@@ -55,7 +53,6 @@
   margin: 0;
 }
 
-
 /* ---------------------------------------------------------
    COMBATANT / INITIATIVE WORKSPACE
    --------------------------------------------------------- */
@@ -68,7 +65,6 @@
 
   margin: 0;
 }
-
 
 /* ---------------------------------------------------------
    CURRENT TURN
@@ -100,7 +96,6 @@
   z-index: auto;
 }
 
-
 /* ---------------------------------------------------------
    LIVE ENCOUNTER CONTROLS
 
@@ -112,8 +107,7 @@
 
   display: grid;
 
-  grid-template-columns:
-    repeat(4, minmax(0, 1fr));
+  grid-template-columns: repeat(4, minmax(0, 1fr));
 
   grid-template-areas:
     "phase display timer audio"
@@ -139,14 +133,11 @@
   align-items: start;
 }
 
-
 /* ---------------------------------------------------------
    LIVE ENCOUNTER CONTROL PLACEMENT
    --------------------------------------------------------- */
 
-#encounterSection
-  .encounter-control-rail
-  > .encounter-rail-panel:nth-child(1) {
+#encounterSection .encounter-control-rail > .encounter-rail-panel:nth-child(1) {
   grid-area: phase;
 }
 
@@ -158,9 +149,7 @@
   grid-area: timer;
 }
 
-#encounterSection
-  .encounter-control-rail
-  > .encounter-rail-panel:nth-child(4) {
+#encounterSection .encounter-control-rail > .encounter-rail-panel:nth-child(4) {
   grid-area: audio;
 }
 
@@ -168,18 +157,13 @@
   grid-area: cues;
 }
 
-#encounterSection
-  .encounter-control-rail
-  > details:first-of-type {
+#encounterSection .encounter-control-rail > details:first-of-type {
   grid-area: scene;
 }
 
-#encounterSection
-  .encounter-control-rail
-  > details:last-of-type {
+#encounterSection .encounter-control-rail > details:last-of-type {
   grid-area: legacy;
 }
-
 
 /* ---------------------------------------------------------
    CONTROL PANEL SIZING
@@ -199,13 +183,11 @@
   box-sizing: border-box;
 }
 
-
 /* Keep control headings compact. */
 
 #encounterSection .rail-section-heading {
   margin-bottom: 12px;
 }
-
 
 /* ---------------------------------------------------------
    TIMER CONTROLS
@@ -214,8 +196,7 @@
 #encounterSection .rail-timer-actions {
   display: grid;
 
-  grid-template-columns:
-    repeat(3, minmax(0, 1fr));
+  grid-template-columns: repeat(3, minmax(0, 1fr));
 
   gap: 8px;
 }
@@ -223,12 +204,10 @@
 #encounterSection .rail-timer-adjust-grid {
   display: grid;
 
-  grid-template-columns:
-    repeat(3, minmax(0, 1fr));
+  grid-template-columns: repeat(3, minmax(0, 1fr));
 
   gap: 6px;
 }
-
 
 /* ---------------------------------------------------------
    PLAYER DISPLAY BUTTONS
@@ -237,22 +216,161 @@
 #encounterSection .rail-display-actions {
   display: grid;
 
-  grid-template-columns:
-    repeat(2, minmax(0, 1fr));
+  grid-template-columns: repeat(2, minmax(0, 1fr));
 
   gap: 8px;
 }
 
+/* ---------------------------------------------------------
+   CURRENT TURN — ACTIVE COMBATANT CONTROLS
+   --------------------------------------------------------- */
+
+#encounterSection .current-turn-actions {
+  grid-column: 1 / -1;
+
+  display: grid;
+  gap: 12px;
+
+  width: 100%;
+  min-width: 0;
+
+  margin-top: 14px;
+  padding-top: 12px;
+
+  border-top: 1px solid currentColor;
+}
+
+#encounterSection .current-turn-action-group {
+  display: grid;
+  gap: 6px;
+}
+
+#encounterSection .current-turn-action-label {
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  opacity: 0.7;
+}
+
+#encounterSection .current-turn-action-buttons {
+  display: grid;
+  gap: 6px;
+}
+
+#encounterSection .current-turn-hp-actions {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
+#encounterSection .current-turn-status-actions {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+#encounterSection .current-turn-action-buttons button {
+  min-width: 0;
+}
+
+#encounterSection .current-turn-condition-editor {
+  grid-column: 1 / -1;
+
+  width: 100%;
+  min-width: 0;
+
+  margin-top: 12px;
+
+  overflow: hidden;
+  box-sizing: border-box;
+}
+
+#encounterSection .current-turn-condition-editor .combatant-inline-editor {
+  margin: 0;
+}
+
+/* ---------------------------------------------------------
+   CURRENT TURN — CONDITION EDITOR LAYOUT
+
+   The shared combatant condition editor is normally wider
+   than the Current Turn card. Reflow its controls so they
+   stay inside the Current Turn panel.
+   --------------------------------------------------------- */
+
+#encounterSection
+  .current-turn-condition-editor
+  .combatant-inline-control-grid {
+  display: grid;
+
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+
+  gap: 10px;
+
+  width: 100%;
+  min-width: 0;
+}
+
+#encounterSection .current-turn-condition-editor .compact-control {
+  min-width: 0;
+  width: 100%;
+}
+
+#encounterSection .current-turn-condition-editor .compact-control input,
+#encounterSection .current-turn-condition-editor .compact-control select {
+  width: 100%;
+  min-width: 0;
+
+  box-sizing: border-box;
+}
+
+/*
+  If the editor has an odd number of controls, let the
+  final control span the full row.
+
+  D&D 5E:
+  Condition | Exhaustion
+  Visible Status
+*/
+
+#encounterSection
+  .current-turn-condition-editor
+  .combatant-inline-control-grid
+  > .compact-control:last-child:nth-child(odd) {
+  grid-column: 1 / -1;
+}
+
+/* ---------------------------------------------------------
+   CURRENT TURN — DEFEATED ACTION
+
+   Strong danger treatment for readability across themes.
+   --------------------------------------------------------- */
+
+#encounterSection #currentTurnDefeatBtn {
+  color: #fff4f4 !important;
+  background: #7f2d2d !important;
+  border: 1px solid #d76767 !important;
+
+  font-weight: 700;
+
+  box-shadow:
+    inset 0 0 0 1px rgba(255, 255, 255, 0.05),
+    0 0 0 1px rgba(0, 0, 0, 0.15);
+}
+
+#encounterSection #currentTurnDefeatBtn:hover {
+  background: #9a3535 !important;
+  border-color: #ef8585 !important;
+}
+
+#encounterSection #currentTurnDefeatBtn:focus-visible {
+  outline: 2px solid #f3b0b0;
+  outline-offset: 2px;
+}
 
 /* ---------------------------------------------------------
    RESPONSIVE — MEDIUM DESKTOP / LAPTOP / BROWSER ZOOM
    --------------------------------------------------------- */
 
 @media (max-width: 1650px) {
-
   #encounterSection .encounter-control-rail {
-    grid-template-columns:
-      repeat(2, minmax(0, 1fr));
+    grid-template-columns: repeat(2, minmax(0, 1fr));
 
     grid-template-areas:
       "phase display"
@@ -263,13 +381,101 @@
   }
 }
 
+/* ---------------------------------------------------------
+   RESPONSIVE — APPLICATION HEADER
+
+   The Fantasy and Sci-Fi shells normally reserve a fixed
+   height for the header. Allow that row to grow when the
+   Encounter/System/Exit controls need more room.
+   --------------------------------------------------------- */
+
+@media (max-width: 1250px) {
+  body.theme-scifi,
+  body.theme-fantasy {
+    grid-template-rows:
+      auto
+      minmax(0, 1fr);
+  }
+
+  body.theme-scifi .app-header,
+  body.theme-fantasy .app-header {
+    grid-template-columns:
+      minmax(0, 1fr)
+      auto;
+
+    grid-template-rows: auto;
+
+    align-items: end;
+
+    min-height: 68px;
+    height: auto;
+
+    gap: 12px;
+
+    position: relative;
+    top: auto;
+
+    overflow: visible;
+  }
+
+  body.theme-scifi .encounter-head-controls,
+  body.theme-fantasy .encounter-head-controls {
+    grid-template-columns:
+      minmax(180px, 1fr)
+      minmax(150px, 220px);
+
+    width: 100%;
+    min-width: 0;
+  }
+
+  body.theme-scifi .encounter-head-controls > *,
+  body.theme-fantasy .encounter-head-controls > * {
+    min-width: 0;
+  }
+
+  body.theme-scifi .encounter-head-controls input,
+  body.theme-scifi .encounter-head-controls select,
+  body.theme-fantasy .encounter-head-controls input,
+  body.theme-fantasy .encounter-head-controls select {
+    width: 100%;
+    min-width: 0;
+  }
+
+  body.theme-scifi .header-actions,
+  body.theme-fantasy .header-actions {
+    display: flex;
+
+    justify-content: flex-end;
+    justify-self: end;
+    align-self: end;
+
+    width: auto;
+    min-width: max-content;
+
+    flex-wrap: nowrap;
+
+    position: static;
+    top: auto;
+    right: auto;
+    bottom: auto;
+    left: auto;
+  }
+
+  body.theme-scifi .header-actions button,
+  body.theme-fantasy .header-actions button {
+    width: auto;
+    white-space: nowrap;
+  }
+}
 
 /* ---------------------------------------------------------
    RESPONSIVE — SMALLER WINDOWS
+
+   Stack Current Turn above Combatants and move the live
+   encounter controls into a single column.
    --------------------------------------------------------- */
 
 @media (max-width: 1100px) {
-
   #encounterSection .encounter-console-layout {
     grid-template-columns: minmax(0, 1fr);
 
@@ -291,5 +497,63 @@
       "cues"
       "scene"
       "legacy";
+  }
+}
+
+/* ---------------------------------------------------------
+   RESPONSIVE — COMPACT HEADER
+   --------------------------------------------------------- */
+
+@media (max-width: 900px) {
+  body.theme-scifi,
+  body.theme-fantasy {
+    grid-template-rows:
+      auto
+      minmax(0, 1fr);
+  }
+
+  body.theme-scifi .app-header,
+  body.theme-fantasy .app-header {
+    grid-template-columns: minmax(0, 1fr);
+
+    grid-template-rows:
+      auto
+      auto;
+
+    align-items: stretch;
+
+    gap: 8px;
+
+    min-height: 0;
+    height: auto;
+
+    padding-bottom: 10px;
+  }
+
+  body.theme-scifi .encounter-head-controls,
+  body.theme-fantasy .encounter-head-controls {
+    grid-template-columns:
+      minmax(0, 1fr)
+      minmax(140px, 190px);
+
+    width: 100%;
+    min-width: 0;
+  }
+
+  body.theme-scifi .header-actions,
+  body.theme-fantasy .header-actions {
+    justify-self: end;
+    align-self: center;
+
+    width: auto;
+    min-width: 0;
+
+    position: static;
+  }
+
+  body.theme-scifi .header-actions button,
+  body.theme-fantasy .header-actions button {
+    width: auto;
+    max-width: 100%;
   }
 }

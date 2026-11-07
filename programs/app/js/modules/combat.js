@@ -9,6 +9,7 @@ ENC.combat = {
   saveTimer: null,
   expandedCombatantIds: new Set(),
   conditionEditorIds: new Set(),
+  currentTurnConditionEditorOpen: false,
   libraryPickerType: "player",
   addCombatantSource: "library",
 
@@ -41,11 +42,17 @@ ENC.combat = {
     return `${String(source.provider)}::${String(key)}`;
   },
 
-  async syncLinkedIdentities({ persist = true, broadcast = false, full = false } = {}) {
+  async syncLinkedIdentities({
+    persist = true,
+    broadcast = false,
+    full = false,
+  } = {}) {
     if (!this.encounter?.combatants?.length) return 0;
 
     const libraryEntries = await this.getLibraryEntriesForSync();
-    const normalizedLibraryEntries = libraryEntries.map((entry) => ENC.normalizeLibraryEntry(entry));
+    const normalizedLibraryEntries = libraryEntries.map((entry) =>
+      ENC.normalizeLibraryEntry(entry),
+    );
     const libraryById = new Map(
       normalizedLibraryEntries.map((entry) => [String(entry.id), entry]),
     );
@@ -206,9 +213,13 @@ ENC.combat = {
     // Phase 3.1.10: verify that the combatant was actually persisted to the
     // active encounter before reporting success to the Compendium workflow.
     const persistedEncounter = await ENC.db.getActiveEncounter();
-    const persistedCombatant = persistedEncounter?.combatants?.find((item) => item.id === combatant.id);
+    const persistedCombatant = persistedEncounter?.combatants?.find(
+      (item) => item.id === combatant.id,
+    );
     if (!persistedCombatant) {
-      throw new Error(`${combatant.name || "Combatant"} was not found after saving the encounter.`);
+      throw new Error(
+        `${combatant.name || "Combatant"} was not found after saving the encounter.`,
+      );
     }
 
     this.encounter = persistedEncounter;
@@ -254,9 +265,13 @@ ENC.combat = {
     // Phase 3.1.10: read the encounter back from IndexedDB so Add to Encounter
     // only reports success after persistence has been confirmed.
     const persistedEncounter = await ENC.db.getActiveEncounter();
-    const persistedCombatant = persistedEncounter?.combatants?.find((item) => item.id === combatant.id);
+    const persistedCombatant = persistedEncounter?.combatants?.find(
+      (item) => item.id === combatant.id,
+    );
     if (!persistedCombatant) {
-      throw new Error(`${combatant.name || "Combatant"} was not found after saving the encounter.`);
+      throw new Error(
+        `${combatant.name || "Combatant"} was not found after saving the encounter.`,
+      );
     }
 
     this.encounter = persistedEncounter;
@@ -301,6 +316,16 @@ ENC.combat = {
     );
   },
 
+  getCurrentCombatant() {
+    if (!this.encounter?.currentId) return null;
+
+    return (
+      this.encounter.combatants.find(
+        (combatant) => combatant.id === this.encounter.currentId,
+      ) || null
+    );
+  },
+
   followCurrentTurn() {
     requestAnimationFrame(() => {
       const currentCard = document.querySelector(
@@ -338,6 +363,7 @@ ENC.combat = {
     const hadCurrent = this.getCurrentIndex() >= 0;
     this.encounter.currentId = transition.currentId;
     this.encounter.round = transition.round;
+    this.currentTurnConditionEditorOpen = false;
 
     await this.save(
       hadCurrent ? (direction > 0 ? "next turn" : "previous turn") : "turn set",
@@ -384,8 +410,11 @@ ENC.combat = {
     if (
       ["defeated", "inactive", "delayed", "ready"].includes(state) &&
       this.encounter.currentId === combatant.id
-    )
+    ) {
       this.encounter.currentId = null;
+      this.currentTurnConditionEditorOpen = false;
+    }
+
     await this.save(`state: ${state}`);
     this.render();
   },
@@ -397,6 +426,7 @@ ENC.combat = {
 
     if (takeTurn) {
       this.encounter.currentId = combatant.id;
+      this.currentTurnConditionEditorOpen = false;
     }
 
     await this.save(
@@ -665,7 +695,8 @@ ENC.combat = {
     cell.className = "combatant-defense-cell";
 
     const defenses = this.primaryDefenseSummary(combatant).filter(
-      (item) => item.value !== "" && item.value !== undefined && item.value !== null,
+      (item) =>
+        item.value !== "" && item.value !== undefined && item.value !== null,
     );
 
     if (!defenses.length) {
@@ -732,7 +763,7 @@ ENC.combat = {
     return cell;
   },
 
-  renderConditionEditor(combatant) {
+  renderConditionEditor(combatant, options = {}) {
     const modules = this.modules();
     const panel = document.createElement("div");
     panel.className = "combatant-inline-editor combatant-condition-editor";
@@ -741,10 +772,19 @@ ENC.combat = {
     heading.className = "combatant-inline-editor-heading";
     const title = document.createElement("strong");
     title.textContent = "Conditions & Status";
-    const close = this.createActionButton("Close", () => {
-      this.conditionEditorIds.delete(combatant.id);
-      this.render();
-    }, { className: "text-button" });
+    const close = this.createActionButton(
+      "Close",
+      () => {
+        if (typeof options.onClose === "function") {
+          options.onClose();
+        } else {
+          this.conditionEditorIds.delete(combatant.id);
+        }
+
+        this.render();
+      },
+      { className: "text-button" },
+    );
     heading.append(title, close);
     panel.appendChild(heading);
 
@@ -929,23 +969,36 @@ ENC.combat = {
 
     if (modules.combatControls && modules.hp) {
       actionGroups.append(
-        this.createActionButton("Damage…", () => this.customHp(combatant, false)),
+        this.createActionButton("Damage…", () =>
+          this.customHp(combatant, false),
+        ),
         this.createActionButton("Heal…", () => this.customHp(combatant, true)),
       );
     }
 
     if (modules.combatControls) {
       actionGroups.append(
-        this.createActionButton("Delay", () => this.setState(combatant, "delayed")),
-        this.createActionButton("Ready", () => this.setState(combatant, "ready")),
-        this.createActionButton("Defeated", () => this.setState(combatant, "defeated")),
-        this.createActionButton("Inactive", () => this.setState(combatant, "inactive")),
+        this.createActionButton("Delay", () =>
+          this.setState(combatant, "delayed"),
+        ),
+        this.createActionButton("Ready", () =>
+          this.setState(combatant, "ready"),
+        ),
+        this.createActionButton("Defeated", () =>
+          this.setState(combatant, "defeated"),
+        ),
+        this.createActionButton("Inactive", () =>
+          this.setState(combatant, "inactive"),
+        ),
         this.createActionButton(
-          combatant.delayed || combatant.ready ? "Trigger / Resume" : "Restore Active",
-          () => this.resumeCombatant(
-            combatant,
-            combatant.delayed || combatant.ready,
-          ),
+          combatant.delayed || combatant.ready
+            ? "Trigger / Resume"
+            : "Restore Active",
+          () =>
+            this.resumeCombatant(
+              combatant,
+              combatant.delayed || combatant.ready,
+            ),
         ),
       );
     }
@@ -1021,8 +1074,10 @@ ENC.combat = {
     const modules = this.modules();
     const card = document.createElement("article");
     card.className = `combatant-card combatant-row ${combatant.combatState || "active"}`;
-    if (combatant.id === this.encounter.currentId) card.classList.add("current");
-    if (this.expandedCombatantIds.has(combatant.id)) card.classList.add("expanded");
+    if (combatant.id === this.encounter.currentId)
+      card.classList.add("current");
+    if (this.expandedCombatantIds.has(combatant.id))
+      card.classList.add("expanded");
 
     const summary = document.createElement("div");
     summary.className = "combatant-summary-grid";
@@ -1047,7 +1102,8 @@ ENC.combat = {
       const linked = document.createElement("span");
       linked.className = "combatant-library-link-badge";
       linked.textContent = "Library linked";
-      linked.title = "Portrait and basic identity follow this combatant's Library entry.";
+      linked.title =
+        "Portrait and basic identity follow this combatant's Library entry.";
       meta.appendChild(linked);
     }
     identityText.append(name, meta);
@@ -1066,7 +1122,9 @@ ENC.combat = {
     }
     summary.appendChild(initiative);
 
-    summary.appendChild(modules.hp ? this.renderHpCell(combatant) : document.createElement("div"));
+    summary.appendChild(
+      modules.hp ? this.renderHpCell(combatant) : document.createElement("div"),
+    );
     summary.appendChild(this.renderDefenseCell(combatant));
     summary.appendChild(this.renderStatusCell(combatant));
 
@@ -1114,7 +1172,10 @@ ENC.combat = {
             () => this.changeHp(combatant, delta),
             {
               className: delta < 0 ? "hp-action damage" : "hp-action heal",
-              title: delta < 0 ? `Apply ${Math.abs(delta)} damage` : `Heal ${delta} HP`,
+              title:
+                delta < 0
+                  ? `Apply ${Math.abs(delta)} damage`
+                  : `Heal ${delta} HP`,
             },
           ),
         );
@@ -1133,18 +1194,22 @@ ENC.combat = {
       }
 
       quickActions.appendChild(
-        this.createActionButton(conditionLabel, () => {
-          if (this.conditionEditorIds.has(combatant.id)) {
-            this.conditionEditorIds.delete(combatant.id);
-          } else {
-            this.conditionEditorIds.add(combatant.id);
-          }
-          this.render();
-        }, {
-          className: this.conditionEditorIds.has(combatant.id)
-            ? "combatant-action-toggle active"
-            : "combatant-action-toggle",
-        }),
+        this.createActionButton(
+          conditionLabel,
+          () => {
+            if (this.conditionEditorIds.has(combatant.id)) {
+              this.conditionEditorIds.delete(combatant.id);
+            } else {
+              this.conditionEditorIds.add(combatant.id);
+            }
+            this.render();
+          },
+          {
+            className: this.conditionEditorIds.has(combatant.id)
+              ? "combatant-action-toggle active"
+              : "combatant-action-toggle",
+          },
+        ),
       );
     }
 
@@ -1157,7 +1222,11 @@ ENC.combat = {
             this.conditionEditorIds.add(combatant.id);
             this.render();
           },
-          { className: exhaustion ? "combatant-action-toggle exhaustion" : "combatant-action-toggle" },
+          {
+            className: exhaustion
+              ? "combatant-action-toggle exhaustion"
+              : "combatant-action-toggle",
+          },
         ),
       );
     }
@@ -1198,6 +1267,19 @@ ENC.combat = {
     const defense = document.getElementById("currentTurnDefense");
     const initiative = document.getElementById("currentTurnInitiative");
     const statuses = document.getElementById("currentTurnStatuses");
+    const actions = document.getElementById("currentTurnActions");
+    const hpActions = document.getElementById("currentTurnHpActionGroup");
+    const conditionButton = document.getElementById("currentTurnConditionBtn");
+    const exhaustionButton = document.getElementById(
+      "currentTurnExhaustionBtn",
+    );
+    const defeatButton = document.getElementById("currentTurnDefeatBtn");
+    const visibilityButton = document.getElementById(
+      "currentTurnVisibilityBtn",
+    );
+    const conditionEditor = document.getElementById(
+      "currentTurnConditionEditor",
+    );
 
     const current = this.encounter.combatants.find(
       (combatant) => combatant.id === this.encounter.currentId,
@@ -1220,12 +1302,23 @@ ENC.combat = {
       if (defenseLabel) defenseLabel.textContent = "DEF";
       if (defense) defense.textContent = "—";
       if (initiative) initiative.textContent = "—";
-      if (statuses) statuses.innerHTML = '<span class="combatant-status-empty">No active status</span>';
+      if (statuses)
+        statuses.innerHTML =
+          '<span class="combatant-status-empty">No active status</span>';
+      if (actions) actions.classList.add("hidden");
+
+      if (conditionEditor) {
+        conditionEditor.innerHTML = "";
+        conditionEditor.classList.add("hidden");
+      }
+
+      this.currentTurnConditionEditorOpen = false;
       return;
     }
 
     if (label) label.textContent = current.name || "Current combatant";
     if (body) body.classList.remove("is-empty");
+    if (actions) actions.classList.remove("hidden");
 
     if (portraitHost) {
       portraitHost.innerHTML = "";
@@ -1245,16 +1338,19 @@ ENC.combat = {
     const metrics = this.hpMetrics(current);
     if (hp) {
       if (metrics.current === null) hp.textContent = "—";
-      else if (metrics.max !== null && metrics.max > 0) hp.textContent = `${metrics.current} / ${metrics.max}`;
+      else if (metrics.max !== null && metrics.max > 0)
+        hp.textContent = `${metrics.current} / ${metrics.max}`;
       else hp.textContent = String(metrics.current);
     }
     if (hpFill) {
-      hpFill.style.width = metrics.percent === null ? "0%" : `${metrics.percent}%`;
+      hpFill.style.width =
+        metrics.percent === null ? "0%" : `${metrics.percent}%`;
       hpFill.dataset.state = metrics.state;
     }
 
     const defenses = this.primaryDefenseSummary(current).filter(
-      (item) => item.value !== "" && item.value !== undefined && item.value !== null,
+      (item) =>
+        item.value !== "" && item.value !== undefined && item.value !== null,
     );
     if (defenseLabel) defenseLabel.textContent = defenses[0]?.label || "DEF";
     if (defense) defense.textContent = defenses[0]?.value ?? "—";
@@ -1264,6 +1360,95 @@ ENC.combat = {
       statuses.innerHTML = "";
       const source = this.renderStatusCell(current);
       while (source.firstChild) statuses.appendChild(source.firstChild);
+    }
+
+    const modules = this.modules();
+
+    /* HP controls */
+
+    if (hpActions) {
+      hpActions.classList.toggle(
+        "hidden",
+        !(modules.combatControls && modules.hp),
+      );
+    }
+
+    /* Conditions / Status */
+
+    if (conditionButton) {
+      let conditionLabel = "Status";
+
+      if (current.systemId === "dnd5e") {
+        conditionLabel = "Conditions";
+      } else if (
+        ENC.getSystemProfile(current.systemId, current.customProfile)
+          .usesConditionTrack
+      ) {
+        conditionLabel = "Condition";
+      }
+
+      conditionButton.textContent = conditionLabel;
+
+      conditionButton.classList.toggle(
+        "hidden",
+        !(modules.conditions || modules.status),
+      );
+
+      conditionButton.classList.toggle(
+        "active",
+        this.currentTurnConditionEditorOpen,
+      );
+    }
+
+    /* D&D 5E Exhaustion */
+
+    if (exhaustionButton) {
+      const showExhaustion = modules.conditions && current.systemId === "dnd5e";
+
+      exhaustionButton.classList.toggle("hidden", !showExhaustion);
+
+      const exhaustion = Number(current.dnd5eExhaustion) || 0;
+
+      exhaustionButton.textContent =
+        exhaustion > 0 ? `Exhaustion ${exhaustion}` : "Exhaustion";
+    }
+
+    /* Defeated */
+
+    if (defeatButton) {
+      defeatButton.classList.toggle("hidden", !modules.combatControls);
+    }
+
+    /* Hide / Reveal */
+
+    if (visibilityButton) {
+      visibilityButton.classList.toggle("hidden", !modules.hiddenCombatants);
+
+      visibilityButton.textContent = current.hidden
+        ? "Reveal to Players"
+        : "Hide from Players";
+    }
+
+    /* Current Turn condition editor */
+
+    if (conditionEditor) {
+      conditionEditor.innerHTML = "";
+
+      const canEditStatus = modules.conditions || modules.status;
+
+      if (this.currentTurnConditionEditorOpen && canEditStatus) {
+        conditionEditor.classList.remove("hidden");
+
+        conditionEditor.appendChild(
+          this.renderConditionEditor(current, {
+            onClose: () => {
+              this.currentTurnConditionEditorOpen = false;
+            },
+          }),
+        );
+      } else {
+        conditionEditor.classList.add("hidden");
+      }
     }
   },
 
@@ -1368,8 +1553,12 @@ ENC.combat = {
     for (const entry of entries) {
       const option = document.createElement("option");
       option.value = entry.id;
-      const typeLabel = ENC.libraryUI?.typeLabel?.(entry.type) || entry.type || "Character";
-      const systemLabel = ENC.getSystemLabel(entry.systemId, entry.customProfile);
+      const typeLabel =
+        ENC.libraryUI?.typeLabel?.(entry.type) || entry.type || "Character";
+      const systemLabel = ENC.getSystemLabel(
+        entry.systemId,
+        entry.customProfile,
+      );
       option.textContent = `${entry.name} — ${typeLabel} · ${systemLabel}`;
 
       if (entry.systemId === this.encounter.systemId) {
@@ -1379,8 +1568,10 @@ ENC.combat = {
       }
     }
 
-    if (currentSystemGroup.children.length) select.appendChild(currentSystemGroup);
-    if (otherSystemsGroup.children.length) select.appendChild(otherSystemsGroup);
+    if (currentSystemGroup.children.length)
+      select.appendChild(currentSystemGroup);
+    if (otherSystemsGroup.children.length)
+      select.appendChild(otherSystemsGroup);
 
     const hasEntries = entries.length > 0;
     select.disabled = !hasEntries;
@@ -1469,10 +1660,10 @@ ENC.combat = {
   },
 
   async resetActiveEncounter({
-    name = "Ad Hoc Encounter",
+    name = "Quick Encounter",
     confirmReset = true,
     snapshotReason = "before new encounter",
-    toastMessage = "Ad hoc encounter ready.",
+    toastMessage = "Quick encounter ready.",
   } = {}) {
     if (
       confirmReset &&
@@ -1510,7 +1701,7 @@ ENC.combat = {
     await ENC.app?.clearRuntimeTimerCheckpoint?.();
 
     const fresh = ENC.createDefaultEncounter();
-    fresh.name = String(name || "Ad Hoc Encounter").trim() || "Ad Hoc Encounter";
+    fresh.name = String(name || "Quick Encounter").trim() || "Quick Encounter";
     fresh.systemId = systemId;
     fresh.customProfile = customProfile;
     fresh.sourceEncounterId = null;
@@ -1581,20 +1772,78 @@ ENC.combat = {
     });
 
     document.querySelectorAll("[data-add-source-panel]").forEach((panel) => {
-      panel.classList.toggle(
-        "active",
-        panel.dataset.addSourcePanel === target,
-      );
+      panel.classList.toggle("active", panel.dataset.addSourcePanel === target);
     });
   },
 
   bind() {
+    const withCurrentCombatant = (callback) => {
+      const combatant = this.getCurrentCombatant();
+
+      if (!combatant) {
+        ENC.app.toast("No current combatant.");
+        return;
+      }
+
+      return callback(combatant);
+    };
     document
       .getElementById("nextTurnBtn")
       .addEventListener("click", () => this.moveTurn(1));
     document
       .getElementById("previousTurnBtn")
       .addEventListener("click", () => this.moveTurn(-1));
+
+    [
+      ["currentTurnHpMinus10", -10],
+      ["currentTurnHpMinus1", -1],
+      ["currentTurnHpPlus1", 1],
+      ["currentTurnHpPlus10", 10],
+    ].forEach(([id, delta]) => {
+      document.getElementById(id)?.addEventListener("click", () => {
+        withCurrentCombatant((combatant) => this.changeHp(combatant, delta));
+      });
+    });
+
+    document
+      .getElementById("currentTurnConditionBtn")
+      ?.addEventListener("click", () => {
+        withCurrentCombatant(() => {
+          this.currentTurnConditionEditorOpen =
+            !this.currentTurnConditionEditorOpen;
+
+          this.render();
+        });
+      });
+
+    document
+      .getElementById("currentTurnExhaustionBtn")
+      ?.addEventListener("click", () => {
+        withCurrentCombatant(() => {
+          this.currentTurnConditionEditorOpen = true;
+          this.render();
+        });
+      });
+
+    document
+      .getElementById("currentTurnDefeatBtn")
+      ?.addEventListener("click", () => {
+        withCurrentCombatant((combatant) =>
+          this.setState(combatant, "defeated"),
+        );
+      });
+
+    document
+      .getElementById("currentTurnVisibilityBtn")
+      ?.addEventListener("click", () => {
+        withCurrentCombatant(async (combatant) => {
+          combatant.hidden = !combatant.hidden;
+
+          await this.save();
+          this.render();
+        });
+      });
+
     document
       .getElementById("encounterName")
       .addEventListener("change", async (event) => {
@@ -1646,7 +1895,9 @@ ENC.combat = {
         if (!panel) return;
         const isHidden = panel.classList.toggle("hidden");
         event.currentTarget.setAttribute("aria-expanded", String(!isHidden));
-        event.currentTarget.textContent = isHidden ? "+ Add Combatant" : "Close Add Combatant";
+        event.currentTarget.textContent = isHidden
+          ? "+ Add Combatant"
+          : "Close Add Combatant";
 
         if (!isHidden) {
           this.showAddCombatantSource(this.addCombatantSource || "library");
@@ -1657,13 +1908,13 @@ ENC.combat = {
     document
       .getElementById("startAdHocEncounterBtn")
       ?.addEventListener("click", async () => {
-        const requested = prompt("Ad hoc encounter name:", "Ad Hoc Encounter");
+        const requested = prompt("Quick encounter name:", "Quick Encounter");
         if (requested === null) return;
         await this.resetActiveEncounter({
-          name: requested.trim() || "Ad Hoc Encounter",
+          name: requested.trim() || "Quick Encounter",
           confirmReset: true,
-          snapshotReason: "before ad hoc encounter",
-          toastMessage: "Clean ad hoc encounter ready.",
+          snapshotReason: "before quick encounter",
+          toastMessage: "Quick encounter ready.",
         });
       });
     document
