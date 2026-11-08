@@ -29,16 +29,7 @@
   </head>
 
   <body class="player-body">
-    <script>
-      (() => {
-        const theme = localStorage.getItem("encounter-ui-theme") || "scifi";
-        const normalized = ["original", "scifi", "fantasy"].includes(theme)
-          ? theme
-          : "scifi";
-        document.body.classList.add(`theme-${normalized}`);
-        document.body.dataset.uiTheme = normalized;
-      })();
-    </script>
+    <script src="js/theme-bootstrap.js?v=alpha3-hardening-1"></script>
     <!-- =========================================
          ENCOUNTER BACKGROUND
          ========================================= -->

@@ -80,3 +80,26 @@ test("Encounter console CSS provides HP state colors and responsive control rail
   assert.match(css, /\.encounter-control-rail\s*\{[^}]*position:\s*sticky/s);
   assert.match(css, /@media \(max-width: 1279px\)/);
 });
+
+test("Run workspace visual polish keeps control rhythm and focus states consistent", () => {
+  const html = read("programs/app/index.html");
+  const css = read("programs/app/css/workspace-layout.css");
+
+  assert.match(html, /workspace-layout\.css\?v=alpha3-phase3-1-13-4a/);
+  assert.match(css, /PHASE 3\.1\.13\.4 — RUN WORKSPACE VISUAL POLISH/);
+  assert.match(css, /\.combatant-quick-actions\s*\{[^}]*border-top:/s);
+  assert.match(css, /\.encounter-control-rail \.rail-section-heading\s*\{[^}]*min-height:\s*34px/s);
+  assert.match(css, /button:focus-visible/);
+  assert.match(css, /summary:focus-visible/);
+});
+
+
+test("theme header keeps Exit enCounter inside the header at high zoom breakpoints", () => {
+  const css = read("programs/app/css/workspace-layout.css");
+
+  assert.match(css, /@media \(max-width: 1350px\)/);
+  assert.match(
+    css,
+    /body\.theme-scifi \.header-actions,[\s\S]*?grid-column:\s*auto;[\s\S]*?grid-row:\s*auto;/,
+  );
+});

@@ -745,6 +745,148 @@ body.theme-fantasy
 }
 
 /* ---------------------------------------------------------
+   PHASE 3.1.13.4 — RUN WORKSPACE VISUAL POLISH
+
+   Keep the established layout intact while tightening the
+   visual rhythm across command, roster, Current Turn, and
+   live-control surfaces.
+   --------------------------------------------------------- */
+
+/* Command strip: keep primary Run actions aligned and easy to scan. */
+
+#encounterSection .run-command-strip {
+  min-height: 60px;
+}
+
+#encounterSection .run-command-actions {
+  align-items: center;
+}
+
+#encounterSection .run-command-actions > button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+
+  min-height: 34px;
+
+  line-height: 1.15;
+  text-align: center;
+}
+
+#encounterSection .encounter-load-menu > summary {
+  min-height: 34px;
+  box-sizing: border-box;
+  line-height: 1.15;
+}
+
+/* Roster: separate scan information from secondary row actions. */
+
+#encounterSection .encounter-roster-toolbar {
+  min-height: 58px;
+}
+
+#encounterSection #toggleAddCombatantBtn {
+  min-height: 34px;
+}
+
+#encounterSection .combatant-summary-grid {
+  min-height: 58px;
+}
+
+#encounterSection .combatant-quick-actions {
+  gap: 6px;
+
+  padding-top: 6px;
+
+  border-top: 1px solid var(--line, rgba(76, 122, 143, 0.22));
+  background: rgba(0, 0, 0, 0.035);
+}
+
+#encounterSection .combatant-quick-actions button {
+  min-height: 28px;
+}
+
+#encounterSection .combatant-status-cell {
+  row-gap: 5px;
+}
+
+#encounterSection .combatant-more-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Current Turn: keep navigation clearly secondary to active-combatant data. */
+
+#encounterSection .tactical-panel-heading .save-indicator {
+  opacity: 0.72;
+}
+
+#encounterSection .current-turn-controls {
+  min-height: 58px;
+}
+
+#encounterSection .turn-navigation-buttons button {
+  min-height: 34px;
+}
+
+/* Live encounter controls: normalize headings, button height, and hint rhythm. */
+
+#encounterSection .encounter-control-rail > * {
+  box-sizing: border-box;
+}
+
+#encounterSection .encounter-control-rail .rail-section-heading {
+  min-height: 34px;
+  margin-bottom: 10px;
+}
+
+#encounterSection .encounter-control-rail button {
+  line-height: 1.15;
+}
+
+#encounterSection .rail-button-grid button,
+#encounterSection .rail-display-actions button,
+#encounterSection .rail-timer-actions button,
+#encounterSection .encounter-cue-button {
+  min-height: 32px;
+}
+
+#encounterSection .rail-display-hint,
+#encounterSection .rail-timer-hint,
+#encounterSection .encounter-control-rail .hint {
+  line-height: 1.4;
+}
+
+#encounterSection .rail-collapsible-panel > summary {
+  min-height: 36px;
+  box-sizing: border-box;
+  line-height: 1.35;
+}
+
+/* Strong, consistent keyboard focus without changing theme palettes. */
+
+#encounterSection button:focus-visible,
+#encounterSection summary:focus-visible,
+#encounterSection select:focus-visible,
+#encounterSection input:focus-visible {
+  outline: 2px solid var(--accent, currentColor);
+  outline-offset: 2px;
+}
+
+/* Fantasy/Sci-Fi quick-action separators should follow each theme. */
+
+body.theme-fantasy #encounterSection .combatant-quick-actions {
+  border-top-color: rgba(215, 161, 63, 0.18);
+  background: rgba(88, 58, 24, 0.07);
+}
+
+body.theme-scifi #encounterSection .combatant-quick-actions {
+  border-top-color: rgba(24, 233, 255, 0.14);
+  background: rgba(0, 126, 150, 0.035);
+}
+
+/* ---------------------------------------------------------
    RESPONSIVE — MEDIUM DESKTOP / LAPTOP / BROWSER ZOOM
    --------------------------------------------------------- */
 
@@ -769,7 +911,7 @@ body.theme-fantasy
    Encounter/System/Exit controls need more room.
    --------------------------------------------------------- */
 
-@media (max-width: 1250px) {
+@media (max-width: 1350px) {
   body.theme-scifi,
   body.theme-fantasy {
     grid-template-rows:
@@ -828,6 +970,15 @@ body.theme-fantasy
     justify-content: flex-end;
     justify-self: end;
     align-self: end;
+
+    /*
+      base.css uses grid-column: 1 / -1 below 1350px.
+      Reset that legacy rule so Exit enCounter stays inside
+      the growing theme header instead of creating an
+      implicit row that spills over the workspace below.
+    */
+    grid-column: auto;
+    grid-row: auto;
 
     width: auto;
     min-width: max-content;

@@ -457,10 +457,7 @@ ENC.combat = {
 
     let currentHp = ENC.finiteNumber(combatant.hp, 0);
     if (currentHp <= 0) {
-      const requested = prompt(
-        "HP to restore when returning to combat:",
-        "1",
-      );
+      const requested = prompt("HP to restore when returning to combat:", "1");
       if (requested === null) return false;
 
       const parsed = Number(requested);
@@ -470,9 +467,7 @@ ENC.combat = {
       }
 
       const max =
-        combatant.maxHp === ""
-          ? null
-          : ENC.finiteNumber(combatant.maxHp, null);
+        combatant.maxHp === "" ? null : ENC.finiteNumber(combatant.maxHp, null);
       currentHp =
         max !== null && Number.isFinite(max) ? Math.min(max, parsed) : parsed;
       combatant.hp = currentHp;
@@ -592,9 +587,7 @@ ENC.combat = {
 
       await this.save("D&D 5E natural 20 death save");
       this.render();
-      ENC.app.toast(
-        `${combatant.name} rolled a natural 20 and regains 1 HP.`,
-      );
+      ENC.app.toast(`${combatant.name} rolled a natural 20 and regains 1 HP.`);
       return true;
     }
 
@@ -703,10 +696,7 @@ ENC.combat = {
 
     // Healing a Downed or Stable combatant above 0 HP returns them to normal
     // participation. A combatant marked Dead still requires Return to Combat.
-    if (
-      next > 0 &&
-      ["downed", "stable"].includes(combatant.recoveryState)
-    ) {
+    if (next > 0 && ["downed", "stable"].includes(combatant.recoveryState)) {
       combatant.recoveryState = "normal";
       combatant.combatState = "active";
       combatant.delayed = false;
@@ -1534,7 +1524,8 @@ ENC.combat = {
     card.appendChild(summary);
 
     const quickActions = document.createElement("div");
-    quickActions.className = "combatant-quick-actions combatant-quick-actions-simplified";
+    quickActions.className =
+      "combatant-quick-actions combatant-quick-actions-simplified";
 
     const requiresReturn =
       combatant.recoveryState === "dead" ||
@@ -1656,9 +1647,7 @@ ENC.combat = {
     const deathSaveSummary = document.getElementById(
       "currentTurnDeathSaveSummary",
     );
-    const deathSuccesses = document.getElementById(
-      "currentTurnDeathSuccesses",
-    );
+    const deathSuccesses = document.getElementById("currentTurnDeathSuccesses");
     const deathFailures = document.getElementById("currentTurnDeathFailures");
     const markDownedButton = document.getElementById(
       "currentTurnMarkDownedBtn",
@@ -1791,14 +1780,18 @@ ENC.combat = {
         const conditionCount = Array.isArray(current.dnd5eConditions)
           ? current.dnd5eConditions.length
           : 0;
-        conditionLabel = conditionCount
-          ? `Conditions ${conditionCount}`
-          : "Conditions";
+
+        // Conditions are already displayed as badges beneath the
+        // current combatant, so keep the action button label simple.
+        conditionLabel = "Conditions";
+
         hasConditionValue ||= conditionCount > 0;
       } else if (profile.usesConditionTrack) {
         const track = current.conditionTrack || "Normal";
+
         conditionLabel =
           track !== "Normal" ? `Condition ${track}` : "Condition";
+
         hasConditionValue ||= track !== "Normal";
       }
 
@@ -1870,7 +1863,8 @@ ENC.combat = {
         !this.currentTurnRecoveryOpen || !modules.combatControls,
       );
 
-      if (recoveryState) recoveryState.textContent = this.recoveryLabel(current);
+      if (recoveryState)
+        recoveryState.textContent = this.recoveryLabel(current);
 
       if (deathSavePanel) {
         deathSavePanel.classList.toggle("hidden", !(isDnd5e && downed));
@@ -1882,8 +1876,7 @@ ENC.combat = {
           [0, 1, 2].map((index) => (index < count ? "●" : "○")).join(" ");
 
         if (deathSaveSummary) {
-          deathSaveSummary.textContent =
-            `${saves.successes} successes / ${saves.failures} failures`;
+          deathSaveSummary.textContent = `${saves.successes} successes / ${saves.failures} failures`;
         }
         if (deathSuccesses) deathSuccesses.textContent = dots(saves.successes);
         if (deathFailures) deathFailures.textContent = dots(saves.failures);
@@ -2397,9 +2390,7 @@ ENC.combat = {
     document
       .getElementById("currentTurnRollDeathSaveBtn")
       ?.addEventListener("click", () => {
-        withCurrentCombatant((combatant) =>
-          this.rollDnd5eDeathSave(combatant),
-        );
+        withCurrentCombatant((combatant) => this.rollDnd5eDeathSave(combatant));
       });
 
     document

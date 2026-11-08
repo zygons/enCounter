@@ -82,13 +82,6 @@ PUBLIC_ROOT_FILES = {
 MAX_UPLOAD_BYTES = 50 * 1024 * 1024
 MAX_BACKUP_BYTES = 50 * 1024 * 1024
 
-for path in [BACKUP_DIR, EXPORT_DIR, IMPORT_DIR, COMPENDIUM_CACHE_DIR]:
-    path.mkdir(parents=True, exist_ok=True)
-for category in ALLOWED_ASSET_CATEGORIES:
-    (ROOT / "assets" / category).mkdir(parents=True, exist_ok=True)
-(ROOT / "assets" / "sounds").mkdir(parents=True, exist_ok=True)
-
-
 def console_print(*args, **kwargs):
     """Print only when a console is attached; stay silent under pythonw.exe."""
     try:
@@ -96,6 +89,67 @@ def console_print(*args, **kwargs):
             print(*args, **kwargs)
     except Exception:
         pass
+
+
+def browser_launch_enabled() -> bool:
+    value = os.environ.get("ENCOUNTER_NO_BROWSER", "").strip().lower()
+    return value not in {"1", "true", "yes", "on"}
+
+
+def ensure_runtime_layout() -> None:
+    """Create writable runtime folders only when the launcher actually starts."""
+    for path in [BACKUP_DIR, EXPORT_DIR, IMPORT_DIR, COMPENDIUM_CACHE_DIR]:
+        path.mkdir(parents=True, exist_ok=True)
+    for category in ALLOWED_ASSET_CATEGORIES:
+        (ROOT / "assets" / category).mkdir(parents=True, exist_ok=True)
+    (ROOT / "assets" / "sounds").mkdir(parents=True, exist_ok=True)
+
+
+def write_startup_error(message: str) -> None:
+    try:
+        log_path = ROOT / "data" / "enCounter-startup-error.log"
+        log_path.parent.mkdir(parents=True, exist_ok=True)
+        log_path.write_text(message, encoding="utf-8")
+    except OSError:
+        pass
+
+
+def show_startup_error(message: str) -> None:
+    write_startup_error(message)
+    console_print(message)
+
+    if os.name == "nt":
+        try:
+            import ctypes
+
+            ctypes.windll.user32.MessageBoxW(
+                None,
+                message,
+                f"{APP_NAME} startup error",
+                0x10,
+            )
+        except Exception:
+            pass
+
+
+def current_server_is_compatible(timeout: float = 0.8) -> bool:
+    """Return True when this port already hosts the current enCounter server."""
+    status_url = f"http://127.0.0.1:{PORT}/api/compendium/dnd5e/status"
+    request = urllib.request.Request(
+        status_url,
+        headers={"Accept": "application/json"},
+        method="GET",
+    )
+    try:
+        with urllib.request.urlopen(request, timeout=timeout) as response:
+            payload = json.loads(response.read().decode("utf-8"))
+        return (
+            isinstance(payload, dict)
+            and payload.get("ok") is True
+            and payload.get("proxyVersion") == COMPENDIUM_PROXY_VERSION
+        )
+    except (OSError, ValueError, json.JSONDecodeError, UnicodeDecodeError):
+        return False
 
 
 def safe_name(name: str) -> str:
@@ -192,6 +246,11 @@ def fetch_srd_json(path: str, timeout: int = 15):
 
 class EnCounterHandler(http.server.SimpleHTTPRequestHandler):
     server_version = f"{APP_NAME}Local/{APP_VERSION}"
+    sys_version = ""
+
+    def version_string(self):
+        # Do not disclose the embedded/system Python version in HTTP headers.
+        return self.server_version
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, directory=str(ROOT), **kwargs)
@@ -205,19 +264,35 @@ class EnCounterHandler(http.server.SimpleHTTPRequestHandler):
         self.send_header("X-Content-Type-Options", "nosniff")
         self.send_header("X-Frame-Options", "DENY")
         self.send_header("Referrer-Policy", "no-referrer")
+        self.send_header("Cross-Origin-Resource-Policy", "same-origin")
+        self.send_header(
+            "Permissions-Policy",
+            "camera=(), microphone=(), geolocation=(), payment=(), usb=()",
+        )
         self.send_header(
             "Content-Security-Policy",
             "default-src 'self'; "
             "script-src 'self'; "
             "style-src 'self' 'unsafe-inline'; "
             "img-src 'self' data: blob:; "
-            "connect-src 'self'; "
+            "connect-src 'self' https://www.dnd5eapi.co; "
             "font-src 'self'; "
             "object-src 'none'; "
             "base-uri 'none'; "
             "frame-ancestors 'none'; "
             "form-action 'self'",
         )
+
+        # Browser caches should never strand a user on stale Alpha code after
+        # replacing a portable build. HTML is never stored; JS/CSS/assets are
+        # revalidated on each load while still allowing conditional requests.
+        request_path = urllib.parse.urlparse(self.path).path
+        if not request_path.startswith("/api/"):
+            if request_path == "/" or request_path.lower().endswith(".html"):
+                self.send_header("Cache-Control", "no-store")
+            else:
+                self.send_header("Cache-Control", "no-cache")
+
         super().end_headers()
 
     def send_json(self, payload, status=200):
@@ -727,8 +802,13 @@ class ReusableTCPServer(socketserver.ThreadingTCPServer):
 
 
 def open_browser():
+    if not browser_launch_enabled():
+        return
     time.sleep(0.4)
-    webbrowser.open(APP_URL)
+    try:
+        webbrowser.open(APP_URL)
+    except Exception as exc:
+        console_print(f"Could not open the default browser automatically: {exc}")
 
 
 if __name__ == "__main__":
@@ -739,6 +819,27 @@ if __name__ == "__main__":
     console_print("Data stays on this computer.")
     console_print("External backups: data\\backups\\")
     console_print("Close the packaged process when you are finished.\n")
+
+    # A second portable launch should focus/reopen the current app instead of
+    # showing a port-collision error. Unknown services on the port are never
+    # trusted or terminated.
+    if current_server_is_compatible():
+        console_print(f"enCounter is already running on port {PORT}; opening the app.")
+        open_browser()
+        raise SystemExit(0)
+
+    try:
+        ensure_runtime_layout()
+    except OSError as exc:
+        message = (
+            f"enCounter cannot write to its portable folder: {ROOT}\n\n"
+            f"{exc}\n\n"
+            "Extract enCounter to a writable folder in your user profile (for example, "
+            "Documents or Downloads) and run it from there. Do not run the portable "
+            "build directly from an archive or a read-only/system folder."
+        )
+        show_startup_error(message)
+        raise SystemExit(1)
 
     try:
         # Bind the server before opening the browser. If the port is unavailable,
@@ -751,24 +852,8 @@ if __name__ == "__main__":
             f"Could not start enCounter on port {PORT}: {exc}\n\n"
             "Another enCounter, Python server, Live Server, or other program is already "
             "using this port. Close the older process and start enCounter again.\n\n"
-            "For Phase 3.1.12.4 the normal server must report Compendium proxy version "
+            "The expected Compendium proxy version is "
             f"{COMPENDIUM_PROXY_VERSION}."
         )
-        try:
-            log_path = ROOT / "data" / "enCounter-startup-error.log"
-            log_path.parent.mkdir(parents=True, exist_ok=True)
-            log_path.write_text(message, encoding="utf-8")
-        except OSError:
-            pass
-        console_print(message)
-        if os.name == "nt":
-            try:
-                import ctypes
-                ctypes.windll.user32.MessageBoxW(
-                    None,
-                    message,
-                    f"{APP_NAME} startup error",
-                    0x10,
-                )
-            except Exception:
-                pass
+        show_startup_error(message)
+        raise SystemExit(1)

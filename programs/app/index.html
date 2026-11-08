@@ -28,21 +28,12 @@
 
     <link
       rel="stylesheet"
-      href="css/workspace-layout.css?v=alpha3-phase3-1-13-3"
+      href="css/workspace-layout.css?v=alpha3-phase3-1-13-4a"
     />
   </head>
 
   <body class="dm-body">
-    <script>
-      (() => {
-        const theme = localStorage.getItem("encounter-ui-theme") || "scifi";
-        if (["original", "scifi", "fantasy"].includes(theme)) {
-          document.body.classList.add(`theme-${theme}`);
-        } else {
-          document.body.classList.add("theme-scifi");
-        }
-      })();
-    </script>
+    <script src="js/theme-bootstrap.js?v=alpha3-hardening-1"></script>
     <!-- =========================================================
          APPLICATION HEADER
          ========================================================= -->
@@ -982,7 +973,7 @@
                 </div>
               </div>
               <div id="encounterCueButtons" class="encounter-cue-buttons">
-                <span class="hint">No prepared sound cues.</span>
+                <span class="hint">No sound cues configured.</span>
               </div>
             </div>
 
@@ -1951,7 +1942,7 @@
                       </details>
 
                       <details class="encounter-setup-advanced">
-                        <summary>Prepared sound cues</summary>
+                        <summary>Sound cues</summary>
 
                         <div class="encounter-setup-cues">
                           <div class="encounter-setup-cue-row">
@@ -2866,7 +2857,7 @@
           <div class="section-heading">
             <div>
               <div class="eyebrow">ONE-SHOT SOUNDS</div>
-              <h2>Prepared Cues</h2>
+              <h2>Sound Cues</h2>
             </div>
           </div>
           <div class="cue-grid">

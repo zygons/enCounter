@@ -47,7 +47,7 @@ ENC.encounterUI = {
     if (!cues.length) {
       const empty = document.createElement("span");
       empty.className = "hint";
-      empty.textContent = "No prepared sound cues for this encounter.";
+      empty.textContent = "No sound cues are configured for this encounter.";
       container.appendChild(empty);
       return;
     }
@@ -234,10 +234,10 @@ ENC.encounterUI = {
       null,
     );
 
-    // A new Prepare build intentionally clears any currently loaded/ad hoc
+    // A new Prepare build intentionally clears any currently loaded/quick
     // Run encounter so the old session cannot remain ghost-loaded.
     await ENC.combat?.resetActiveEncounter?.({
-      name: "Ad Hoc Encounter",
+      name: "Quick Encounter",
       confirmReset: false,
       snapshotReason: "before prepare encounter build",
       toastMessage: null,

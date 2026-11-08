@@ -188,12 +188,20 @@ The Alpha Windows executable is currently unsigned. Windows SmartScreen may ther
 
 Python is **not** required on the target computer when using the packaged Linux build.
 
+The official Linux portable package is built on **Ubuntu 22.04 x86_64** to provide a stable, conservative glibc baseline. It is intended for current mainstream x86_64 Linux distributions with the same or a newer compatible glibc. Very old distributions may require building enCounter locally on that distribution or on an equivalently old compatible build system.
+
 If Linux reports that the file is not executable, run:
 
 ```bash
 chmod +x enCounter
 ./enCounter
 ```
+
+## Browser compatibility
+
+enCounter is a local browser application served by its bundled localhost server. For the best Alpha experience, use a current desktop release of **Google Chrome, Microsoft Edge, or Mozilla Firefox**. Keep the DM Console and Player Display in the **same browser profile** so IndexedDB and the local synchronization channel are shared.
+
+Private/incognito windows use separate or temporary browser storage in many browsers. Do not rely on a private/incognito session for persistent Library, encounter, or settings data. Browser storage can also be cleared by browser privacy controls, so use enCounter's export/backup features for data that matters.
 
 ## Development and builds
 
@@ -226,7 +234,9 @@ Build a clean Linux portable release on Linux (the archive name records the mach
 ./Build\ enCounter\ Linux.sh
 ```
 
-PyInstaller builds are platform-specific. Build the Windows package on Windows and the Linux package on Linux. The build scripts intentionally exclude previous backups, imports, exports, campaign images, and browser library data.
+PyInstaller builds are platform-specific. Build the Windows package on Windows and the Linux package on Linux. The official CI Linux build uses Ubuntu 22.04 x86_64 because PyInstaller Linux executables inherit the build system's glibc compatibility baseline.
+
+The build scripts intentionally exclude previous backups, imports, exports, caches, campaign images, and user-supplied media from portable releases. **Do not publish a ZIP of your working repository folder as a release package.** A development folder can contain ignored local backups, compendium cache files, and custom assets that are not meant for distribution. Use the provided build scripts (or the GitHub Actions workflow); each portable release is checked by `programs/release_audit.py` before it is archived.
 
 ### Optional GitHub Actions builds
 

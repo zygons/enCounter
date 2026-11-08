@@ -57,3 +57,16 @@ test("Backup configuration lives in DM Data & Tools instead of Settings", () => 
   assert.doesNotMatch(settingsHtml, /id="externalBackupEnabled"/);
   assert.match(settingsHtml, /Backup, restore,\s+storage, and recovery tools are managed under DM/);
 });
+
+
+test("Alpha 3 user-facing terminology does not regress to Ad Hoc or Prepared Cues", () => {
+  const html = read("programs/app/index.html");
+  const encounters = read("programs/app/js/modules/encounters.js");
+
+  assert.match(html, /\+ Quick Encounter/);
+  assert.match(html, />Sound Cues</);
+  assert.doesNotMatch(html, />Prepared Cues</);
+  assert.doesNotMatch(html, /No prepared sound cues/i);
+  assert.doesNotMatch(encounters, /Ad Hoc Encounter/);
+  assert.match(encounters, /name: "Quick Encounter"/);
+});
