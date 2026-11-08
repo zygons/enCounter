@@ -480,3 +480,66 @@ test("legacy encounter media is promoted into prepared presentation", () => {
   assert.equal(normalized.presentation.combatBackground, "/assets/backgrounds/custom/combat.png");
   assert.equal(normalized.presentation.soundscape.scene.music.asset, "/assets/sounds/music/scene.mp3");
 });
+
+test("normalizeCombatant preserves recovery and D&D death-save state", () => {
+  const combatant = ENC.normalizeCombatant({
+    id: "cleric",
+    name: "Cleric",
+    type: "player",
+    systemId: "dnd5e",
+    maxHp: 50,
+    hp: 0,
+    combatState: "active",
+    recoveryState: "downed",
+    dnd5eConditions: ["Unconscious"],
+    dnd5eDeathSaves: { successes: 2, failures: 1 },
+  });
+
+  assert.equal(combatant.recoveryState, "downed");
+  assert.equal(combatant.dnd5eDeathSaves.successes, 2);
+  assert.equal(combatant.dnd5eDeathSaves.failures, 1);
+  assert.equal(combatant.combatState, "active");
+});
+
+test("resetCombatantTransientState clears recovery and death saves", () => {
+  const reset = ENC.resetCombatantTransientState({
+    id: "cleric",
+    name: "Cleric",
+    type: "player",
+    systemId: "dnd5e",
+    maxHp: 50,
+    hp: 0,
+    recoveryState: "downed",
+    dnd5eDeathSaves: { successes: 2, failures: 2 },
+  });
+
+  assert.equal(reset.hp, 50);
+  assert.equal(reset.recoveryState, "normal");
+  assert.equal(reset.dnd5eDeathSaves.successes, 0);
+  assert.equal(reset.dnd5eDeathSaves.failures, 0);
+});
+
+test("downed and stable active combatants remain turn eligible while inactive dead combatants do not", () => {
+  const downed = ENC.normalizeCombatant({
+    id: "downed",
+    name: "Downed",
+    combatState: "active",
+    recoveryState: "downed",
+  });
+  const stable = ENC.normalizeCombatant({
+    id: "stable",
+    name: "Stable",
+    combatState: "active",
+    recoveryState: "stable",
+  });
+  const dead = ENC.normalizeCombatant({
+    id: "dead",
+    name: "Dead",
+    combatState: "inactive",
+    recoveryState: "dead",
+  });
+
+  assert.equal(ENC.isTurnEligibleCombatant(downed), true);
+  assert.equal(ENC.isTurnEligibleCombatant(stable), true);
+  assert.equal(ENC.isTurnEligibleCombatant(dead), false);
+});

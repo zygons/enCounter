@@ -38,7 +38,7 @@ test("live turn, phase, display, audio, and scene controls remain uniquely wired
   }
 });
 
-test("combatant rendering includes graphical HP, system-aware defense, and fast controls", () => {
+test("combatant rendering includes graphical HP, system-aware defense, and simplified row controls", () => {
   const js = read("programs/app/js/modules/combat.js");
   assert.match(js, /renderHpCell\(combatant\)/);
   assert.match(js, /primaryDefenseSummary\(combatant\)/);
@@ -46,9 +46,31 @@ test("combatant rendering includes graphical HP, system-aware defense, and fast 
   assert.match(js, /refDefense/);
   assert.match(js, /fortDefense/);
   assert.match(js, /willDefense/);
-  assert.match(js, /\[-10, -1, 1, 10\]/);
+  assert.match(js, /combatant-quick-actions-simplified/);
+  assert.match(js, /Set Turn/);
   assert.match(js, /conditionEditorIds/);
   assert.match(js, /expandedCombatantIds/);
+  assert.match(js, /currentTurnHpMinus10/);
+  assert.doesNotMatch(js, /for \(const delta of \[-10, -1, 1, 10\]\)/);
+});
+
+
+test("Current Turn hierarchy emphasizes active management without changing control wiring", () => {
+  const html = read("programs/app/index.html");
+  const js = read("programs/app/js/modules/combat.js");
+  const css = read("programs/app/css/workspace-layout.css");
+
+  assert.match(html, />Quick Actions</);
+  assert.match(html, /Status &amp; State/);
+  assert.match(html, /Damage ← · → Heal/);
+  assert.match(html, /class="current-turn-state-action"/);
+  assert.match(js, /label\.textContent = "Active Turn"/);
+  assert.match(js, /conditionCount/);
+  assert.match(js, /recoveryButton\.dataset\.state = state/);
+  assert.match(js, /aria-expanded/);
+  assert.match(css, /current-turn-actions-heading/);
+  assert.match(css, /current-turn-hp-actions \.hp-action\.damage/);
+  assert.match(css, /currentTurnRecoveryBtn\[data-state="downed"\]/);
 });
 
 test("Encounter console CSS provides HP state colors and responsive control rail", () => {

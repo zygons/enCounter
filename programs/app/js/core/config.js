@@ -170,6 +170,7 @@ ENC.COMBAT_STATES = new Set([
   "defeated",
   "inactive",
 ]);
+ENC.RECOVERY_STATES = new Set(["normal", "downed", "stable", "dead"]);
 ENC.CONDITION_TRACK_VALUES = new Set([
   "Normal",
   "-1",
@@ -773,6 +774,29 @@ ENC.normalizeCombatant = function (
     source.createdOrder,
     Date.now() + Math.random(),
   );
+  const recoveryState = ENC.RECOVERY_STATES.has(source.recoveryState)
+    ? source.recoveryState
+    : "normal";
+  const deathSaveSource =
+    source.dnd5eDeathSaves && typeof source.dnd5eDeathSaves === "object"
+      ? source.dnd5eDeathSaves
+      : {};
+  const dnd5eDeathSaves = {
+    successes: Math.max(
+      0,
+      Math.min(
+        3,
+        Math.trunc(ENC.finiteNumber(deathSaveSource.successes, 0)),
+      ),
+    ),
+    failures: Math.max(
+      0,
+      Math.min(
+        3,
+        Math.trunc(ENC.finiteNumber(deathSaveSource.failures, 0)),
+      ),
+    ),
+  };
   // Alpha 3 HP model: combatants need both current HP and maximum HP so
   // the live Encounter meter can represent health accurately. Older records
   // may only contain `hp`; when that happens, treat the legacy value as the
@@ -818,6 +842,9 @@ ENC.normalizeCombatant = function (
       ),
     ),
 
+    recoveryState,
+    dnd5eDeathSaves,
+
     visibleStatus: String(source.visibleStatus || ""),
     combatState,
     hidden: Boolean(source.hidden),
@@ -835,6 +862,8 @@ ENC.resetCombatantTransientState = function (combatant = {}) {
     conditionTrack: "Normal",
     dnd5eConditions: [],
     dnd5eExhaustion: 0,
+    recoveryState: "normal",
+    dnd5eDeathSaves: { successes: 0, failures: 0 },
     visibleStatus: "",
     combatState: "active",
     delayed: false,
@@ -889,6 +918,8 @@ ENC.syncCombatantDetailsFromLibrary = function (combatant = {}, libraryEntry = {
       conditionTrack: source.conditionTrack,
       dnd5eConditions: ENC.deepClone(source.dnd5eConditions),
       dnd5eExhaustion: source.dnd5eExhaustion,
+      recoveryState: source.recoveryState,
+      dnd5eDeathSaves: ENC.deepClone(source.dnd5eDeathSaves),
       visibleStatus: source.visibleStatus,
       combatState: source.combatState,
       hidden: source.hidden,

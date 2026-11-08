@@ -14,7 +14,7 @@ const read = (relative) => fs.readFileSync(path.join(root, relative), "utf8");
 test("DM Characters uses a compact table-style library with on-demand editor", () => {
   const html = read("programs/app/index.html");
   assert.match(html, /class="character-table-header"/);
-  assert.match(html, /id="libraryCards" class="library-cards character-table"/);
+  assert.match(html, /id="libraryCards"\s+class="library-cards character-table"/);
   assert.match(html, /id="libraryEditorPanel"[^>]*hidden/);
   assert.match(html, /id="newLibraryEntryBtn"/);
   assert.match(html, /id="libraryResultCount"/);

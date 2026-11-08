@@ -609,6 +609,7 @@ ENC.display = {
         id: combatant.id,
         type: combatant.type,
         combatState: combatant.combatState,
+        recoveryState: combatant.recoveryState || "normal",
         name: combatant.name,
         initiative: combatant.initiative,
         portrait: combatant.portrait || "",
@@ -635,6 +636,9 @@ ENC.display = {
         const card = document.createElement("article");
         card.className =
           `initiative-card ` + `${combatant.type} ` + `${combatant.combatState}`;
+        if (combatant.recoveryState && combatant.recoveryState !== "normal") {
+          card.classList.add(`recovery-${combatant.recoveryState}`);
+        }
         card.dataset.combatantId = combatant.id;
 
         if (
@@ -705,6 +709,16 @@ ENC.display = {
             .map((status) => status.trim())
             .filter(Boolean);
           for (const status of statuses) badges.appendChild(this.badge(status));
+        }
+
+        if (combatant.recoveryState === "downed") {
+          badges.appendChild(this.badge("DOWNED", "defeated"));
+        }
+        if (combatant.recoveryState === "stable") {
+          badges.appendChild(this.badge("STABLE", "condition"));
+        }
+        if (combatant.recoveryState === "dead") {
+          badges.appendChild(this.badge("DEAD", "defeated"));
         }
 
         if (combatant.combatState === "defeated") {

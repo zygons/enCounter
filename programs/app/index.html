@@ -28,7 +28,7 @@
 
     <link
       rel="stylesheet"
-      href="css/workspace-layout.css?v=alpha3-currentturn-6"
+      href="css/workspace-layout.css?v=alpha3-phase3-1-13-3"
     />
   </head>
 
@@ -546,11 +546,21 @@
                   class="current-turn-actions hidden"
                   aria-label="Current combatant actions"
                 >
+                  <div class="current-turn-actions-heading">
+                    <span class="current-turn-actions-title">Quick Actions</span>
+                    <span class="current-turn-actions-note">Auto-saved</span>
+                  </div>
+
                   <div
                     id="currentTurnHpActionGroup"
                     class="current-turn-action-group"
                   >
-                    <span class="current-turn-action-label">HP</span>
+                    <div class="current-turn-action-group-heading">
+                      <span class="current-turn-action-label">HP</span>
+                      <span class="current-turn-action-context">
+                        Damage ← · → Heal
+                      </span>
+                    </div>
 
                     <div
                       class="current-turn-action-buttons current-turn-hp-actions"
@@ -597,39 +607,137 @@
                     id="currentTurnStatusActionGroup"
                     class="current-turn-action-group"
                   >
-                    <span class="current-turn-action-label">STATUS</span>
+                    <div class="current-turn-action-group-heading">
+                      <span class="current-turn-action-label">Status &amp; State</span>
+                      <span class="current-turn-action-context">
+                        Conditions · Recovery · Visibility
+                      </span>
+                    </div>
 
                     <div
                       class="current-turn-action-buttons current-turn-status-actions"
                     >
-                      <button id="currentTurnConditionBtn" type="button">
+                      <button
+                        id="currentTurnConditionBtn"
+                        class="current-turn-state-action"
+                        type="button"
+                        aria-expanded="false"
+                      >
                         Conditions
                       </button>
 
                       <button
-                        id="currentTurnExhaustionBtn"
-                        class="hidden"
+                        id="currentTurnRecoveryBtn"
+                        class="current-turn-state-action"
                         type="button"
+                        aria-expanded="false"
+                      >
+                        Recovery
+                      </button>
+
+                      <button
+                        id="currentTurnExhaustionBtn"
+                        class="current-turn-state-action hidden"
+                        type="button"
+                        aria-expanded="false"
                       >
                         Exhaustion
                       </button>
 
                       <button
-                        id="currentTurnDefeatBtn"
-                        class="danger-outline"
-                        type="button"
-                      >
-                        Defeated
-                      </button>
-
-                      <button
                         id="currentTurnVisibilityBtn"
-                        class="hidden"
+                        class="current-turn-state-action hidden"
                         type="button"
                       >
                         Hide from Players
                       </button>
                     </div>
+                  </div>
+                </div>
+
+                <div
+                  id="currentTurnRecoveryPanel"
+                  class="current-turn-recovery-panel hidden"
+                  aria-label="Current combatant recovery"
+                >
+                  <div class="current-turn-recovery-heading">
+                    <span class="current-turn-action-label">RECOVERY</span>
+                    <strong id="currentTurnRecoveryState">Normal</strong>
+                  </div>
+
+                  <div
+                    id="currentTurnDeathSavePanel"
+                    class="current-turn-death-saves hidden"
+                  >
+                    <div class="current-turn-death-save-heading">
+                      <strong>Death Saves</strong>
+                      <span id="currentTurnDeathSaveSummary" class="hint">
+                        0 successes / 0 failures
+                      </span>
+                    </div>
+
+                    <div class="current-turn-death-save-track">
+                      <div>
+                        <span>Successes</span>
+                        <strong id="currentTurnDeathSuccesses">○ ○ ○</strong>
+                      </div>
+                      <div>
+                        <span>Failures</span>
+                        <strong id="currentTurnDeathFailures">○ ○ ○</strong>
+                      </div>
+                    </div>
+
+                    <div class="current-turn-death-save-actions">
+                      <button
+                        id="currentTurnRollDeathSaveBtn"
+                        class="primary"
+                        type="button"
+                      >
+                        Roll Death Save
+                      </button>
+                      <button id="currentTurnAddDeathSuccessBtn" type="button">
+                        + Success
+                      </button>
+                      <button id="currentTurnAddDeathFailureBtn" type="button">
+                        + Failure
+                      </button>
+                    </div>
+                  </div>
+
+                  <p id="currentTurnRecoveryHint" class="hint"></p>
+
+                  <div class="current-turn-recovery-actions">
+                    <button id="currentTurnMarkDownedBtn" type="button">
+                      Mark Downed
+                    </button>
+                    <button
+                      id="currentTurnStabilizeBtn"
+                      class="hidden"
+                      type="button"
+                    >
+                      Stabilize
+                    </button>
+                    <button
+                      id="currentTurnMarkDefeatedBtn"
+                      class="danger-outline"
+                      type="button"
+                    >
+                      Defeated
+                    </button>
+                    <button
+                      id="currentTurnMarkDeadBtn"
+                      class="danger-outline"
+                      type="button"
+                    >
+                      Mark Dead
+                    </button>
+                    <button
+                      id="currentTurnReturnCombatBtn"
+                      class="primary hidden"
+                      type="button"
+                    >
+                      Return to Combat
+                    </button>
                   </div>
                 </div>
 
@@ -3088,7 +3196,7 @@
 
     <!-- Core -->
 
-    <script src="js/core/config.js?v=alpha3-phase3-no-srd-artwork1"></script>
+    <script src="js/core/config.js?v=alpha3-recovery-1"></script>
     <script src="js/core/db.js?v=alpha3-phase3-compendium1"></script>
     <script src="js/core/sync.js?v=alpha3-phase3-compendium1"></script>
 
@@ -3100,7 +3208,7 @@
     <script src="js/modules/assets.js?v=alpha3-phase3-1-13-6k"></script>
     <script src="js/modules/settings.js?v=alpha3-phase3-1-13-6a"></script>
     <script src="js/modules/library.js?v=alpha3-phase3-1-14-3"></script>
-    <script src="js/modules/combat.js?v=alpha3-currentturn-1"></script>
+    <script src="js/modules/combat.js?v=alpha3-phase3-1-13-3"></script>
     <script src="js/modules/compendium.js?v=alpha3-phase3-1-14-3"></script>
     <script src="js/modules/audio.js?v=alpha3-phase3-compendium1"></script>
     <script src="js/modules/encounters.js?v=alpha3-phase3-1-14-4"></script>

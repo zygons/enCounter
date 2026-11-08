@@ -10,6 +10,7 @@ ENC.combat = {
   expandedCombatantIds: new Set(),
   conditionEditorIds: new Set(),
   currentTurnConditionEditorOpen: false,
+  currentTurnRecoveryOpen: false,
   libraryPickerType: "player",
   addCombatantSource: "library",
 
@@ -326,6 +327,297 @@ ENC.combat = {
     );
   },
 
+  getDnd5eDeathSaves(combatant) {
+    const source = combatant?.dnd5eDeathSaves || {};
+    return {
+      successes: Math.max(
+        0,
+        Math.min(3, Math.trunc(ENC.finiteNumber(source.successes, 0))),
+      ),
+      failures: Math.max(
+        0,
+        Math.min(3, Math.trunc(ENC.finiteNumber(source.failures, 0))),
+      ),
+    };
+  },
+
+  resetDnd5eDeathSaves(combatant) {
+    if (!combatant) return;
+    combatant.dnd5eDeathSaves = { successes: 0, failures: 0 };
+  },
+
+  addDnd5eUnconscious(combatant) {
+    if (!combatant || combatant.systemId !== "dnd5e") return;
+    if (!Array.isArray(combatant.dnd5eConditions)) {
+      combatant.dnd5eConditions = [];
+    }
+    if (!combatant.dnd5eConditions.includes("Unconscious")) {
+      combatant.dnd5eConditions.push("Unconscious");
+    }
+  },
+
+  removeDnd5eUnconscious(combatant) {
+    if (!combatant || !Array.isArray(combatant.dnd5eConditions)) return;
+    combatant.dnd5eConditions = combatant.dnd5eConditions.filter(
+      (condition) => condition !== "Unconscious",
+    );
+  },
+
+  recoveryLabel(combatant) {
+    const state = combatant?.recoveryState || "normal";
+    const labels = {
+      normal: "Normal",
+      downed: "Downed",
+      stable: "Stable",
+      dead: "Dead",
+    };
+    return labels[state] || "Normal";
+  },
+
+  async setRecoveryState(combatant, state) {
+    if (!combatant || !ENC.RECOVERY_STATES.has(state)) return false;
+
+    const previousState = combatant.recoveryState || "normal";
+    combatant.recoveryState = state;
+
+    if (state === "downed") {
+      combatant.combatState = "active";
+      combatant.delayed = false;
+      combatant.ready = false;
+      combatant.hp = 0;
+
+      if (previousState !== "downed") {
+        this.resetDnd5eDeathSaves(combatant);
+      }
+
+      if (combatant.systemId === "dnd5e") {
+        this.addDnd5eUnconscious(combatant);
+      }
+
+      if (combatant.systemId === "swse") {
+        combatant.conditionTrack = "Helpless";
+      }
+    } else if (state === "stable") {
+      combatant.combatState = "active";
+      combatant.delayed = false;
+      combatant.ready = false;
+      combatant.hp = 0;
+
+      if (combatant.systemId === "dnd5e") {
+        this.resetDnd5eDeathSaves(combatant);
+        this.addDnd5eUnconscious(combatant);
+      }
+    } else if (state === "dead") {
+      combatant.combatState = "inactive";
+      combatant.delayed = false;
+      combatant.ready = false;
+
+      if (combatant.systemId === "dnd5e") {
+        this.removeDnd5eUnconscious(combatant);
+      }
+
+      if (this.encounter.currentId === combatant.id) {
+        this.encounter.currentId = null;
+        this.currentTurnConditionEditorOpen = false;
+        this.currentTurnRecoveryOpen = false;
+      }
+    } else if (state === "normal") {
+      this.resetDnd5eDeathSaves(combatant);
+      this.removeDnd5eUnconscious(combatant);
+    }
+
+    await this.save(`recovery: ${state}`);
+    this.render();
+    return true;
+  },
+
+  async markCombatantDefeated(combatant) {
+    if (!combatant) return false;
+
+    combatant.combatState = "defeated";
+    combatant.delayed = false;
+    combatant.ready = false;
+    combatant.recoveryState = "normal";
+    this.resetDnd5eDeathSaves(combatant);
+    this.removeDnd5eUnconscious(combatant);
+
+    if (this.encounter.currentId === combatant.id) {
+      this.encounter.currentId = null;
+      this.currentTurnConditionEditorOpen = false;
+      this.currentTurnRecoveryOpen = false;
+    }
+
+    await this.save("state: defeated");
+    this.render();
+    return true;
+  },
+
+  async returnCombatantToCombat(combatant, takeTurn = false) {
+    if (!combatant) return false;
+
+    let currentHp = ENC.finiteNumber(combatant.hp, 0);
+    if (currentHp <= 0) {
+      const requested = prompt(
+        "HP to restore when returning to combat:",
+        "1",
+      );
+      if (requested === null) return false;
+
+      const parsed = Number(requested);
+      if (!Number.isFinite(parsed) || parsed <= 0) {
+        ENC.app.toast("Enter an HP value greater than 0.");
+        return false;
+      }
+
+      const max =
+        combatant.maxHp === ""
+          ? null
+          : ENC.finiteNumber(combatant.maxHp, null);
+      currentHp =
+        max !== null && Number.isFinite(max) ? Math.min(max, parsed) : parsed;
+      combatant.hp = currentHp;
+    }
+
+    combatant.recoveryState = "normal";
+    combatant.combatState = "active";
+    combatant.delayed = false;
+    combatant.ready = false;
+    this.resetDnd5eDeathSaves(combatant);
+    this.removeDnd5eUnconscious(combatant);
+
+    if (
+      combatant.systemId === "swse" &&
+      combatant.conditionTrack === "Helpless"
+    ) {
+      combatant.conditionTrack = "-10";
+    }
+
+    if (takeTurn) {
+      this.encounter.currentId = combatant.id;
+    }
+
+    this.currentTurnConditionEditorOpen = false;
+    this.currentTurnRecoveryOpen = false;
+
+    await this.save("combatant returned to combat");
+    this.render();
+    if (takeTurn) this.followCurrentTurn();
+    return true;
+  },
+
+  async recordDnd5eDeathSave(
+    combatant,
+    { successes = 0, failures = 0, message = "" } = {},
+  ) {
+    if (
+      !combatant ||
+      combatant.systemId !== "dnd5e" ||
+      combatant.recoveryState !== "downed"
+    ) {
+      return false;
+    }
+
+    const saves = this.getDnd5eDeathSaves(combatant);
+    saves.successes = Math.min(3, saves.successes + successes);
+    saves.failures = Math.min(3, saves.failures + failures);
+    combatant.dnd5eDeathSaves = saves;
+
+    if (saves.failures >= 3) {
+      combatant.recoveryState = "dead";
+      combatant.combatState = "inactive";
+      combatant.delayed = false;
+      combatant.ready = false;
+      this.removeDnd5eUnconscious(combatant);
+
+      if (this.encounter.currentId === combatant.id) {
+        this.encounter.currentId = null;
+        this.currentTurnConditionEditorOpen = false;
+        this.currentTurnRecoveryOpen = false;
+      }
+
+      await this.save("D&D 5E death saves failed");
+      this.render();
+      ENC.app.toast(
+        message
+          ? `${message} ${combatant.name} has died.`
+          : `${combatant.name} has died.`,
+      );
+      return true;
+    }
+
+    if (saves.successes >= 3) {
+      combatant.recoveryState = "stable";
+      this.resetDnd5eDeathSaves(combatant);
+      this.addDnd5eUnconscious(combatant);
+
+      await this.save("D&D 5E combatant stabilized");
+      this.render();
+      ENC.app.toast(
+        message
+          ? `${message} ${combatant.name} is stable.`
+          : `${combatant.name} is stable.`,
+      );
+      return true;
+    }
+
+    await this.save("D&D 5E death save");
+    this.render();
+    if (message) ENC.app.toast(message);
+    return true;
+  },
+
+  async rollDnd5eDeathSave(combatant) {
+    if (
+      !combatant ||
+      combatant.systemId !== "dnd5e" ||
+      combatant.recoveryState !== "downed"
+    ) {
+      ENC.app.toast(
+        "Death saves are only available for a downed D&D 5E combatant.",
+      );
+      return false;
+    }
+
+    const roll = Math.floor(Math.random() * 20) + 1;
+
+    if (roll === 20) {
+      combatant.hp = 1;
+      combatant.recoveryState = "normal";
+      combatant.combatState = "active";
+      combatant.delayed = false;
+      combatant.ready = false;
+      this.resetDnd5eDeathSaves(combatant);
+      this.removeDnd5eUnconscious(combatant);
+      this.currentTurnRecoveryOpen = false;
+
+      await this.save("D&D 5E natural 20 death save");
+      this.render();
+      ENC.app.toast(
+        `${combatant.name} rolled a natural 20 and regains 1 HP.`,
+      );
+      return true;
+    }
+
+    if (roll === 1) {
+      return this.recordDnd5eDeathSave(combatant, {
+        failures: 2,
+        message: `${combatant.name} rolled a natural 1 — two death-save failures.`,
+      });
+    }
+
+    if (roll >= 10) {
+      return this.recordDnd5eDeathSave(combatant, {
+        successes: 1,
+        message: `${combatant.name} rolled ${roll} — death-save success.`,
+      });
+    }
+
+    return this.recordDnd5eDeathSave(combatant, {
+      failures: 1,
+      message: `${combatant.name} rolled ${roll} — death-save failure.`,
+    });
+  },
+
   followCurrentTurn() {
     requestAnimationFrame(() => {
       const currentCard = document.querySelector(
@@ -364,6 +656,7 @@ ENC.combat = {
     this.encounter.currentId = transition.currentId;
     this.encounter.round = transition.round;
     this.currentTurnConditionEditorOpen = false;
+    this.currentTurnRecoveryOpen = false;
 
     await this.save(
       hadCurrent ? (direction > 0 ? "next turn" : "previous turn") : "turn set",
@@ -377,6 +670,7 @@ ENC.combat = {
     const parsed = Number(value);
     if (!Number.isFinite(parsed)) return false;
 
+    const previousHp = ENC.finiteNumber(combatant.hp, 0);
     const max =
       combatant.maxHp === "" ? null : ENC.finiteNumber(combatant.maxHp, null);
     let next = Math.max(0, parsed);
@@ -384,6 +678,53 @@ ENC.combat = {
 
     if (combatant.hp === next) return true;
     combatant.hp = next;
+
+    // D&D player characters automatically enter recovery at 0 HP. Other
+    // combatants stay DM-controlled so enemies/NPCs are not forced to roll
+    // death saves unless the DM explicitly marks them Downed.
+    if (
+      combatant.systemId === "dnd5e" &&
+      combatant.type === "player" &&
+      previousHp > 0 &&
+      next === 0 &&
+      combatant.recoveryState !== "dead" &&
+      combatant.combatState !== "defeated"
+    ) {
+      combatant.recoveryState = "downed";
+      combatant.combatState = "active";
+      combatant.delayed = false;
+      combatant.ready = false;
+      this.resetDnd5eDeathSaves(combatant);
+      this.addDnd5eUnconscious(combatant);
+      if (this.encounter.currentId === combatant.id) {
+        this.currentTurnRecoveryOpen = true;
+      }
+    }
+
+    // Healing a Downed or Stable combatant above 0 HP returns them to normal
+    // participation. A combatant marked Dead still requires Return to Combat.
+    if (
+      next > 0 &&
+      ["downed", "stable"].includes(combatant.recoveryState)
+    ) {
+      combatant.recoveryState = "normal";
+      combatant.combatState = "active";
+      combatant.delayed = false;
+      combatant.ready = false;
+      this.resetDnd5eDeathSaves(combatant);
+      this.removeDnd5eUnconscious(combatant);
+      if (this.encounter.currentId === combatant.id) {
+        this.currentTurnRecoveryOpen = false;
+      }
+
+      if (
+        combatant.systemId === "swse" &&
+        combatant.conditionTrack === "Helpless"
+      ) {
+        combatant.conditionTrack = "-10";
+      }
+    }
+
     await this.save();
     this.render();
     return true;
@@ -392,7 +733,26 @@ ENC.combat = {
   async changeHp(combatant, amount) {
     const current = ENC.finiteNumber(combatant.hp, 0);
     const delta = ENC.finiteNumber(amount, 0);
-    await this.setHp(combatant, current + delta);
+
+    if (
+      combatant.systemId === "dnd5e" &&
+      current <= 0 &&
+      delta < 0 &&
+      ["downed", "stable"].includes(combatant.recoveryState)
+    ) {
+      if (combatant.recoveryState === "stable") {
+        combatant.recoveryState = "downed";
+        this.addDnd5eUnconscious(combatant);
+      }
+      return this.recordDnd5eDeathSave(combatant, {
+        failures: 1,
+        message:
+          `${combatant.name} took damage at 0 HP — one death-save failure. ` +
+          "If the damage was a critical hit, add one additional failure manually.",
+      });
+    }
+
+    return this.setHp(combatant, current + delta);
   },
 
   async customHp(combatant, heal = false) {
@@ -404,22 +764,36 @@ ENC.combat = {
   },
 
   async setState(combatant, state) {
+    if (state === "defeated") {
+      return this.markCombatantDefeated(combatant);
+    }
+
     combatant.combatState = state;
     combatant.delayed = state === "delayed";
     combatant.ready = state === "ready";
     if (
-      ["defeated", "inactive", "delayed", "ready"].includes(state) &&
+      ["inactive", "delayed", "ready"].includes(state) &&
       this.encounter.currentId === combatant.id
     ) {
       this.encounter.currentId = null;
       this.currentTurnConditionEditorOpen = false;
+      this.currentTurnRecoveryOpen = false;
     }
 
     await this.save(`state: ${state}`);
     this.render();
+    return true;
   },
 
   async resumeCombatant(combatant, takeTurn = false) {
+    const requiresReturn =
+      combatant.recoveryState === "dead" ||
+      ["defeated", "inactive"].includes(combatant.combatState);
+
+    if (requiresReturn || (!takeTurn && combatant.recoveryState !== "normal")) {
+      return this.returnCombatantToCombat(combatant, takeTurn);
+    }
+
     combatant.combatState = "active";
     combatant.delayed = false;
     combatant.ready = false;
@@ -427,6 +801,7 @@ ENC.combat = {
     if (takeTurn) {
       this.encounter.currentId = combatant.id;
       this.currentTurnConditionEditorOpen = false;
+      this.currentTurnRecoveryOpen = false;
     }
 
     await this.save(
@@ -435,9 +810,8 @@ ENC.combat = {
 
     this.render();
 
-    if (takeTurn) {
-      this.followCurrentTurn();
-    }
+    if (takeTurn) this.followCurrentTurn();
+    return true;
   },
 
   statSummary(combatant) {
@@ -748,6 +1122,10 @@ ENC.combat = {
 
     add(combatant.visibleStatus, "status");
 
+    if (combatant.recoveryState && combatant.recoveryState !== "normal") {
+      add(this.recoveryLabel(combatant), `recovery-${combatant.recoveryState}`);
+    }
+
     if (combatant.combatState && combatant.combatState !== "active") {
       add(combatant.combatState, "state");
     }
@@ -946,9 +1324,7 @@ ENC.combat = {
           "Current HP",
           combatant.hp,
           async (value) => {
-            combatant.hp = value;
-            await this.save();
-            this.render();
+            await this.setHp(combatant, value);
           },
           "number",
         ),
@@ -984,16 +1360,25 @@ ENC.combat = {
         this.createActionButton("Ready", () =>
           this.setState(combatant, "ready"),
         ),
+        this.createActionButton("Mark Downed", () =>
+          this.setRecoveryState(combatant, "downed"),
+        ),
+        this.createActionButton("Mark Dead", () =>
+          this.setRecoveryState(combatant, "dead"),
+        ),
         this.createActionButton("Defeated", () =>
-          this.setState(combatant, "defeated"),
+          this.markCombatantDefeated(combatant),
         ),
         this.createActionButton("Inactive", () =>
           this.setState(combatant, "inactive"),
         ),
         this.createActionButton(
-          combatant.delayed || combatant.ready
-            ? "Trigger / Resume"
-            : "Restore Active",
+          combatant.recoveryState !== "normal" ||
+            ["defeated", "inactive"].includes(combatant.combatState)
+            ? "Return to Combat"
+            : combatant.delayed || combatant.ready
+              ? "Trigger / Resume"
+              : "Restore Active",
           () =>
             this.resumeCombatant(
               combatant,
@@ -1149,38 +1534,30 @@ ENC.combat = {
     card.appendChild(summary);
 
     const quickActions = document.createElement("div");
-    quickActions.className = "combatant-quick-actions";
+    quickActions.className = "combatant-quick-actions combatant-quick-actions-simplified";
 
+    const requiresReturn =
+      combatant.recoveryState === "dead" ||
+      ["defeated", "inactive"].includes(combatant.combatState);
     const setTurn = this.createActionButton(
-      combatant.id === this.encounter.currentId ? "Current Turn" : "Set Turn",
+      combatant.id === this.encounter.currentId
+        ? "Current Turn"
+        : requiresReturn
+          ? "Return First"
+          : "Set Turn",
       () => this.resumeCombatant(combatant, true),
       {
         className:
           combatant.id === this.encounter.currentId
             ? "combatant-action-current"
             : "combatant-action-primary",
-        disabled: combatant.id === this.encounter.currentId,
+        disabled: combatant.id === this.encounter.currentId || requiresReturn,
+        title: requiresReturn
+          ? "Use Return to Combat before assigning this combatant a turn."
+          : "",
       },
     );
     quickActions.appendChild(setTurn);
-
-    if (modules.combatControls && modules.hp) {
-      for (const delta of [-10, -1, 1, 10]) {
-        quickActions.appendChild(
-          this.createActionButton(
-            delta > 0 ? `+${delta}` : String(delta).replace("-", "−"),
-            () => this.changeHp(combatant, delta),
-            {
-              className: delta < 0 ? "hp-action damage" : "hp-action heal",
-              title:
-                delta < 0
-                  ? `Apply ${Math.abs(delta)} damage`
-                  : `Heal ${delta} HP`,
-            },
-          ),
-        );
-      }
-    }
 
     if (modules.conditions || modules.status) {
       let conditionLabel = "Status";
@@ -1213,20 +1590,15 @@ ENC.combat = {
       );
     }
 
-    if (modules.conditions && combatant.systemId === "dnd5e") {
-      const exhaustion = Number(combatant.dnd5eExhaustion) || 0;
+    if (
+      combatant.recoveryState !== "normal" ||
+      ["defeated", "inactive"].includes(combatant.combatState)
+    ) {
       quickActions.appendChild(
         this.createActionButton(
-          exhaustion ? `Exhaustion ${exhaustion}` : "Exhaustion",
-          () => {
-            this.conditionEditorIds.add(combatant.id);
-            this.render();
-          },
-          {
-            className: exhaustion
-              ? "combatant-action-toggle exhaustion"
-              : "combatant-action-toggle",
-          },
+          "Return to Combat",
+          () => this.returnCombatantToCombat(combatant, false),
+          { className: "combatant-action-primary" },
         ),
       );
     }
@@ -1273,9 +1645,31 @@ ENC.combat = {
     const exhaustionButton = document.getElementById(
       "currentTurnExhaustionBtn",
     );
-    const defeatButton = document.getElementById("currentTurnDefeatBtn");
+    const recoveryButton = document.getElementById("currentTurnRecoveryBtn");
     const visibilityButton = document.getElementById(
       "currentTurnVisibilityBtn",
+    );
+    const recoveryPanel = document.getElementById("currentTurnRecoveryPanel");
+    const recoveryState = document.getElementById("currentTurnRecoveryState");
+    const recoveryHint = document.getElementById("currentTurnRecoveryHint");
+    const deathSavePanel = document.getElementById("currentTurnDeathSavePanel");
+    const deathSaveSummary = document.getElementById(
+      "currentTurnDeathSaveSummary",
+    );
+    const deathSuccesses = document.getElementById(
+      "currentTurnDeathSuccesses",
+    );
+    const deathFailures = document.getElementById("currentTurnDeathFailures");
+    const markDownedButton = document.getElementById(
+      "currentTurnMarkDownedBtn",
+    );
+    const stabilizeButton = document.getElementById("currentTurnStabilizeBtn");
+    const markDefeatedButton = document.getElementById(
+      "currentTurnMarkDefeatedBtn",
+    );
+    const markDeadButton = document.getElementById("currentTurnMarkDeadBtn");
+    const returnCombatButton = document.getElementById(
+      "currentTurnReturnCombatBtn",
     );
     const conditionEditor = document.getElementById(
       "currentTurnConditionEditor",
@@ -1287,7 +1681,11 @@ ENC.combat = {
 
     if (!current) {
       if (label) label.textContent = "Awaiting combatant";
-      if (body) body.classList.add("is-empty");
+      if (body) {
+        body.classList.add("is-empty");
+        body.dataset.hpState = "unknown";
+        body.dataset.recoveryState = "normal";
+      }
       if (portraitHost) {
         portraitHost.innerHTML = "";
         portraitHost.textContent = "?";
@@ -1311,12 +1709,14 @@ ENC.combat = {
         conditionEditor.innerHTML = "";
         conditionEditor.classList.add("hidden");
       }
+      if (recoveryPanel) recoveryPanel.classList.add("hidden");
 
       this.currentTurnConditionEditorOpen = false;
+      this.currentTurnRecoveryOpen = false;
       return;
     }
 
-    if (label) label.textContent = current.name || "Current combatant";
+    if (label) label.textContent = "Active Turn";
     if (body) body.classList.remove("is-empty");
     if (actions) actions.classList.remove("hidden");
 
@@ -1332,10 +1732,14 @@ ENC.combat = {
       meta.textContent = `${ENC.getSystemLabel(
         current.systemId,
         current.customProfile,
-      )} // ${current.type || "combatant"}`;
+      )} · ${current.type || "combatant"}`;
     }
 
     const metrics = this.hpMetrics(current);
+    if (body) {
+      body.dataset.hpState = metrics.state;
+      body.dataset.recoveryState = current.recoveryState || "normal";
+    }
     if (hp) {
       if (metrics.current === null) hp.textContent = "—";
       else if (metrics.max !== null && metrics.max > 0)
@@ -1376,15 +1780,26 @@ ENC.combat = {
     /* Conditions / Status */
 
     if (conditionButton) {
+      const profile = ENC.getSystemProfile(
+        current.systemId,
+        current.customProfile,
+      );
       let conditionLabel = "Status";
+      let hasConditionValue = Boolean(current.visibleStatus);
 
       if (current.systemId === "dnd5e") {
-        conditionLabel = "Conditions";
-      } else if (
-        ENC.getSystemProfile(current.systemId, current.customProfile)
-          .usesConditionTrack
-      ) {
-        conditionLabel = "Condition";
+        const conditionCount = Array.isArray(current.dnd5eConditions)
+          ? current.dnd5eConditions.length
+          : 0;
+        conditionLabel = conditionCount
+          ? `Conditions ${conditionCount}`
+          : "Conditions";
+        hasConditionValue ||= conditionCount > 0;
+      } else if (profile.usesConditionTrack) {
+        const track = current.conditionTrack || "Normal";
+        conditionLabel =
+          track !== "Normal" ? `Condition ${track}` : "Condition";
+        hasConditionValue ||= track !== "Normal";
       }
 
       conditionButton.textContent = conditionLabel;
@@ -1397,6 +1812,11 @@ ENC.combat = {
       conditionButton.classList.toggle(
         "active",
         this.currentTurnConditionEditorOpen,
+      );
+      conditionButton.classList.toggle("has-value", hasConditionValue);
+      conditionButton.setAttribute(
+        "aria-expanded",
+        String(this.currentTurnConditionEditorOpen),
       );
     }
 
@@ -1411,12 +1831,104 @@ ENC.combat = {
 
       exhaustionButton.textContent =
         exhaustion > 0 ? `Exhaustion ${exhaustion}` : "Exhaustion";
+      exhaustionButton.classList.toggle("has-value", exhaustion > 0);
+      exhaustionButton.setAttribute(
+        "aria-expanded",
+        String(this.currentTurnConditionEditorOpen),
+      );
     }
 
-    /* Defeated */
+    /* Recovery */
 
-    if (defeatButton) {
-      defeatButton.classList.toggle("hidden", !modules.combatControls);
+    if (recoveryButton) {
+      recoveryButton.classList.toggle("hidden", !modules.combatControls);
+      recoveryButton.classList.toggle("active", this.currentTurnRecoveryOpen);
+
+      const state = current.recoveryState || "normal";
+      recoveryButton.textContent =
+        state === "normal" ? "Recovery" : this.recoveryLabel(current);
+      recoveryButton.dataset.state = state;
+      recoveryButton.classList.toggle("has-value", state !== "normal");
+      recoveryButton.setAttribute(
+        "aria-expanded",
+        String(this.currentTurnRecoveryOpen),
+      );
+    }
+
+    if (recoveryPanel) {
+      const state = current.recoveryState || "normal";
+      const isDnd5e = current.systemId === "dnd5e";
+      const isSwse = current.systemId === "swse";
+      const downed = state === "downed";
+      const stable = state === "stable";
+      const dead = state === "dead";
+      const defeated = current.combatState === "defeated";
+      const inactive = current.combatState === "inactive";
+
+      recoveryPanel.classList.toggle(
+        "hidden",
+        !this.currentTurnRecoveryOpen || !modules.combatControls,
+      );
+
+      if (recoveryState) recoveryState.textContent = this.recoveryLabel(current);
+
+      if (deathSavePanel) {
+        deathSavePanel.classList.toggle("hidden", !(isDnd5e && downed));
+      }
+
+      if (isDnd5e && downed) {
+        const saves = this.getDnd5eDeathSaves(current);
+        const dots = (count) =>
+          [0, 1, 2].map((index) => (index < count ? "●" : "○")).join(" ");
+
+        if (deathSaveSummary) {
+          deathSaveSummary.textContent =
+            `${saves.successes} successes / ${saves.failures} failures`;
+        }
+        if (deathSuccesses) deathSuccesses.textContent = dots(saves.successes);
+        if (deathFailures) deathFailures.textContent = dots(saves.failures);
+      }
+
+      if (recoveryHint) {
+        if (isDnd5e && downed) {
+          recoveryHint.textContent =
+            "D&D 5E: resolve death saves here or use the manual success/failure controls when rolling physical dice.";
+        } else if (isDnd5e && stable) {
+          recoveryHint.textContent =
+            "Stable at 0 HP. Healing above 0 HP or Return to Combat restores normal participation.";
+        } else if (isSwse && downed) {
+          recoveryHint.textContent =
+            "SWSE recovery is tracked manually in this phase. Downed sets the Condition Track to Helpless; Return to Combat restores HP and moves the track off Helpless.";
+        } else if (dead) {
+          recoveryHint.textContent =
+            "Marked dead. Return to Combat can be used if the combatant is later revived or restored.";
+        } else if (defeated || inactive) {
+          recoveryHint.textContent =
+            "Out of normal initiative. Use Return to Combat to restore active participation.";
+        } else {
+          recoveryHint.textContent =
+            "Use Downed for a recoverable 0 HP state, Defeated to remove a combatant from the encounter without declaring death, or Mark Dead for a lethal result.";
+        }
+      }
+
+      if (markDownedButton) {
+        markDownedButton.classList.toggle("hidden", downed || dead);
+      }
+      if (stabilizeButton) {
+        stabilizeButton.classList.toggle("hidden", !downed || isSwse);
+      }
+      if (markDefeatedButton) {
+        markDefeatedButton.classList.toggle("hidden", defeated);
+      }
+      if (markDeadButton) {
+        markDeadButton.classList.toggle("hidden", dead);
+      }
+      if (returnCombatButton) {
+        returnCombatButton.classList.toggle(
+          "hidden",
+          state === "normal" && current.combatState === "active",
+        );
+      }
     }
 
     /* Hide / Reveal */
@@ -1427,6 +1939,7 @@ ENC.combat = {
       visibilityButton.textContent = current.hidden
         ? "Reveal to Players"
         : "Hide from Players";
+      visibilityButton.classList.toggle("has-value", Boolean(current.hidden));
     }
 
     /* Current Turn condition editor */
@@ -1811,6 +2324,9 @@ ENC.combat = {
         withCurrentCombatant(() => {
           this.currentTurnConditionEditorOpen =
             !this.currentTurnConditionEditorOpen;
+          if (this.currentTurnConditionEditorOpen) {
+            this.currentTurnRecoveryOpen = false;
+          }
 
           this.render();
         });
@@ -1821,15 +2337,84 @@ ENC.combat = {
       ?.addEventListener("click", () => {
         withCurrentCombatant(() => {
           this.currentTurnConditionEditorOpen = true;
+          this.currentTurnRecoveryOpen = false;
           this.render();
         });
       });
 
     document
-      .getElementById("currentTurnDefeatBtn")
+      .getElementById("currentTurnRecoveryBtn")
+      ?.addEventListener("click", () => {
+        withCurrentCombatant(() => {
+          this.currentTurnRecoveryOpen = !this.currentTurnRecoveryOpen;
+          if (this.currentTurnRecoveryOpen) {
+            this.currentTurnConditionEditorOpen = false;
+          }
+          this.render();
+        });
+      });
+
+    document
+      .getElementById("currentTurnMarkDownedBtn")
       ?.addEventListener("click", () => {
         withCurrentCombatant((combatant) =>
-          this.setState(combatant, "defeated"),
+          this.setRecoveryState(combatant, "downed"),
+        );
+      });
+
+    document
+      .getElementById("currentTurnStabilizeBtn")
+      ?.addEventListener("click", () => {
+        withCurrentCombatant((combatant) =>
+          this.setRecoveryState(combatant, "stable"),
+        );
+      });
+
+    document
+      .getElementById("currentTurnMarkDefeatedBtn")
+      ?.addEventListener("click", () => {
+        withCurrentCombatant((combatant) =>
+          this.markCombatantDefeated(combatant),
+        );
+      });
+
+    document
+      .getElementById("currentTurnMarkDeadBtn")
+      ?.addEventListener("click", () => {
+        withCurrentCombatant((combatant) =>
+          this.setRecoveryState(combatant, "dead"),
+        );
+      });
+
+    document
+      .getElementById("currentTurnReturnCombatBtn")
+      ?.addEventListener("click", () => {
+        withCurrentCombatant((combatant) =>
+          this.returnCombatantToCombat(combatant, false),
+        );
+      });
+
+    document
+      .getElementById("currentTurnRollDeathSaveBtn")
+      ?.addEventListener("click", () => {
+        withCurrentCombatant((combatant) =>
+          this.rollDnd5eDeathSave(combatant),
+        );
+      });
+
+    document
+      .getElementById("currentTurnAddDeathSuccessBtn")
+      ?.addEventListener("click", () => {
+        withCurrentCombatant((combatant) =>
+          this.recordDnd5eDeathSave(combatant, { successes: 1 }),
+        );
+      });
+
+    document
+      .getElementById("currentTurnAddDeathFailureBtn")
+      ?.addEventListener("click", () => {
+        withCurrentCombatant((combatant) =>
+          this.recordDnd5eDeathSave(combatant, { failures: 1 }),
         );
       });
 

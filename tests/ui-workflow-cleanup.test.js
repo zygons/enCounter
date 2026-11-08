@@ -55,5 +55,5 @@ test("Backup configuration lives in DM Data & Tools instead of Settings", () => 
   assert.match(dataHtml, /id="externalBackupEnabled"/);
   assert.match(dataHtml, /Automatic external backup/);
   assert.doesNotMatch(settingsHtml, /id="externalBackupEnabled"/);
-  assert.match(settingsHtml, /Backup, restore, storage, and recovery tools are managed under DM/);
+  assert.match(settingsHtml, /Backup, restore,\s+storage, and recovery tools are managed under DM/);
 });

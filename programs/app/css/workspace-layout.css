@@ -223,34 +223,80 @@
 
 /* ---------------------------------------------------------
    CURRENT TURN — ACTIVE COMBATANT CONTROLS
+
+   Phase 3.1.13.3: establish a clear quick-action hierarchy.
+   Current Turn is the active-management surface; the roster
+   remains overview-first.
    --------------------------------------------------------- */
 
 #encounterSection .current-turn-actions {
   grid-column: 1 / -1;
 
   display: grid;
-  gap: 12px;
+  gap: 9px;
 
   width: 100%;
   min-width: 0;
 
-  margin-top: 14px;
-  padding-top: 12px;
+  margin-top: 10px;
+  padding-top: 10px;
 
-  border-top: 1px solid currentColor;
+  border-top: 1px solid var(--line, currentColor);
+}
+
+#encounterSection .current-turn-actions-heading,
+#encounterSection .current-turn-action-group-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+
+  min-width: 0;
+}
+
+#encounterSection .current-turn-actions-title,
+#encounterSection .current-turn-action-label {
+  font-size: 0.7rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+#encounterSection .current-turn-actions-title {
+  opacity: 0.88;
+}
+
+#encounterSection .current-turn-action-label {
+  opacity: 0.72;
+}
+
+#encounterSection .current-turn-actions-note,
+#encounterSection .current-turn-action-context {
+  min-width: 0;
+
+  overflow: hidden;
+
+  font-size: 0.62rem;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+
+  opacity: 0.56;
 }
 
 #encounterSection .current-turn-action-group {
   display: grid;
-  gap: 6px;
-}
+  gap: 7px;
 
-#encounterSection .current-turn-action-label {
-  font-size: 0.72rem;
-  font-weight: 700;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  opacity: 0.7;
+  min-width: 0;
+
+  padding: 8px;
+
+  border: 1px solid var(--line, currentColor);
+  border-radius: 5px;
+
+  background: rgba(0, 0, 0, 0.06);
 }
 
 #encounterSection .current-turn-action-buttons {
@@ -268,6 +314,59 @@
 
 #encounterSection .current-turn-action-buttons button {
   min-width: 0;
+  min-height: 32px;
+
+  font-weight: 700;
+}
+
+/* HP actions use persistent damage/healing cues, not hover alone. */
+
+#encounterSection .current-turn-hp-actions .hp-action.damage {
+  border-color: rgba(181, 76, 84, 0.62);
+  background: rgba(127, 45, 45, 0.12);
+}
+
+#encounterSection .current-turn-hp-actions .hp-action.heal {
+  border-color: rgba(78, 156, 105, 0.62);
+  background: rgba(31, 88, 52, 0.12);
+}
+
+/* Toggle/state buttons communicate both open panels and live values. */
+
+#encounterSection .current-turn-state-action.active {
+  border-color: var(--accent);
+  box-shadow: inset 0 -2px 0 var(--accent);
+}
+
+#encounterSection .current-turn-state-action.has-value {
+  font-weight: 800;
+}
+
+#encounterSection #currentTurnConditionBtn.has-value,
+#encounterSection #currentTurnExhaustionBtn.has-value {
+  border-color: #75649b;
+}
+
+#encounterSection #currentTurnVisibilityBtn.has-value {
+  border-color: #8c7444;
+}
+
+#encounterSection #currentTurnRecoveryBtn[data-state="downed"] {
+  border-color: #c18b32;
+  background: rgba(107, 75, 24, 0.24);
+  color: #fff0c2;
+}
+
+#encounterSection #currentTurnRecoveryBtn[data-state="stable"] {
+  border-color: #4e9c69;
+  background: rgba(31, 88, 52, 0.24);
+  color: #dcffe7;
+}
+
+#encounterSection #currentTurnRecoveryBtn[data-state="dead"] {
+  border-color: #b54c54;
+  background: rgba(106, 37, 42, 0.34);
+  color: #ffe2e4;
 }
 
 #encounterSection .current-turn-condition-editor {
@@ -276,7 +375,7 @@
   width: 100%;
   min-width: 0;
 
-  margin-top: 12px;
+  margin-top: 4px;
 
   overflow: hidden;
   box-sizing: border-box;
@@ -284,6 +383,50 @@
 
 #encounterSection .current-turn-condition-editor .combatant-inline-editor {
   margin: 0;
+}
+
+/* Theme-specific quick-action surfaces preserve each visual language. */
+
+body.theme-fantasy #encounterSection .current-turn-action-group {
+  border-color: rgba(108, 74, 33, 0.58);
+  background: rgba(88, 58, 24, 0.12);
+}
+
+body.theme-fantasy
+  #encounterSection
+  .current-turn-hp-actions
+  .hp-action.damage {
+  border-color: rgba(155, 28, 28, 0.68);
+  background: rgba(155, 28, 28, 0.12);
+}
+
+body.theme-fantasy
+  #encounterSection
+  .current-turn-hp-actions
+  .hp-action.heal {
+  border-color: rgba(7, 91, 42, 0.68);
+  background: rgba(20, 105, 53, 0.1);
+}
+
+body.theme-scifi #encounterSection .current-turn-action-group {
+  border-color: rgba(24, 233, 255, 0.26);
+  background: rgba(0, 126, 150, 0.07);
+}
+
+body.theme-scifi
+  #encounterSection
+  .current-turn-hp-actions
+  .hp-action.damage {
+  border-color: rgba(239, 94, 103, 0.58);
+  background: rgba(147, 42, 50, 0.13);
+}
+
+body.theme-scifi
+  #encounterSection
+  .current-turn-hp-actions
+  .hp-action.heal {
+  border-color: rgba(85, 220, 113, 0.58);
+  background: rgba(32, 122, 66, 0.12);
 }
 
 /* ---------------------------------------------------------
@@ -337,12 +480,119 @@
 }
 
 /* ---------------------------------------------------------
-   CURRENT TURN — DEFEATED ACTION
-
-   Strong danger treatment for readability across themes.
+   CURRENT TURN — RECOVERY / DEATH SAVES
    --------------------------------------------------------- */
 
-#encounterSection #currentTurnDefeatBtn {
+#encounterSection .current-turn-recovery-panel {
+  grid-column: 1 / -1;
+
+  display: grid;
+  gap: 12px;
+
+  width: 100%;
+  min-width: 0;
+
+  padding: 12px;
+
+  border: 1px solid var(--line);
+  border-radius: 6px;
+
+  background: rgba(0, 0, 0, 0.08);
+  box-sizing: border-box;
+}
+
+#encounterSection .current-turn-recovery-heading,
+#encounterSection .current-turn-death-save-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+#encounterSection .current-turn-recovery-heading strong {
+  font-size: 0.9rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+/* Keep recovery guidance readable on the light Fantasy parchment panel. */
+
+body.theme-fantasy #encounterSection #currentTurnRecoveryHint {
+  color: #5f452d;
+  opacity: 0.95;
+}
+
+#encounterSection .current-turn-death-saves {
+  display: grid;
+  gap: 10px;
+
+  padding-top: 10px;
+  border-top: 1px solid var(--line);
+}
+
+#encounterSection .current-turn-death-save-track {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+}
+
+#encounterSection .current-turn-death-save-track > div {
+  display: grid;
+  gap: 4px;
+
+  min-width: 0;
+  padding: 8px;
+
+  border: 1px solid var(--line);
+  border-radius: 4px;
+
+  background: rgba(0, 0, 0, 0.08);
+}
+
+#encounterSection .current-turn-death-save-track span {
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  opacity: 0.75;
+}
+
+#encounterSection #currentTurnDeathSuccesses {
+  color: #2f8f4e;
+  letter-spacing: 0.16em;
+}
+
+#encounterSection #currentTurnDeathFailures {
+  color: var(--danger);
+  letter-spacing: 0.16em;
+}
+
+#encounterSection .current-turn-death-save-actions {
+  display: grid;
+  grid-template-columns: 1.4fr 1fr 1fr;
+  gap: 6px;
+}
+
+#encounterSection .current-turn-recovery-actions {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 6px;
+}
+
+#encounterSection .current-turn-death-save-actions button,
+#encounterSection .current-turn-recovery-actions button {
+  min-width: 0;
+}
+
+#encounterSection #currentTurnRecoveryBtn.active {
+  border-color: var(--accent);
+  box-shadow: inset 0 -2px 0 var(--accent);
+}
+
+/* Strong danger treatment for lethal/removal actions. */
+
+#encounterSection #currentTurnMarkDefeatedBtn,
+#encounterSection #currentTurnMarkDeadBtn {
   color: #fff4f4 !important;
   background: #7f2d2d !important;
   border: 1px solid #d76767 !important;
@@ -354,14 +604,144 @@
     0 0 0 1px rgba(0, 0, 0, 0.15);
 }
 
-#encounterSection #currentTurnDefeatBtn:hover {
+#encounterSection #currentTurnMarkDefeatedBtn:hover,
+#encounterSection #currentTurnMarkDeadBtn:hover {
   background: #9a3535 !important;
   border-color: #ef8585 !important;
 }
 
-#encounterSection #currentTurnDefeatBtn:focus-visible {
+#encounterSection #currentTurnMarkDefeatedBtn:focus-visible,
+#encounterSection #currentTurnMarkDeadBtn:focus-visible {
   outline: 2px solid #f3b0b0;
   outline-offset: 2px;
+}
+
+/* Recovery state badges are shared by the roster and Current Turn card. */
+
+#encounterSection .combatant-status-badge.recovery-downed {
+  background: #6b4b18;
+  border-color: #c18b32;
+  color: #fff0c2;
+}
+
+#encounterSection .combatant-status-badge.recovery-stable {
+  background: #1f5834;
+  border-color: #4e9c69;
+  color: #dcffe7;
+}
+
+#encounterSection .combatant-status-badge.recovery-dead {
+  background: #6a252a;
+  border-color: #b54c54;
+  color: #ffe2e4;
+}
+
+/* ---------------------------------------------------------
+   FANTASY THEME — RECOVERY / DEATH SAVE CONTRAST
+   --------------------------------------------------------- */
+
+body.theme-fantasy #encounterSection .current-turn-recovery-panel {
+  background: rgba(88, 58, 24, 0.28);
+  border: 1px solid rgba(108, 74, 33, 0.9);
+  color: #2f1d0c;
+}
+
+body.theme-fantasy #encounterSection .current-turn-recovery-heading,
+body.theme-fantasy #encounterSection .current-turn-death-save-heading {
+  color: #2f1d0c;
+}
+
+body.theme-fantasy #encounterSection #currentTurnRecoveryState {
+  color: #2f1d0c;
+}
+
+body.theme-fantasy #encounterSection #currentTurnDeathSaveSummary {
+  color: #6a4a22;
+  opacity: 1;
+}
+
+body.theme-fantasy #encounterSection .current-turn-recovery-panel .hint {
+  color: #6a4a22;
+  opacity: 1;
+}
+
+body.theme-fantasy #encounterSection .current-turn-death-save-track > div {
+  background: rgba(120, 88, 46, 0.22);
+  border: 1px solid rgba(108, 74, 33, 0.85);
+  color: #2f1d0c;
+}
+
+body.theme-fantasy #encounterSection .current-turn-death-save-track span {
+  color: #5b3c18;
+}
+
+body.theme-fantasy #encounterSection .current-turn-death-save-track strong {
+  color: #2f1d0c;
+}
+
+body.theme-fantasy #encounterSection .current-turn-recovery-panel hr,
+body.theme-fantasy #encounterSection .current-turn-recovery-panel .divider {
+  border-color: rgba(108, 74, 33, 0.6);
+}
+
+
+/* ---------------------------------------------------------
+   FANTASY THEME — DEATH SAVE INDICATORS
+
+   Increase contrast of the success/failure markers against
+   the parchment Current Turn background.
+   --------------------------------------------------------- */
+
+body.theme-fantasy
+  #encounterSection
+  #currentTurnDeathSuccesses {
+  color: #075b2a !important;
+
+  font-size: 1.15rem;
+  font-weight: 900;
+  line-height: 1;
+
+  letter-spacing: 0.22em;
+
+  -webkit-text-stroke: 0.6px #06451f;
+
+  text-shadow:
+    0 1px 0 rgba(255, 255, 255, 0.35),
+    0 0 1px #06451f;
+}
+
+body.theme-fantasy
+  #encounterSection
+  #currentTurnDeathFailures {
+  color: #9b1c1c !important;
+
+  font-size: 1.15rem;
+  font-weight: 900;
+  line-height: 1;
+
+  letter-spacing: 0.22em;
+
+  -webkit-text-stroke: 0.6px #741313;
+
+  text-shadow:
+    0 1px 0 rgba(255, 255, 255, 0.35),
+    0 0 1px #741313;
+}
+
+body.theme-fantasy
+  #encounterSection
+  .current-turn-death-save-track
+  > div:first-child {
+  background: rgba(20, 105, 53, 0.1);
+  border-color: rgba(7, 91, 42, 0.7);
+}
+
+body.theme-fantasy
+  #encounterSection
+  .current-turn-death-save-track
+  > div:last-child {
+  background: rgba(155, 28, 28, 0.09);
+  border-color: rgba(155, 28, 28, 0.65);
 }
 
 /* ---------------------------------------------------------
@@ -497,6 +877,32 @@
       "cues"
       "scene"
       "legacy";
+  }
+
+  #encounterSection .current-turn-actions {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  #encounterSection .current-turn-actions-heading {
+    grid-column: 1 / -1;
+  }
+
+  #encounterSection .current-turn-death-save-actions {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+@media (max-width: 760px) {
+  #encounterSection .current-turn-actions {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  #encounterSection .current-turn-actions-heading {
+    grid-column: 1;
+  }
+
+  #encounterSection .current-turn-action-context {
+    display: none;
   }
 }
 
