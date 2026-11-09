@@ -60,6 +60,9 @@ test("portable build dependencies and runner baselines are pinned", () => {
   assert.match(workflow, /Smoke-test Windows portable executable/);
   assert.match(workflow, /Smoke-test Linux portable executable/);
   assert.match(workflow, /Verify downloaded release checksums/);
+  assert.match(workflow, /--notes-file "\$\{release_notes_file\}"/);
+  assert.match(workflow, /RELEASE_NOTES_\$\{GITHUB_REF_NAME#v\}\.md/);
+  assert.doesNotMatch(workflow, /--generate-notes/);
 });
 
 test("portable build scripts audit release contents before archive publication", () => {

@@ -28,7 +28,15 @@ test("release-facing version references match docs/VERSION.txt", () => {
   assert.match(read("programs/launcher.py"), new RegExp(`APP_VERSION = "${version.replaceAll(".", "\\.")}"`));
   assert.match(read("programs/app/index.html"), new RegExp(`v${version.replaceAll(".", "\\.")}`));
   assert.match(read("programs/app/display.html"), new RegExp(`v${version.replaceAll(".", "\\.")}`));
-  assert.match(read("programs/enCounter_version_info.txt"), new RegExp(version.replaceAll(".", "\\.")));
+  const windowsVersionInfo = read("programs/enCounter_version_info.txt");
+  assert.match(windowsVersionInfo, new RegExp(version.replaceAll(".", "\\.")));
+
+  const versionParts = version.match(/^(\d+)\.(\d+)\.(\d+)-alpha\.(\d+)$/);
+  assert.ok(versionParts, "release version must match MAJOR.MINOR.PATCH-alpha.N");
+  const numericVersion = versionParts.slice(1).map(Number).join(", ");
+  assert.match(windowsVersionInfo, new RegExp(`filevers=\\(${numericVersion}\\)`));
+  assert.match(windowsVersionInfo, new RegExp(`prodvers=\\(${numericVersion}\\)`));
+
   assert.match(read("docs/LEGAL.html"), new RegExp(version.replaceAll(".", "\\.")));
   assert.ok(read("README.md").includes("**Current release:** `" + version + "`"));
 });

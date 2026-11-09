@@ -410,10 +410,16 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
+          release_notes_file="docs/RELEASE_NOTES_${GITHUB_REF_NAME#v}.md"
+          if [ ! -f "${release_notes_file}" ]; then
+            echo "ERROR: Release notes file was not found: ${release_notes_file}"
+            exit 1
+          fi
+
           gh release create "${GITHUB_REF_NAME}" \
             release-assets/* \
             "docs/enCounter User Guide.pdf" \
             --verify-tag \
             --prerelease \
-            --generate-notes \
+            --notes-file "${release_notes_file}" \
             --title "enCounter ${GITHUB_REF_NAME#v}"

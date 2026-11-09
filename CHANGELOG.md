@@ -6,6 +6,61 @@ All notable changes to enCounter will be documented here.
 
 No changes recorded yet.
 
+## 0.3.0-alpha.1 - 2026-11-08
+
+### Added
+
+- New **Run / Prepare** workspace model with dedicated Characters, Compendium, Encounters, Assets, and Data & Tools preparation areas.
+- **Quick Encounter** workflow and unified Add Combatant flow for Library, Compendium, and temporary combatants.
+- D&D 5E SRD creature **Compendium** search with direct Add to Encounter and editable Save/Refresh Library workflows.
+- Separate **Reusable Encounter Templates** and **Saved Encounter States** for fresh prepared encounters versus resumable live-session progress.
+- Direct pre-game encounter setup editor for roster, Scene/Combat presentation, audio, Sound Cues, and prepared Timer configuration.
+- **Active Turn** Quick Actions for HP, Conditions, Recovery, Exhaustion, visibility, Defeated, and Return to Combat.
+- D&D 5E recovery states and integrated Death Saves for Player combatants, including Downed, Stable, Dead, Stabilize, and Return to Combat workflows.
+- Runtime Timer checkpoint recovery for application restarts.
+- Release audit tooling and packaged-executable smoke tests for Windows and Linux portable builds.
+
+### Changed
+
+- Simplified combatant rows for faster scanning; less-frequent combat actions now live in the `...` menu.
+- Player Display controls now use **Open Display**, **Show Scene**, **Show Combat**, and **Send to Standby**.
+- User-facing terminology standardized on **Quick Encounter** and **Sound Cues**.
+- Character Library moved to a compact table-style workspace with category, system, source, and search filters.
+- Library-linked combatants can refresh durable Library data while preserving live combat state.
+- Compendium-linked records use provider identity rather than creature name alone for refresh/synchronization.
+- Encounter preparation, Scene/Combat media, audio, Timer, and persistence behavior were consolidated around the new Template/State model.
+- Responsive layout, theme consistency, Active Turn hierarchy, and high-zoom behavior were polished across the DM Console.
+
+### Fixed
+
+- Improved Scene/Combat audio lifecycle handling when configured tracks fail to start or no Scene audio is configured.
+- Hardened startup handling so a compatible duplicate launch reuses the existing local server instead of competing for port 5500.
+- Strengthened asset-reference checks across the Library, Templates, Saved States, active Run encounter, and recovery snapshots before deletion.
+- Preserved recovery/death-save state through normalization, persistence, and Library synchronization where appropriate.
+- Corrected high-zoom header behavior and multiple Alpha 3 workflow/terminology regressions.
+
+### Security / Release Hardening
+
+- Local launcher remains bound to `127.0.0.1` and rejects inappropriate Host/Origin requests.
+- Added/strengthened Content Security Policy, cache control, `nosniff`, frame, Cross-Origin-Resource-Policy, and Permissions-Policy behavior.
+- Moved theme bootstrap code out of inline scripts for CSP compatibility.
+- Restricted direct Compendium browser fallback to the configured D&D 5E API origin.
+- Pinned PyInstaller build dependencies and Windows/Linux CI baselines.
+- Portable builds now run `programs/release_audit.py` before archive publication and generate SHA-256 checksums.
+
+### Verification
+
+- Automated regression suite: **145 tests passed, 0 failed**.
+- Local Windows portable build, release audit, executable launch, and clean-shutdown verification completed.
+- Native Linux build/release-audit/smoke verification is performed by the Ubuntu GitHub Actions job; manual Linux desktop testing remains deferred.
+
+### Notes
+
+- This is the first release in the Alpha 3 line.
+- Remote Compendium creature artwork is intentionally not imported; DMs can assign their own local portraits.
+- Detailed SWSE unconscious/recovery-check automation remains deferred; Alpha 3 provides manual recovery-state support.
+- Export important data before upgrading between Alpha builds.
+
 ## 0.2.0-alpha.2 - 2026-10-01
 
 ### Added

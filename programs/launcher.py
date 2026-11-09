@@ -23,7 +23,7 @@ from pathlib import Path
 
 PORT = int(os.environ.get("ENCOUNTER_PORT", "5500"))
 APP_NAME = "enCounter"
-APP_VERSION = "0.2.0-alpha.2"
+APP_VERSION = "0.3.0-alpha.1"
 APP_STAGE = "Alpha"
 COMPENDIUM_PROXY_VERSION = "3.1.12.4"
 
