@@ -16,16 +16,19 @@ permissions:
 
 jobs:
   # ============================================================
-  # Run automated JavaScript tests
+  # Run automated and local-server hardening tests
   # ============================================================
 
   test:
-    name: Run core tests
-    runs-on: ubuntu-latest
+    name: Run core and launcher tests
+    runs-on: ubuntu-22.04
+    timeout-minutes: 15
 
     steps:
       - name: Checkout repository
         uses: actions/checkout@v7
+        with:
+          persist-credentials: false
 
       - name: Set up Node.js
         uses: actions/setup-node@v7
@@ -33,59 +36,186 @@ jobs:
           node-version: "24"
           package-manager-cache: false
 
-      - name: Run core JavaScript tests
+      - name: Set up Python
+        uses: actions/setup-python@v7
+        with:
+          python-version: "3.12"
+
+      - name: Run JavaScript regression suite
         run: node --test tests/*.test.js
+
+      - name: Check Python and shell syntax
+        run: |
+          python3 -m py_compile programs/launcher.py programs/release_audit.py
+          bash -n "Build enCounter Linux.sh" "Start enCounter.sh"
+
+      - name: Smoke-test hardened local source server
+        shell: bash
+        run: |
+          set -euo pipefail
+          export ENCOUNTER_PORT=5510
+          export ENCOUNTER_NO_BROWSER=1
+
+          python3 programs/launcher.py > /tmp/encounter-source-smoke.log 2>&1 &
+          server_pid=$!
+
+          cleanup() {
+            kill "${server_pid}" 2>/dev/null || true
+          }
+          trap cleanup EXIT
+
+          for attempt in {1..30}; do
+            if curl --fail --silent --show-error \
+              "http://127.0.0.1:${ENCOUNTER_PORT}/api/compendium/dnd5e/status" \
+              >/tmp/encounter-status.json; then
+              break
+            fi
+            sleep 0.2
+          done
+
+          python3 - <<'PY'
+          import json
+          from pathlib import Path
+
+          payload = json.loads(Path('/tmp/encounter-status.json').read_text())
+          assert payload['ok'] is True
+          assert payload['proxyVersion'] == '3.1.12.4'
+          PY
+
+          curl --fail --silent --show-error --head \
+            "http://127.0.0.1:${ENCOUNTER_PORT}/programs/app/index.html" \
+            >/tmp/encounter-headers.txt
+
+          grep -qi '^Cache-Control: no-store' /tmp/encounter-headers.txt
+          grep -qi '^Content-Security-Policy:' /tmp/encounter-headers.txt
+          grep -qi '^Cross-Origin-Resource-Policy: same-origin' /tmp/encounter-headers.txt
+          grep -qi '^Permissions-Policy:' /tmp/encounter-headers.txt
+
+          if grep -qi '^Server: .*Python/' /tmp/encounter-headers.txt; then
+            echo "ERROR: Python runtime version leaked in HTTP Server header."
+            exit 1
+          fi
+
+          bad_host_status="$(curl --silent --output /dev/null --write-out '%{http_code}' \
+            -H 'Host: example.invalid' \
+            "http://127.0.0.1:${ENCOUNTER_PORT}/programs/app/index.html")"
+          test "${bad_host_status}" = "403"
+
+          data_status="$(curl --silent --output /dev/null --write-out '%{http_code}' \
+            "http://127.0.0.1:${ENCOUNTER_PORT}/data/backups/backup-latest.json")"
+          test "${data_status}" = "404"
+
+          source_status="$(curl --silent --output /dev/null --write-out '%{http_code}' \
+            "http://127.0.0.1:${ENCOUNTER_PORT}/programs/launcher.py")"
+          test "${source_status}" = "404"
+
+          curl --fail --silent --show-error \
+            -X POST \
+            -H 'Content-Type: application/json' \
+            --data '{}' \
+            "http://127.0.0.1:${ENCOUNTER_PORT}/api/shutdown" \
+            >/dev/null
+
+          wait "${server_pid}"
+          trap - EXIT
 
   # ============================================================
   # Build Windows portable package
-  #
-  # Runs for:
-  #   - manual workflow runs
-  #   - version tags
-  #
-  # Does NOT run for pull requests.
   # ============================================================
 
   windows:
     name: Build Windows portable
     needs: test
-
     if: github.event_name != 'pull_request'
-
-    runs-on: windows-latest
+    runs-on: windows-2022
+    timeout-minutes: 25
 
     steps:
       - name: Checkout repository
         uses: actions/checkout@v7
+        with:
+          persist-credentials: false
 
       - name: Set up Python
         uses: actions/setup-python@v7
         with:
           python-version: "3.12"
 
-      - name: Install build dependencies
+      - name: Install pinned build dependencies
         run: python -m pip install -r requirements-build.txt
 
       - name: Build Windows package
         shell: cmd
         run: call "Build enCounter Windows.bat" < NUL
 
-      - name: Verify Windows release files
+      - name: Verify Windows archive, checksum, and release contents
         shell: powershell
         run: |
-          Write-Host "Windows release files:"
-          Get-ChildItem release -Recurse
+          $ErrorActionPreference = "Stop"
 
-          $zip = Get-ChildItem release -Filter "*Windows-Portable.zip"
-          if (-not $zip) {
-            Write-Error "Windows portable ZIP was not created."
-            exit 1
+          $releaseDir = Get-ChildItem release -Directory -Filter "*Windows-Portable" | Select-Object -First 1
+          $zip = Get-ChildItem release -File -Filter "*Windows-Portable.zip" | Select-Object -First 1
+          $sha = Get-ChildItem release -File -Filter "*Windows-Portable.sha256.txt" | Select-Object -First 1
+
+          if (-not $releaseDir -or -not $zip -or -not $sha) {
+            throw "Windows portable release folder, ZIP, or checksum was not created."
           }
 
-          $sha = Get-ChildItem release -Filter "*Windows-Portable.sha256.txt"
-          if (-not $sha) {
-            Write-Error "Windows SHA-256 file was not created."
-            exit 1
+          python programs/release_audit.py $releaseDir.FullName --platform windows
+
+          $expected = ((Get-Content $sha.FullName -Raw).Trim() -split '\s+')[0].ToLower()
+          $actual = (Get-FileHash -Algorithm SHA256 $zip.FullName).Hash.ToLower()
+          if ($expected -ne $actual) {
+            throw "Windows ZIP checksum mismatch. Expected $expected; got $actual."
+          }
+
+      - name: Smoke-test Windows portable executable
+        shell: powershell
+        run: |
+          $ErrorActionPreference = "Stop"
+          $releaseDir = Get-ChildItem release -Directory -Filter "*Windows-Portable" | Select-Object -First 1
+          $exe = Join-Path $releaseDir.FullName "enCounter.exe"
+
+          $env:ENCOUNTER_PORT = "5511"
+          $env:ENCOUNTER_NO_BROWSER = "1"
+
+          $server = Start-Process -FilePath $exe -WorkingDirectory $releaseDir.FullName -PassThru
+          try {
+            $status = $null
+            for ($i = 0; $i -lt 30; $i++) {
+              try {
+                $status = Invoke-RestMethod -Uri "http://127.0.0.1:5511/api/compendium/dnd5e/status" -TimeoutSec 1
+                break
+              } catch {
+                Start-Sleep -Milliseconds 250
+              }
+            }
+
+            if (-not $status -or $status.proxyVersion -ne "3.1.12.4") {
+              throw "Packaged Windows server did not report the expected proxy version."
+            }
+
+            # A duplicate launch should reuse the current server and exit cleanly.
+            $duplicate = Start-Process -FilePath $exe -WorkingDirectory $releaseDir.FullName -PassThru
+            if (-not $duplicate.WaitForExit(5000)) {
+              Stop-Process -Id $duplicate.Id -Force -ErrorAction SilentlyContinue
+              throw "Duplicate Windows launch did not exit after detecting the running server."
+            }
+            if ($duplicate.ExitCode -ne 0) {
+              throw "Duplicate Windows launch exited with code $($duplicate.ExitCode)."
+            }
+
+            Invoke-RestMethod -Uri "http://127.0.0.1:5511/api/shutdown" -Method Post -ContentType "application/json" -Body "{}" -TimeoutSec 3 | Out-Null
+            if (-not $server.WaitForExit(10000)) {
+              throw "Packaged Windows server did not shut down cleanly."
+            }
+            if ($server.ExitCode -ne 0) {
+              throw "Packaged Windows server exited with code $($server.ExitCode)."
+            }
+          } finally {
+            if (-not $server.HasExited) {
+              Stop-Process -Id $server.Id -Force -ErrorAction SilentlyContinue
+            }
           }
 
       - name: Upload Windows portable package
@@ -101,31 +231,30 @@ jobs:
   # ============================================================
   # Build Linux portable package
   #
-  # Runs for:
-  #   - manual workflow runs
-  #   - version tags
-  #
-  # Does NOT run for pull requests.
+  # Ubuntu 22.04 is intentional. PyInstaller Linux executables
+  # depend on the build system's glibc baseline; using an older
+  # supported runner improves compatibility with newer distros.
   # ============================================================
 
   linux:
     name: Build Linux portable
     needs: test
-
     if: github.event_name != 'pull_request'
-
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-22.04
+    timeout-minutes: 25
 
     steps:
       - name: Checkout repository
         uses: actions/checkout@v7
+        with:
+          persist-credentials: false
 
       - name: Set up Python
         uses: actions/setup-python@v7
         with:
           python-version: "3.12"
 
-      - name: Install build dependencies
+      - name: Install pinned build dependencies
         run: python3 -m pip install -r requirements-build.txt
 
       - name: Build Linux package
@@ -133,20 +262,72 @@ jobs:
           chmod +x "Build enCounter Linux.sh"
           ./Build\ enCounter\ Linux.sh
 
-      - name: Verify Linux release files
+      - name: Verify Linux archive, checksum, and release contents
+        shell: bash
         run: |
-          echo "Linux release files:"
-          find release -maxdepth 2 -type f -print
+          set -euo pipefail
+          release_dir="$(find release -maxdepth 1 -type d -name '*Linux-*' | head -n 1)"
+          archive="$(find release -maxdepth 1 -type f -name '*Linux-*.tar.gz' | head -n 1)"
+          checksum="$(find release -maxdepth 1 -type f -name '*Linux-*.sha256.txt' | head -n 1)"
 
-          if ! compgen -G "release/*Linux-*.tar.gz" > /dev/null; then
-            echo "ERROR: Linux tar.gz package was not created."
-            exit 1
-          fi
+          test -n "${release_dir}" && test -d "${release_dir}"
+          test -n "${archive}" && test -f "${archive}"
+          test -n "${checksum}" && test -f "${checksum}"
 
-          if ! compgen -G "release/*Linux-*.sha256.txt" > /dev/null; then
-            echo "ERROR: Linux SHA-256 file was not created."
-            exit 1
-          fi
+          python3 programs/release_audit.py "${release_dir}" --platform linux
+          (cd release && sha256sum -c "$(basename "${checksum}")")
+
+          echo "Linux build baseline:"
+          ldd --version | head -n 1
+
+      - name: Smoke-test Linux portable executable
+        shell: bash
+        run: |
+          set -euo pipefail
+          release_dir="$(find release -maxdepth 1 -type d -name '*Linux-*' | head -n 1)"
+          exe="${release_dir}/enCounter"
+
+          export ENCOUNTER_PORT=5512
+          export ENCOUNTER_NO_BROWSER=1
+
+          "${exe}" > /tmp/encounter-linux-smoke.log 2>&1 &
+          server_pid=$!
+
+          cleanup() {
+            kill "${server_pid}" 2>/dev/null || true
+          }
+          trap cleanup EXIT
+
+          for attempt in {1..30}; do
+            if curl --fail --silent --show-error \
+              "http://127.0.0.1:${ENCOUNTER_PORT}/api/compendium/dnd5e/status" \
+              >/tmp/encounter-linux-status.json; then
+              break
+            fi
+            sleep 0.25
+          done
+
+          python3 - <<'PY'
+          import json
+          from pathlib import Path
+
+          payload = json.loads(Path('/tmp/encounter-linux-status.json').read_text())
+          assert payload['ok'] is True
+          assert payload['proxyVersion'] == '3.1.12.4'
+          PY
+
+          # Duplicate launch should reuse the running portable server and exit 0.
+          "${exe}"
+
+          curl --fail --silent --show-error \
+            -X POST \
+            -H 'Content-Type: application/json' \
+            --data '{}' \
+            "http://127.0.0.1:${ENCOUNTER_PORT}/api/shutdown" \
+            >/dev/null
+
+          wait "${server_pid}"
+          trap - EXIT
 
       - name: Upload Linux portable package
         uses: actions/upload-artifact@v7
@@ -160,26 +341,17 @@ jobs:
 
   # ============================================================
   # Publish GitHub Release
-  #
-  # Runs ONLY when a version tag beginning with "v" is pushed.
-  #
-  # Example:
-  #
-  #   v0.2.0-alpha.2
-  #
   # ============================================================
 
   release:
     name: Publish GitHub Release
-
     if: startsWith(github.ref, 'refs/tags/v')
-
     needs:
       - test
       - windows
       - linux
-
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-22.04
+    timeout-minutes: 15
 
     permissions:
       contents: write
@@ -187,6 +359,8 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v7
+        with:
+          persist-credentials: false
 
       - name: Download Windows and Linux packages
         uses: actions/download-artifact@v8
@@ -194,23 +368,41 @@ jobs:
           path: release-assets
           merge-multiple: true
 
+      - name: Verify downloaded release checksums
+        run: |
+          python3 - <<'PY'
+          import hashlib
+          from pathlib import Path
+
+          root = Path('release-assets')
+          checksum_files = sorted(root.glob('*.sha256.txt'))
+          if len(checksum_files) < 2:
+              raise SystemExit('Expected Windows and Linux checksum files.')
+
+          for checksum_path in checksum_files:
+              line = checksum_path.read_text(encoding='ascii').strip().replace('\r', '')
+              expected, filename = line.split(None, 1)
+              filename = filename.strip().lstrip('*')
+              target = root / filename
+              if not target.is_file():
+                  raise SystemExit(f'Missing release asset referenced by {checksum_path.name}: {filename}')
+              actual = hashlib.sha256(target.read_bytes()).hexdigest()
+              if actual.lower() != expected.lower():
+                  raise SystemExit(f'Checksum mismatch for {filename}')
+              print(f'Checksum OK: {filename}')
+          PY
+
       - name: Verify User Guide
         run: |
-          echo "Checking for User Guide..."
-
           if [ ! -f "docs/enCounter User Guide.pdf" ]; then
             echo "ERROR: docs/enCounter User Guide.pdf was not found."
             exit 1
           fi
 
-          echo "User Guide found:"
-          ls -lh "docs/enCounter User Guide.pdf"
-
       - name: Display release assets
         run: |
           echo "Release assets:"
           find release-assets -maxdepth 2 -type f -print
-
           echo "Documentation:"
           find docs -maxdepth 1 -type f -print
 
@@ -218,10 +410,16 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
+          release_notes_file="docs/RELEASE_NOTES_${GITHUB_REF_NAME#v}.md"
+          if [ ! -f "${release_notes_file}" ]; then
+            echo "ERROR: Release notes file was not found: ${release_notes_file}"
+            exit 1
+          fi
+
           gh release create "${GITHUB_REF_NAME}" \
             release-assets/* \
             "docs/enCounter User Guide.pdf" \
             --verify-tag \
             --prerelease \
-            --generate-notes \
+            --notes-file "${release_notes_file}" \
             --title "enCounter ${GITHUB_REF_NAME#v}"

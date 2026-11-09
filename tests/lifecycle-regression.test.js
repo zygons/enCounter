@@ -188,7 +188,7 @@ test("loading saved material stops old encounter audio and returns Player Displa
   assert.match(encounters, /ENC\.app\.broadcastDisplayState\?\.\(\)/);
 });
 
-test("Start Ad Hoc and New Build clear runtime audio, timer checkpoint, and Player Display presentation", () => {
+test("Quick Encounter and New Build clear runtime audio, timer checkpoint, and Player Display presentation", () => {
   const combat = read("programs/app/js/modules/combat.js");
   const encounters = read("programs/app/js/modules/encounters.js");
 

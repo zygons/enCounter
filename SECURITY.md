@@ -67,6 +67,8 @@ enCounter is local-first software. The current launcher binds its local HTTP ser
 
 The local HTTP layer is intended to expose only the application, public notices, and supported asset files needed by enCounter. Runtime backup data and development/build files should not be browser-accessible.
 
+The current launcher also applies same-origin and content-security response headers, rejects untrusted Host/Origin values for local API access, and keeps runtime data outside the browser-served path. Portable build scripts run a release audit to reject packages that accidentally contain runtime `data/` content or user-supplied assets.
+
 Security reports are welcome for issues involving:
 
 - unintended network exposure

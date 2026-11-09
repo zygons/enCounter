@@ -39,6 +39,23 @@ if ! python3 -m PyInstaller --version >/dev/null 2>&1; then
   exit 1
 fi
 
+for required in \
+  programs/launcher.py \
+  programs/release_audit.py \
+  programs/app/index.html \
+  programs/app/display.html \
+  programs/app/js/theme-bootstrap.js \
+  "docs/enCounter User Guide.pdf" \
+  CHANGELOG.md \
+  README.md \
+  PRIVACY.md \
+  THIRD_PARTY_NOTICES.md; do
+  if [[ ! -f "${required}" ]]; then
+    echo "ERROR: Required release file was not found: ${required}"
+    exit 1
+  fi
+done
+
 rm -rf build dist "${RELEASE_DIR}" "${RELEASE_TAR}" "${RELEASE_SHA}"
 mkdir -p "${RELEASE_ROOT}"
 
@@ -94,7 +111,7 @@ mkdir -p \
 
 [[ -d docs ]] && cp -a docs "${RELEASE_DIR}/docs"
 [[ -f "docs/enCounter User Guide.pdf" ]] && cp "docs/enCounter User Guide.pdf" "${RELEASE_DIR}/enCounter User Guide.pdf"
-cp LICENSE README.md AI_ASSISTANCE.md PRIVACY.md THIRD_PARTY_NOTICES.md "${RELEASE_DIR}/"
+cp LICENSE README.md CHANGELOG.md AI_ASSISTANCE.md PRIVACY.md THIRD_PARTY_NOTICES.md "${RELEASE_DIR}/"
 
 # Defensive cleanup: no prior user data may ship.
 find "${RELEASE_DIR}/data/backups" -mindepth 1 -delete
@@ -104,6 +121,9 @@ find "${RELEASE_DIR}/data/cache/compendium" -mindepth 1 -delete
 rm -f "${RELEASE_DIR}/data/enCounter-startup-error.log"
 
 chmod +x "${RELEASE_DIR}/enCounter"
+
+echo "Auditing portable release contents..."
+python3 programs/release_audit.py "${RELEASE_DIR}" --platform linux
 
 echo "Creating tar.gz package..."
 tar -C "${RELEASE_ROOT}" -czf "${RELEASE_TAR}" "${RELEASE_NAME}"

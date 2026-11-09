@@ -29,16 +29,7 @@
   </head>
 
   <body class="player-body">
-    <script>
-      (() => {
-        const theme = localStorage.getItem("encounter-ui-theme") || "scifi";
-        const normalized = ["original", "scifi", "fantasy"].includes(theme)
-          ? theme
-          : "scifi";
-        document.body.classList.add(`theme-${normalized}`);
-        document.body.dataset.uiTheme = normalized;
-      })();
-    </script>
+    <script src="js/theme-bootstrap.js?v=alpha3-hardening-1"></script>
     <!-- =========================================
          ENCOUNTER BACKGROUND
          ========================================= -->
@@ -156,7 +147,7 @@
             <span id="displaySystem" class="system-pill"> Generic TTRPG </span>
 
             <span id="playerAppVersion" class="player-app-version">
-              ALPHA · v0.2.0-alpha.2
+              ALPHA · v0.3.0-alpha.1
             </span>
 
             <span
@@ -251,7 +242,7 @@
 
     <!-- Shared configuration / system profiles -->
 
-    <script src="js/core/config.js?v=alpha3-phase3-1-13-6a"></script>
+    <script src="js/core/config.js?v=alpha3-recovery-1"></script>
 
     <!-- IndexedDB access -->
 
@@ -271,6 +262,6 @@
 
     <!-- Player Display Controller -->
 
-    <script src="js/display.js?v=alpha3-phase3-1-13-6j"></script>
+    <script src="js/display.js?v=alpha3-recovery-1"></script>
   </body>
 </html>

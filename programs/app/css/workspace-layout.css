@@ -1,0 +1,1116 @@
+/* =========================================================
+   enCounter Alpha 3
+   Phase 3.1.13 — Run Workspace Layout
+   ========================================================= */
+
+/* ---------------------------------------------------------
+   RUN WORKSPACE
+   Command bar
+   Combatants + Current Turn
+   Live Encounter Controls
+   --------------------------------------------------------- */
+
+#encounterSection .encounter-console-layout {
+  display: grid;
+
+  grid-template-columns:
+    minmax(0, 1fr)
+    minmax(300px, 360px);
+
+  grid-template-areas:
+    "command command"
+    "roster focus"
+    "controls controls";
+
+  gap: 16px;
+
+  align-items: start;
+
+  width: 100%;
+  min-width: 0;
+}
+
+/*
+  Allow the command strip and roster inside
+  encounter-console-main to participate directly
+  in the parent workspace grid.
+*/
+
+#encounterSection .encounter-console-main {
+  display: contents;
+}
+
+/* ---------------------------------------------------------
+   COMMAND STRIP
+   --------------------------------------------------------- */
+
+#encounterSection .encounter-command-strip {
+  grid-area: command;
+
+  width: 100%;
+  min-width: 0;
+
+  margin: 0;
+}
+
+/* ---------------------------------------------------------
+   COMBATANT / INITIATIVE WORKSPACE
+   --------------------------------------------------------- */
+
+#encounterSection .encounter-roster-panel {
+  grid-area: roster;
+
+  min-width: 0;
+  width: 100%;
+
+  margin: 0;
+}
+
+/* ---------------------------------------------------------
+   CURRENT TURN
+   --------------------------------------------------------- */
+
+#encounterSection .encounter-focus-column {
+  grid-area: focus;
+
+  min-width: 0;
+  width: 100%;
+
+  position: static !important;
+  top: auto !important;
+  z-index: auto !important;
+
+  align-self: start;
+}
+
+#encounterSection .current-turn-focus-panel {
+  width: 100%;
+  margin: 0;
+
+  position: relative;
+  top: auto;
+
+  height: auto;
+  max-height: none;
+
+  z-index: auto;
+}
+
+/* ---------------------------------------------------------
+   LIVE ENCOUNTER CONTROLS
+
+   Phase | Player Display | Timer | Audio
+   --------------------------------------------------------- */
+
+#encounterSection .encounter-control-rail {
+  grid-area: controls;
+
+  display: grid;
+
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+
+  grid-template-areas:
+    "phase display timer audio"
+    "cues  cues    timer scene"
+    "legacy legacy legacy legacy";
+
+  gap: 12px;
+
+  width: 100%;
+  min-width: 0;
+
+  position: static !important;
+  top: auto !important;
+
+  height: auto;
+  max-height: none;
+
+  overflow: visible;
+
+  margin: 0;
+  padding: 0;
+
+  align-items: start;
+}
+
+/* ---------------------------------------------------------
+   LIVE ENCOUNTER CONTROL PLACEMENT
+   --------------------------------------------------------- */
+
+#encounterSection .encounter-control-rail > .encounter-rail-panel:nth-child(1) {
+  grid-area: phase;
+}
+
+#encounterSection .encounter-display-panel {
+  grid-area: display;
+}
+
+#encounterSection .encounter-timer-panel {
+  grid-area: timer;
+}
+
+#encounterSection .encounter-control-rail > .encounter-rail-panel:nth-child(4) {
+  grid-area: audio;
+}
+
+#encounterSection .encounter-cue-panel {
+  grid-area: cues;
+}
+
+#encounterSection .encounter-control-rail > details:first-of-type {
+  grid-area: scene;
+}
+
+#encounterSection .encounter-control-rail > details:last-of-type {
+  grid-area: legacy;
+}
+
+/* ---------------------------------------------------------
+   CONTROL PANEL SIZING
+   --------------------------------------------------------- */
+
+/*
+  Prevent old rail sizing from forcing narrow cards.
+*/
+
+#encounterSection .encounter-control-rail > * {
+  min-width: 0;
+  width: auto;
+  margin: 0;
+}
+
+#encounterSection .encounter-rail-panel {
+  box-sizing: border-box;
+}
+
+/* Keep control headings compact. */
+
+#encounterSection .rail-section-heading {
+  margin-bottom: 12px;
+}
+
+/* ---------------------------------------------------------
+   TIMER CONTROLS
+   --------------------------------------------------------- */
+
+#encounterSection .rail-timer-actions {
+  display: grid;
+
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+
+  gap: 8px;
+}
+
+#encounterSection .rail-timer-adjust-grid {
+  display: grid;
+
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+
+  gap: 6px;
+}
+
+/* ---------------------------------------------------------
+   PLAYER DISPLAY BUTTONS
+   --------------------------------------------------------- */
+
+#encounterSection .rail-display-actions {
+  display: grid;
+
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+
+  gap: 8px;
+}
+
+/* ---------------------------------------------------------
+   CURRENT TURN — ACTIVE COMBATANT CONTROLS
+
+   Phase 3.1.13.3: establish a clear quick-action hierarchy.
+   Current Turn is the active-management surface; the roster
+   remains overview-first.
+   --------------------------------------------------------- */
+
+#encounterSection .current-turn-actions {
+  grid-column: 1 / -1;
+
+  display: grid;
+  gap: 9px;
+
+  width: 100%;
+  min-width: 0;
+
+  margin-top: 10px;
+  padding-top: 10px;
+
+  border-top: 1px solid var(--line, currentColor);
+}
+
+#encounterSection .current-turn-actions-heading,
+#encounterSection .current-turn-action-group-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+
+  min-width: 0;
+}
+
+#encounterSection .current-turn-actions-title,
+#encounterSection .current-turn-action-label {
+  font-size: 0.7rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+#encounterSection .current-turn-actions-title {
+  opacity: 0.88;
+}
+
+#encounterSection .current-turn-action-label {
+  opacity: 0.72;
+}
+
+#encounterSection .current-turn-actions-note,
+#encounterSection .current-turn-action-context {
+  min-width: 0;
+
+  overflow: hidden;
+
+  font-size: 0.62rem;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+
+  opacity: 0.56;
+}
+
+#encounterSection .current-turn-action-group {
+  display: grid;
+  gap: 7px;
+
+  min-width: 0;
+
+  padding: 8px;
+
+  border: 1px solid var(--line, currentColor);
+  border-radius: 5px;
+
+  background: rgba(0, 0, 0, 0.06);
+}
+
+#encounterSection .current-turn-action-buttons {
+  display: grid;
+  gap: 6px;
+}
+
+#encounterSection .current-turn-hp-actions {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
+#encounterSection .current-turn-status-actions {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+#encounterSection .current-turn-action-buttons button {
+  min-width: 0;
+  min-height: 32px;
+
+  font-weight: 700;
+}
+
+/* HP actions use persistent damage/healing cues, not hover alone. */
+
+#encounterSection .current-turn-hp-actions .hp-action.damage {
+  border-color: rgba(181, 76, 84, 0.62);
+  background: rgba(127, 45, 45, 0.12);
+}
+
+#encounterSection .current-turn-hp-actions .hp-action.heal {
+  border-color: rgba(78, 156, 105, 0.62);
+  background: rgba(31, 88, 52, 0.12);
+}
+
+/* Toggle/state buttons communicate both open panels and live values. */
+
+#encounterSection .current-turn-state-action.active {
+  border-color: var(--accent);
+  box-shadow: inset 0 -2px 0 var(--accent);
+}
+
+#encounterSection .current-turn-state-action.has-value {
+  font-weight: 800;
+}
+
+#encounterSection #currentTurnConditionBtn.has-value,
+#encounterSection #currentTurnExhaustionBtn.has-value {
+  border-color: #75649b;
+}
+
+#encounterSection #currentTurnVisibilityBtn.has-value {
+  border-color: #8c7444;
+}
+
+#encounterSection #currentTurnRecoveryBtn[data-state="downed"] {
+  border-color: #c18b32;
+  background: rgba(107, 75, 24, 0.24);
+  color: #fff0c2;
+}
+
+#encounterSection #currentTurnRecoveryBtn[data-state="stable"] {
+  border-color: #4e9c69;
+  background: rgba(31, 88, 52, 0.24);
+  color: #dcffe7;
+}
+
+#encounterSection #currentTurnRecoveryBtn[data-state="dead"] {
+  border-color: #b54c54;
+  background: rgba(106, 37, 42, 0.34);
+  color: #ffe2e4;
+}
+
+#encounterSection .current-turn-condition-editor {
+  grid-column: 1 / -1;
+
+  width: 100%;
+  min-width: 0;
+
+  margin-top: 4px;
+
+  overflow: hidden;
+  box-sizing: border-box;
+}
+
+#encounterSection .current-turn-condition-editor .combatant-inline-editor {
+  margin: 0;
+}
+
+/* Theme-specific quick-action surfaces preserve each visual language. */
+
+body.theme-fantasy #encounterSection .current-turn-action-group {
+  border-color: rgba(108, 74, 33, 0.58);
+  background: rgba(88, 58, 24, 0.12);
+}
+
+body.theme-fantasy
+  #encounterSection
+  .current-turn-hp-actions
+  .hp-action.damage {
+  border-color: rgba(155, 28, 28, 0.68);
+  background: rgba(155, 28, 28, 0.12);
+}
+
+body.theme-fantasy
+  #encounterSection
+  .current-turn-hp-actions
+  .hp-action.heal {
+  border-color: rgba(7, 91, 42, 0.68);
+  background: rgba(20, 105, 53, 0.1);
+}
+
+body.theme-scifi #encounterSection .current-turn-action-group {
+  border-color: rgba(24, 233, 255, 0.26);
+  background: rgba(0, 126, 150, 0.07);
+}
+
+body.theme-scifi
+  #encounterSection
+  .current-turn-hp-actions
+  .hp-action.damage {
+  border-color: rgba(239, 94, 103, 0.58);
+  background: rgba(147, 42, 50, 0.13);
+}
+
+body.theme-scifi
+  #encounterSection
+  .current-turn-hp-actions
+  .hp-action.heal {
+  border-color: rgba(85, 220, 113, 0.58);
+  background: rgba(32, 122, 66, 0.12);
+}
+
+/* ---------------------------------------------------------
+   CURRENT TURN — CONDITION EDITOR LAYOUT
+
+   The shared combatant condition editor is normally wider
+   than the Current Turn card. Reflow its controls so they
+   stay inside the Current Turn panel.
+   --------------------------------------------------------- */
+
+#encounterSection
+  .current-turn-condition-editor
+  .combatant-inline-control-grid {
+  display: grid;
+
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+
+  gap: 10px;
+
+  width: 100%;
+  min-width: 0;
+}
+
+#encounterSection .current-turn-condition-editor .compact-control {
+  min-width: 0;
+  width: 100%;
+}
+
+#encounterSection .current-turn-condition-editor .compact-control input,
+#encounterSection .current-turn-condition-editor .compact-control select {
+  width: 100%;
+  min-width: 0;
+
+  box-sizing: border-box;
+}
+
+/*
+  If the editor has an odd number of controls, let the
+  final control span the full row.
+
+  D&D 5E:
+  Condition | Exhaustion
+  Visible Status
+*/
+
+#encounterSection
+  .current-turn-condition-editor
+  .combatant-inline-control-grid
+  > .compact-control:last-child:nth-child(odd) {
+  grid-column: 1 / -1;
+}
+
+/* ---------------------------------------------------------
+   CURRENT TURN — RECOVERY / DEATH SAVES
+   --------------------------------------------------------- */
+
+#encounterSection .current-turn-recovery-panel {
+  grid-column: 1 / -1;
+
+  display: grid;
+  gap: 12px;
+
+  width: 100%;
+  min-width: 0;
+
+  padding: 12px;
+
+  border: 1px solid var(--line);
+  border-radius: 6px;
+
+  background: rgba(0, 0, 0, 0.08);
+  box-sizing: border-box;
+}
+
+#encounterSection .current-turn-recovery-heading,
+#encounterSection .current-turn-death-save-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+#encounterSection .current-turn-recovery-heading strong {
+  font-size: 0.9rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+/* Keep recovery guidance readable on the light Fantasy parchment panel. */
+
+body.theme-fantasy #encounterSection #currentTurnRecoveryHint {
+  color: #5f452d;
+  opacity: 0.95;
+}
+
+#encounterSection .current-turn-death-saves {
+  display: grid;
+  gap: 10px;
+
+  padding-top: 10px;
+  border-top: 1px solid var(--line);
+}
+
+#encounterSection .current-turn-death-save-track {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+}
+
+#encounterSection .current-turn-death-save-track > div {
+  display: grid;
+  gap: 4px;
+
+  min-width: 0;
+  padding: 8px;
+
+  border: 1px solid var(--line);
+  border-radius: 4px;
+
+  background: rgba(0, 0, 0, 0.08);
+}
+
+#encounterSection .current-turn-death-save-track span {
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  opacity: 0.75;
+}
+
+#encounterSection #currentTurnDeathSuccesses {
+  color: #2f8f4e;
+  letter-spacing: 0.16em;
+}
+
+#encounterSection #currentTurnDeathFailures {
+  color: var(--danger);
+  letter-spacing: 0.16em;
+}
+
+#encounterSection .current-turn-death-save-actions {
+  display: grid;
+  grid-template-columns: 1.4fr 1fr 1fr;
+  gap: 6px;
+}
+
+#encounterSection .current-turn-recovery-actions {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 6px;
+}
+
+#encounterSection .current-turn-death-save-actions button,
+#encounterSection .current-turn-recovery-actions button {
+  min-width: 0;
+}
+
+#encounterSection #currentTurnRecoveryBtn.active {
+  border-color: var(--accent);
+  box-shadow: inset 0 -2px 0 var(--accent);
+}
+
+/* Strong danger treatment for lethal/removal actions. */
+
+#encounterSection #currentTurnMarkDefeatedBtn,
+#encounterSection #currentTurnMarkDeadBtn {
+  color: #fff4f4 !important;
+  background: #7f2d2d !important;
+  border: 1px solid #d76767 !important;
+
+  font-weight: 700;
+
+  box-shadow:
+    inset 0 0 0 1px rgba(255, 255, 255, 0.05),
+    0 0 0 1px rgba(0, 0, 0, 0.15);
+}
+
+#encounterSection #currentTurnMarkDefeatedBtn:hover,
+#encounterSection #currentTurnMarkDeadBtn:hover {
+  background: #9a3535 !important;
+  border-color: #ef8585 !important;
+}
+
+#encounterSection #currentTurnMarkDefeatedBtn:focus-visible,
+#encounterSection #currentTurnMarkDeadBtn:focus-visible {
+  outline: 2px solid #f3b0b0;
+  outline-offset: 2px;
+}
+
+/* Recovery state badges are shared by the roster and Current Turn card. */
+
+#encounterSection .combatant-status-badge.recovery-downed {
+  background: #6b4b18;
+  border-color: #c18b32;
+  color: #fff0c2;
+}
+
+#encounterSection .combatant-status-badge.recovery-stable {
+  background: #1f5834;
+  border-color: #4e9c69;
+  color: #dcffe7;
+}
+
+#encounterSection .combatant-status-badge.recovery-dead {
+  background: #6a252a;
+  border-color: #b54c54;
+  color: #ffe2e4;
+}
+
+/* ---------------------------------------------------------
+   FANTASY THEME — RECOVERY / DEATH SAVE CONTRAST
+   --------------------------------------------------------- */
+
+body.theme-fantasy #encounterSection .current-turn-recovery-panel {
+  background: rgba(88, 58, 24, 0.28);
+  border: 1px solid rgba(108, 74, 33, 0.9);
+  color: #2f1d0c;
+}
+
+body.theme-fantasy #encounterSection .current-turn-recovery-heading,
+body.theme-fantasy #encounterSection .current-turn-death-save-heading {
+  color: #2f1d0c;
+}
+
+body.theme-fantasy #encounterSection #currentTurnRecoveryState {
+  color: #2f1d0c;
+}
+
+body.theme-fantasy #encounterSection #currentTurnDeathSaveSummary {
+  color: #6a4a22;
+  opacity: 1;
+}
+
+body.theme-fantasy #encounterSection .current-turn-recovery-panel .hint {
+  color: #6a4a22;
+  opacity: 1;
+}
+
+body.theme-fantasy #encounterSection .current-turn-death-save-track > div {
+  background: rgba(120, 88, 46, 0.22);
+  border: 1px solid rgba(108, 74, 33, 0.85);
+  color: #2f1d0c;
+}
+
+body.theme-fantasy #encounterSection .current-turn-death-save-track span {
+  color: #5b3c18;
+}
+
+body.theme-fantasy #encounterSection .current-turn-death-save-track strong {
+  color: #2f1d0c;
+}
+
+body.theme-fantasy #encounterSection .current-turn-recovery-panel hr,
+body.theme-fantasy #encounterSection .current-turn-recovery-panel .divider {
+  border-color: rgba(108, 74, 33, 0.6);
+}
+
+
+/* ---------------------------------------------------------
+   FANTASY THEME — DEATH SAVE INDICATORS
+
+   Increase contrast of the success/failure markers against
+   the parchment Current Turn background.
+   --------------------------------------------------------- */
+
+body.theme-fantasy
+  #encounterSection
+  #currentTurnDeathSuccesses {
+  color: #075b2a !important;
+
+  font-size: 1.15rem;
+  font-weight: 900;
+  line-height: 1;
+
+  letter-spacing: 0.22em;
+
+  -webkit-text-stroke: 0.6px #06451f;
+
+  text-shadow:
+    0 1px 0 rgba(255, 255, 255, 0.35),
+    0 0 1px #06451f;
+}
+
+body.theme-fantasy
+  #encounterSection
+  #currentTurnDeathFailures {
+  color: #9b1c1c !important;
+
+  font-size: 1.15rem;
+  font-weight: 900;
+  line-height: 1;
+
+  letter-spacing: 0.22em;
+
+  -webkit-text-stroke: 0.6px #741313;
+
+  text-shadow:
+    0 1px 0 rgba(255, 255, 255, 0.35),
+    0 0 1px #741313;
+}
+
+body.theme-fantasy
+  #encounterSection
+  .current-turn-death-save-track
+  > div:first-child {
+  background: rgba(20, 105, 53, 0.1);
+  border-color: rgba(7, 91, 42, 0.7);
+}
+
+body.theme-fantasy
+  #encounterSection
+  .current-turn-death-save-track
+  > div:last-child {
+  background: rgba(155, 28, 28, 0.09);
+  border-color: rgba(155, 28, 28, 0.65);
+}
+
+/* ---------------------------------------------------------
+   PHASE 3.1.13.4 — RUN WORKSPACE VISUAL POLISH
+
+   Keep the established layout intact while tightening the
+   visual rhythm across command, roster, Current Turn, and
+   live-control surfaces.
+   --------------------------------------------------------- */
+
+/* Command strip: keep primary Run actions aligned and easy to scan. */
+
+#encounterSection .run-command-strip {
+  min-height: 60px;
+}
+
+#encounterSection .run-command-actions {
+  align-items: center;
+}
+
+#encounterSection .run-command-actions > button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+
+  min-height: 34px;
+
+  line-height: 1.15;
+  text-align: center;
+}
+
+#encounterSection .encounter-load-menu > summary {
+  min-height: 34px;
+  box-sizing: border-box;
+  line-height: 1.15;
+}
+
+/* Roster: separate scan information from secondary row actions. */
+
+#encounterSection .encounter-roster-toolbar {
+  min-height: 58px;
+}
+
+#encounterSection #toggleAddCombatantBtn {
+  min-height: 34px;
+}
+
+#encounterSection .combatant-summary-grid {
+  min-height: 58px;
+}
+
+#encounterSection .combatant-quick-actions {
+  gap: 6px;
+
+  padding-top: 6px;
+
+  border-top: 1px solid var(--line, rgba(76, 122, 143, 0.22));
+  background: rgba(0, 0, 0, 0.035);
+}
+
+#encounterSection .combatant-quick-actions button {
+  min-height: 28px;
+}
+
+#encounterSection .combatant-status-cell {
+  row-gap: 5px;
+}
+
+#encounterSection .combatant-more-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Current Turn: keep navigation clearly secondary to active-combatant data. */
+
+#encounterSection .tactical-panel-heading .save-indicator {
+  opacity: 0.72;
+}
+
+#encounterSection .current-turn-controls {
+  min-height: 58px;
+}
+
+#encounterSection .turn-navigation-buttons button {
+  min-height: 34px;
+}
+
+/* Live encounter controls: normalize headings, button height, and hint rhythm. */
+
+#encounterSection .encounter-control-rail > * {
+  box-sizing: border-box;
+}
+
+#encounterSection .encounter-control-rail .rail-section-heading {
+  min-height: 34px;
+  margin-bottom: 10px;
+}
+
+#encounterSection .encounter-control-rail button {
+  line-height: 1.15;
+}
+
+#encounterSection .rail-button-grid button,
+#encounterSection .rail-display-actions button,
+#encounterSection .rail-timer-actions button,
+#encounterSection .encounter-cue-button {
+  min-height: 32px;
+}
+
+#encounterSection .rail-display-hint,
+#encounterSection .rail-timer-hint,
+#encounterSection .encounter-control-rail .hint {
+  line-height: 1.4;
+}
+
+#encounterSection .rail-collapsible-panel > summary {
+  min-height: 36px;
+  box-sizing: border-box;
+  line-height: 1.35;
+}
+
+/* Strong, consistent keyboard focus without changing theme palettes. */
+
+#encounterSection button:focus-visible,
+#encounterSection summary:focus-visible,
+#encounterSection select:focus-visible,
+#encounterSection input:focus-visible {
+  outline: 2px solid var(--accent, currentColor);
+  outline-offset: 2px;
+}
+
+/* Fantasy/Sci-Fi quick-action separators should follow each theme. */
+
+body.theme-fantasy #encounterSection .combatant-quick-actions {
+  border-top-color: rgba(215, 161, 63, 0.18);
+  background: rgba(88, 58, 24, 0.07);
+}
+
+body.theme-scifi #encounterSection .combatant-quick-actions {
+  border-top-color: rgba(24, 233, 255, 0.14);
+  background: rgba(0, 126, 150, 0.035);
+}
+
+/* ---------------------------------------------------------
+   RESPONSIVE — MEDIUM DESKTOP / LAPTOP / BROWSER ZOOM
+   --------------------------------------------------------- */
+
+@media (max-width: 1650px) {
+  #encounterSection .encounter-control-rail {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+
+    grid-template-areas:
+      "phase display"
+      "timer audio"
+      "timer scene"
+      "cues cues"
+      "legacy legacy";
+  }
+}
+
+/* ---------------------------------------------------------
+   RESPONSIVE — APPLICATION HEADER
+
+   The Fantasy and Sci-Fi shells normally reserve a fixed
+   height for the header. Allow that row to grow when the
+   Encounter/System/Exit controls need more room.
+   --------------------------------------------------------- */
+
+@media (max-width: 1350px) {
+  body.theme-scifi,
+  body.theme-fantasy {
+    grid-template-rows:
+      auto
+      minmax(0, 1fr);
+  }
+
+  body.theme-scifi .app-header,
+  body.theme-fantasy .app-header {
+    grid-template-columns:
+      minmax(0, 1fr)
+      auto;
+
+    grid-template-rows: auto;
+
+    align-items: end;
+
+    min-height: 68px;
+    height: auto;
+
+    gap: 12px;
+
+    position: relative;
+    top: auto;
+
+    overflow: visible;
+  }
+
+  body.theme-scifi .encounter-head-controls,
+  body.theme-fantasy .encounter-head-controls {
+    grid-template-columns:
+      minmax(180px, 1fr)
+      minmax(150px, 220px);
+
+    width: 100%;
+    min-width: 0;
+  }
+
+  body.theme-scifi .encounter-head-controls > *,
+  body.theme-fantasy .encounter-head-controls > * {
+    min-width: 0;
+  }
+
+  body.theme-scifi .encounter-head-controls input,
+  body.theme-scifi .encounter-head-controls select,
+  body.theme-fantasy .encounter-head-controls input,
+  body.theme-fantasy .encounter-head-controls select {
+    width: 100%;
+    min-width: 0;
+  }
+
+  body.theme-scifi .header-actions,
+  body.theme-fantasy .header-actions {
+    display: flex;
+
+    justify-content: flex-end;
+    justify-self: end;
+    align-self: end;
+
+    /*
+      base.css uses grid-column: 1 / -1 below 1350px.
+      Reset that legacy rule so Exit enCounter stays inside
+      the growing theme header instead of creating an
+      implicit row that spills over the workspace below.
+    */
+    grid-column: auto;
+    grid-row: auto;
+
+    width: auto;
+    min-width: max-content;
+
+    flex-wrap: nowrap;
+
+    position: static;
+    top: auto;
+    right: auto;
+    bottom: auto;
+    left: auto;
+  }
+
+  body.theme-scifi .header-actions button,
+  body.theme-fantasy .header-actions button {
+    width: auto;
+    white-space: nowrap;
+  }
+}
+
+/* ---------------------------------------------------------
+   RESPONSIVE — SMALLER WINDOWS
+
+   Stack Current Turn above Combatants and move the live
+   encounter controls into a single column.
+   --------------------------------------------------------- */
+
+@media (max-width: 1100px) {
+  #encounterSection .encounter-console-layout {
+    grid-template-columns: minmax(0, 1fr);
+
+    grid-template-areas:
+      "command"
+      "focus"
+      "roster"
+      "controls";
+  }
+
+  #encounterSection .encounter-control-rail {
+    grid-template-columns: minmax(0, 1fr);
+
+    grid-template-areas:
+      "phase"
+      "display"
+      "timer"
+      "audio"
+      "cues"
+      "scene"
+      "legacy";
+  }
+
+  #encounterSection .current-turn-actions {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  #encounterSection .current-turn-actions-heading {
+    grid-column: 1 / -1;
+  }
+
+  #encounterSection .current-turn-death-save-actions {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+@media (max-width: 760px) {
+  #encounterSection .current-turn-actions {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  #encounterSection .current-turn-actions-heading {
+    grid-column: 1;
+  }
+
+  #encounterSection .current-turn-action-context {
+    display: none;
+  }
+}
+
+/* ---------------------------------------------------------
+   RESPONSIVE — COMPACT HEADER
+   --------------------------------------------------------- */
+
+@media (max-width: 900px) {
+  body.theme-scifi,
+  body.theme-fantasy {
+    grid-template-rows:
+      auto
+      minmax(0, 1fr);
+  }
+
+  body.theme-scifi .app-header,
+  body.theme-fantasy .app-header {
+    grid-template-columns: minmax(0, 1fr);
+
+    grid-template-rows:
+      auto
+      auto;
+
+    align-items: stretch;
+
+    gap: 8px;
+
+    min-height: 0;
+    height: auto;
+
+    padding-bottom: 10px;
+  }
+
+  body.theme-scifi .encounter-head-controls,
+  body.theme-fantasy .encounter-head-controls {
+    grid-template-columns:
+      minmax(0, 1fr)
+      minmax(140px, 190px);
+
+    width: 100%;
+    min-width: 0;
+  }
+
+  body.theme-scifi .header-actions,
+  body.theme-fantasy .header-actions {
+    justify-self: end;
+    align-self: center;
+
+    width: auto;
+    min-width: 0;
+
+    position: static;
+  }
+
+  body.theme-scifi .header-actions button,
+  body.theme-fantasy .header-actions button {
+    width: auto;
+    max-width: 100%;
+  }
+}

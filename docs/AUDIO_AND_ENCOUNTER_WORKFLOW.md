@@ -1,187 +1,92 @@
-# enCounter — Saved Encounters, Scene Display, Soundscapes, and Initiative Tracking
+# enCounter — Alpha 3 Encounter Presentation, Audio, Timer, and Initiative Workflow
 
-This document describes the encounter presentation and live-session workflow for **enCounter v0.2.0-alpha.2**.
+This document describes the encounter presentation and live-session workflow for **enCounter v0.3.0-alpha.1**.
 
-A prepared encounter can move through Scene and Combat presentation while retaining its Saved Encounter configuration, visual timers, Soundscape, and initiative state.
+Alpha 3 separates **Run** from **Prepare**. Reusable encounter setup is managed under **Prepare → Encounters**, while live game operation happens under **Run → Active Encounter**.
 
-## Encounter workflow
+## Prepare an encounter
 
-1. Build an encounter in the DM Console: name, system, participants, Scene Image, Combat Background, Soundscape, and timer settings.
+1. Open **Prepare → Encounters**.
+2. Create a new encounter build or select a **Reusable Encounter Template**.
+3. Add Library combatants to the template.
+4. Configure the Scene background, Combat background, Scene audio, Combat audio, fade/transition behavior, and Sound Cues.
+5. Configure the prepared Timer if the encounter uses one.
+6. Click **Save Encounter Setup**.
+7. When needed, use **Save Current Run as Template** to intentionally turn a useful live Run encounter into a reusable template.
 
-2. Use **Save** or **Save As…** in the Saved Encounter bar to store the prepared encounter.
+Reusable templates reset transient live-combat progress when loaded. Use a **Saved Encounter State** when you need to resume live session progress instead.
 
-3. Load a Saved Encounter later. enCounter creates an active working copy; game-night changes do not overwrite the saved encounter unless the DM explicitly presses **Save**.
+## Start or resume play
 
-4. Use **Show Scene** to display only the encounter's Scene Image on the Player Display. Initiative, combatants, round information, current turn, and next turn remain hidden.
+From **Run → Active Encounter**:
 
-5. Use **Scene Audio** to start the roleplay/exploration Soundscape independently of Player Display visibility.
-
-6. Use **Start Combat** to:
-   - Change the encounter to Combat phase.
-   - Switch the Player Display to Combat mode.
-   - Establish the current combatant from the initiative order.
-   - Bring the current combatant into view on the DM Console.
-   - Center the current visible combatant on the Player Display.
-   - Transition the Soundscape to Combat audio when automatic Combat audio switching is enabled.
-
-7. During combat, use **Next Turn**, **Previous Turn**, **Set Turn**, and **Trigger / Resume** to manage the active combatant. The DM Console and Player Display use the same current-turn state and remain synchronized as initiative changes.
-
-8. Use **End Combat** to return the Player Display to Scene mode. If Scene audio was playing before combat and return-to-scene audio is enabled, the Scene Soundscape resumes automatically.
-
-9. Use **Hide Player Display** at any time to return the players to STAND BY without stopping DM-side audio.
+- Use **+ Quick Encounter** for a session-only encounter.
+- Use **Load / Resume → Reusable Template → Load Template** for a fresh prepared encounter.
+- Use **Load / Resume → Saved Encounter State → Resume State** to continue a live saved session.
 
 ## Player Display modes
 
-- **Stand By** — enCounter logo / STAND BY only. Encounter information and Player-visible timers are hidden.
-- **Scene** — full-screen Scene Image. No initiative or combat UI is displayed. Player-visible timers may still appear.
-- **Combat** — initiative and combat information is displayed using the Combat Background. Player-visible timers may still appear.
+The Run workspace provides **Display Controls**:
 
-### Combat initiative presentation
+- **Open Display** — opens the player-facing window.
+- **Show Scene** — shows roleplay/exploration presentation.
+- **Show Combat** — shows combat/initiative presentation.
+- **Send to Standby** — returns players to the privacy screen without ending the DM's current encounter phase.
 
-During Combat mode, the Player Display follows the active initiative state maintained by the DM Console.
+Hidden combatants remain omitted from the Player Display until revealed.
 
-The current visible combatant is highlighted and automatically centered within the initiative display as turns advance. This keeps the active character or creature visible during encounters with initiative orders that are wider than the available Player Display area.
+## Initiative and Active Turn
 
-Hidden combatants remain omitted from the Player Display until the DM uses **Reveal to Players**.
+During combat, the Active Turn panel provides the current combatant's portrait, HP, defense/stat, initiative, statuses, and Quick Actions.
 
-## Initiative Tracking and DM Auto-Follow
+Use **Previous** / **Next Turn** to move through eligible initiative combatants. DM Auto-Follow brings the active combatant into view only when the active turn changes, so ordinary edits do not pull the DM away from another row.
 
-The DM Console and Player Display share the same active-turn state. When initiative changes, both displays identify the same current combatant.
+The Player Display centers the current visible combatant when the turn changes.
 
-### DM Console behavior
+## D&D 5E recovery
 
-The current combatant is highlighted on the DM Console.
+For D&D 5E Player combatants, reaching 0 HP automatically enters **Downed** recovery and adds **Unconscious**. The Recovery panel provides Death Saves, Stabilize, Mark Dead, Defeated, and Return to Combat controls.
 
-The DM Console automatically follows and brings the active combatant into view when:
+Death Save automation in Alpha 3:
 
-- **Start Combat** establishes the first current combatant.
-- **Next Turn** advances initiative.
-- **Previous Turn** moves backward through initiative.
-- **Set Turn** manually selects a combatant as the current turn.
-- **Trigger / Resume** causes a Delayed or Readied combatant to resume and take the current turn.
+- Natural 20: regain 1 HP and return to Normal.
+- Natural 1: two failures.
+- 10–19: one success.
+- 2–9: one failure.
+- Three successes: Stable.
+- Three failures: Dead.
 
-This makes it easier for the DM to follow the initiative order during encounters containing more combatants than can fit on the screen at once.
+Damage at 0 HP records one failure; add an extra failure manually when the hit should count for more than one.
 
-### Player Display behavior
+## Soundscape and Sound Cues
 
-When the active turn changes, the Player Display:
+Scene and Combat audio remain encounter-bound.
 
-- Updates the current-turn highlight.
-- Keeps the visible initiative order synchronized with the DM Console.
-- Automatically centers the current visible combatant.
-- Continues to omit combatants that are hidden from players.
+Prepared configuration can include:
 
-### Auto-Follow only occurs on turn changes
+- Scene music
+- Scene ambience layers
+- Combat music
+- Combat ambience
+- master volume
+- fade/transition behavior
+- automatic Scene-to-Combat switching
+- optional return to Scene audio
+- up to three one-shot Sound Cues
 
-DM Auto-Follow is intentionally limited to actions that change the active turn.
+Sound Cues appear in the Run workspace after the encounter setup is saved/applied. Audio plays from the DM computer; the Player Display is visual-only.
 
-The DM Console does **not** automatically move back to the current combatant when the DM performs ordinary encounter edits such as:
+## Timer behavior
 
-- Damage or healing.
-- Direct HP changes.
-- Status changes.
-- Condition Track changes.
-- Resource adjustments.
-- Notes or other combatant edits.
-- Hide or Reveal actions.
-- Restoring a combatant without making that combatant the current turn.
+Reusable encounter templates preserve prepared Timer configuration, including name, duration, skin, display mode, visibility, and numeric-countdown preferences.
 
-This allows the DM to work on another combatant's card without the screen unexpectedly jumping back to the active character.
+Loading a template starts with a fresh Ready timer rather than restoring an old running countdown. Alpha 3 also maintains a separate runtime timer checkpoint so a live timer can be recovered after an application restart when appropriate.
 
-## Soundscape
+## End of session
 
-The Soundscape belongs to the loaded encounter and its configuration is saved with the Saved Encounter.
-
-### Scene audio
-
-- Optional Scene music.
-- Up to three ambience layers in the current UI.
-- Each Scene ambience layer can **Stop**, **Continue**, or **Lower Volume** when Combat begins.
-
-### Combat audio
-
-- Optional Combat music.
-- Up to two additional Combat ambience layers in the current UI.
-- Combat audio can begin automatically when **Start Combat** is selected.
-- Scene audio can optionally return when Combat ends.
-
-### Prepared cues
-
-Three one-shot cue slots are available in the current Soundscape editor for alarms, explosions, doors, horns, creature sounds, transmissions, weapon effects, and similar events.
-
-After the Soundscape is applied to the encounter, any configured cue appears automatically as a live **Prepared Cues** button on the Encounter tab.
-
-These live cue buttons remain available during both Scene and Combat phases so the DM does not need to leave the Encounter screen during play.
-
-### Saving and loading Soundscapes
-
-Soundscapes are not stored or loaded separately. They are part of the Saved Encounter.
-
-Loading a Saved Encounter restores its:
-
-- Scene music configuration.
-- Scene ambience configuration.
-- Combat music configuration.
-- Combat ambience configuration.
-- Prepared Cue assignments.
-- Volume settings.
-- Fade settings.
-- Scene-to-Combat transition behavior.
-- Return-to-Scene behavior.
-
-Loading an encounter does **not** automatically start audio playback.
-
-The DM chooses when to start Scene Audio, Combat Audio, or a Prepared Cue.
-
-### Audio library
-
-Supported import formats:
-
-- MP3
-- OGG
-- WAV
-- FLAC
-
-Folders:
-
-```text
-assets/sounds/music/
-assets/sounds/ambience/
-assets/sounds/sfx/
-assets/sounds/custom/
-```
-
-Audio plays from the DM computer. The Player Display remains visual-only, avoiding duplicate playback and browser audio synchronization issues.
-
-Saved Encounters store references to local audio assets rather than embedding the audio files themselves. When moving enCounter to another computer, copy the complete `assets/` folder if Saved Encounters depend on imported audio or images.
-
-## Timers outside combat
-
-Player-visible timers are independent of initiative.
-
-A timer may be shown while the Player Display is in Scene mode, making it suitable for:
-
-- Puzzles.
-- Arrivals.
-- Evacuations.
-- Security responses.
-- Environmental hazards.
-- Reinforcements.
-- Countdown events.
-- Other roleplaying sequences.
-
-Player-visible timers can also remain active during Combat mode.
-
-While the Player Display is on **STAND BY**, Player-visible timers remain hidden.
-### Saving and loading Timer configuration
-
-Saved Encounters store the Timer's prepared configuration:
-
-- Timer name.
-- Configured duration.
-- Visual skin.
-- Player Display mode.
-- Whether the timer is shown to players.
-- DM and Player numeric-countdown preferences.
-
-Loading a Saved Encounter restores those settings and creates a fresh **Ready** timer using the full configured duration. Live runtime state is intentionally not reusable encounter data: running/paused/completed state, remaining time, and the `endAt` timestamp are not restored from the previous session.
+1. Wait for **SAVED**.
+2. Save an encounter state if you need to resume the live session later.
+3. Optionally use **Data & Tools → Export Everything** for a milestone backup.
+4. Click **Exit enCounter**.
+5. Wait for the local server to stop.
+6. Close the browser after shutdown completes.

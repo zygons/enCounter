@@ -1,8 +1,8 @@
 # enCounter
 
-**enCounter** is a free, open-source, local-first TTRPG encounter, initiative, scene-presentation, timer, and soundscape manager with separate DM and Player Displays, reusable player/NPC/enemy/creature libraries, Saved Encounters, local media assets, and backup/export features.
+**enCounter** is a free, open-source, local-first TTRPG encounter, initiative, scene-presentation, timer, and soundscape manager with separate DM and Player Displays, a reusable Character Library, Encounter Templates, Saved Encounter States, local media assets, and backup/export features.
 
-**Current release:** `0.2.0-alpha.2`
+**Current release:** `0.3.0-alpha.1`
 **Status:** Alpha / pre-release  
 **License:** MIT  
 **Platforms:** Windows and Linux
@@ -19,71 +19,56 @@
 
 ## Features
 
+- Separate **Run** and **Prepare** workspaces for live play and pre-game setup
 - Separate **DM Console** and **Player Display**
-- One-button Player Display control:
-  - **Start Player Display**
-  - **Hide Player Display**
-  - **Show Player Display**
-- Player Display presentation modes:
-  - **STAND BY**
-  - **Scene**
-  - **Combat**
-- Private DM editing while the Player Display shows **STAND BY**
+- Player Display controls for:
+  - **Open Display**
+  - **Show Scene**
+  - **Show Combat**
+  - **Send to Standby**
+- Private DM editing while the Player Display remains on the **STAND BY** privacy screen
 - Initiative and turn management with synchronized DM and Player Display tracking
-- **DM Initiative Auto-Follow**
-  - follows the active combatant as turns advance
-  - clearly highlights who is currently acting
-  - automatically brings the current combatant into view
-  - does not interrupt unrelated HP, status, resource, or combatant edits
-- **Player Display initiative auto-centering**
-  - automatically centers the active visible combatant
-  - keeps the current turn visible during larger encounters
-- Automatic round advancement
-- Delay, Ready, Trigger / Resume, and Set Turn controls
-- HP, status, condition, and combatant controls
-- Structured D&D 5E conditions with multi-condition support and separate Exhaustion tracking
-- Hidden enemies with **Hide from Players / Reveal to Players**
-- Reusable Player, NPC, Enemy, and Creature Library
-- Saved Encounter Library with:
-  - Save
-  - Save As
-  - Load
-  - Duplicate
-  - Delete
-  - working-copy loading for game-session changes
-- Encounter phases for:
-  - Prepared
-  - Scene / Roleplay
-  - Combat
-  - Complete
-- Separate **Scene Image** and **Combat Background** per encounter
-- Scene / roleplay Player Display mode with full-screen encounter artwork
-- Visual countdown timers for Scene and Combat
-- Prepared Timer configuration saved with Saved Encounters and restored in a fresh Ready state
-- Timer controls for Start, Pause, Resume, Reset, Stop, and time adjustments
-- Visual timer skins including:
-  - Fantasy Hourglass
-  - Candle
-  - Sci-Fi Pixel Depletion
-- Optional Player Display numeric countdown
-- Encounter Soundscapes with:
-  - scene music
-  - layered scene ambience
-  - combat music
-  - combat ambience
-  - master volume
-  - fade transitions
-  - automatic Scene-to-Combat switching
-  - optional return to Scene audio after combat
-- Prepared one-shot audio cues
-- Live Prepared Cue buttons directly on the Encounter screen
+- **Active Turn** panel with HP Quick Actions, Conditions, Recovery, Exhaustion, visibility, Defeated, and Return to Combat controls
+- **DM Initiative Auto-Follow** and Player Display initiative auto-centering
+- Automatic round advancement plus Delay, Ready, Trigger / Resume, and Set Turn controls
+- Structured D&D 5E Conditions with multi-condition support and separate Exhaustion tracking
+- D&D 5E Player recovery states (**Downed / Stable / Dead**) with integrated Death Saves
+- Hidden combatants with **Hide from Players / Reveal to Players**
+- Reusable Character Library for Players, NPCs, Enemies, and Creatures
+- D&D 5E SRD **Compendium** search with Add to Encounter and Save/Refresh Library workflows
+- **Reusable Encounter Templates** for repeatable prepared encounters
+- **Saved Encounter States** for resuming live-session progress
+- **Quick Encounter** for immediate session-only play
+- Separate Scene and Combat backgrounds and presentation controls
+- Visual countdown timers for Scene and Combat, including prepared Timer configuration
+- Encounter Soundscapes with Scene/Combat music, layered ambience, master volume, fade transitions, and automatic Scene-to-Combat switching
+- Up to three prepared one-shot **Sound Cues** available from the live Run workspace
 - Local audio import support for MP3, OGG, WAV, and FLAC
-- Portrait and encounter-background support
+- Portrait, token/icon, and encounter-background asset support
 - Generic TTRPG, SWSE, D&D 5E, and Custom system profiles
-- Local autosave and recovery snapshots
-- Backup, export, and import tools
-- Windows and Linux portable builds
+- Local autosave, restart recovery, and recovery snapshots
+- Backup, export, import, and persistent-browser-storage tools
+- Hardened localhost-only launcher and audited Windows/Linux portable builds
 - Runs locally without requiring a cloud account
+
+## What's new in 0.3.0-alpha.1
+
+Version `0.3.0-alpha.1` is the first Alpha 3 release and focuses on a clearer Run/Prepare workflow, D&D 5E recovery, SRD Compendium integration, encounter preparation, and portable-release hardening.
+
+Highlights include:
+
+- New **Run / Prepare** DM workspace
+- **Quick Encounter** and unified Add Combatant workflow
+- D&D 5E SRD **Compendium** search with Add to Encounter / Save to Library
+- Reusable Encounter Templates separated from Saved Encounter States
+- Reworked **Active Turn** Quick Actions
+- D&D 5E Downed / Stable / Dead recovery with Death Saves
+- Simplified combatant rows with secondary actions in a `...` menu
+- Improved responsive layout, themes, and 200% zoom behavior
+- Hardened localhost launcher and browser security headers
+- Audited Windows/Linux portable build pipeline with pinned dependencies and native smoke tests
+
+For the full change list, see `docs/RELEASE_NOTES_0.3.0-alpha.1.md`.
 
 ## What's new in 0.2.0-alpha.2
 
@@ -108,7 +93,7 @@ Highlights include:
 - Fantasy Hourglass, Candle, and Sci-Fi Pixel timer presentations
 - Encounter-bound Soundscapes
 - Scene and Combat music and ambience
-- Prepared one-shot audio cues
+- Prepared one-shot Sound Cues
 - Live cue buttons on the Encounter screen
 - Saved Encounter audio and presentation configuration
 - Stand By, Scene, and Combat Player Display modes
@@ -118,33 +103,9 @@ Highlights include:
 
 ## Screenshots
 
-### DM Console
+Current Alpha 3 screenshots and complete workflows are included in the **enCounter User Guide** under `docs/enCounter User Guide.pdf`.
 
-The DM Console manages Saved Encounters, initiative, combatants, timers, scene/combat presentation, Soundscapes, and Prepared Cues.
-
-![enCounter DM Console](docs/images/enCounter_Library.png)
-![enCounter DM Console](docs/images/enCounter_Library2.png)
-![enCounter DM Console](docs/images/enCounter_Game.png)
-![enCounter DM Console](docs/images/enCounter_Settings.png)
-
-### Player Display — Scene
-
-Scene mode displays encounter artwork and optional visual timers without revealing initiative or combat information.
-
-![enCounter Player Display](docs/images/enCounter_Awaiting.png)
-![enCounter Player Display](docs/images/enCounter-Game2.png)
-
-### Player Display — Stand By
-
-![enCounter Player Display Stand By](docs/images/enCounter-Standby.png)
-
-### Encounter Soundscape live cues
-
-Soundscapes are stored as part of Saved Encounters. Loading a Saved Encounter restores its Scene music, Scene ambience, Combat music, Combat ambience, transition settings, and Prepared Cue assignments.
-
-Configured one-shot cues appear as live buttons on the Encounter screen and can be triggered during either Scene or Combat play.
-
-Audio playback itself does not automatically begin when an encounter is loaded. The DM remains in control of when Scene or Combat audio starts.
+The `docs/images/` folder may also contain screenshots retained from earlier Alpha documentation and should not be treated as the authoritative Alpha 3 interface reference.
 
 ## Alpha notice
 
@@ -168,10 +129,9 @@ See [`AI_ASSISTANCE.md`](AI_ASSISTANCE.md) for the full disclosure.
 2. Extract the complete ZIP to a normal writable folder such as Documents or Desktop. Do not run enCounter directly from inside the ZIP or from a protected system folder such as `Program Files`.
 3. Double-click `enCounter.exe`.
 4. enCounter opens in your default browser.
-5. Click **Start Player Display** to open the player-facing display on a second monitor or TV.
-6. Use **Hide Player Display** when you need to make private encounter or initiative changes.
-7. Click **Show Player Display** when you are ready for players to see the updated encounter.
-8. When finished, use **Exit enCounter** in the DM Console so the local background server closes cleanly.
+5. Use **Open Display** to open the player-facing window on a second monitor or TV.
+6. Use **Show Scene** or **Show Combat** for the appropriate presentation, and **Send to Standby** when you need to make private changes.
+7. When finished, use **Exit enCounter** in the DM Console so the local background server closes cleanly.
 
 Python is **not** required on the target computer when using the packaged Windows build.
 
@@ -183,10 +143,13 @@ The Alpha Windows executable is currently unsigned. Windows SmartScreen may ther
 2. Extract it to a normal writable user folder.
 3. Run `./enCounter` from the extracted folder, or double-click it if your desktop environment permits executable files.
 4. enCounter opens in your default browser.
-5. Click **Start Player Display** to open the player-facing display.
-6. When finished, use **Exit enCounter** in the DM Console so the local background server closes cleanly.
+5. Use **Open Display** to open the player-facing window.
+6. Use **Show Scene**, **Show Combat**, and **Send to Standby** as needed.
+7. When finished, use **Exit enCounter** in the DM Console so the local background server closes cleanly.
 
 Python is **not** required on the target computer when using the packaged Linux build.
+
+The official Linux portable package is built on **Ubuntu 22.04 x86_64** to provide a stable, conservative glibc baseline. It is intended for current mainstream x86_64 Linux distributions with the same or a newer compatible glibc. Very old distributions may require building enCounter locally on that distribution or on an equivalently old compatible build system.
 
 If Linux reports that the file is not executable, run:
 
@@ -194,6 +157,12 @@ If Linux reports that the file is not executable, run:
 chmod +x enCounter
 ./enCounter
 ```
+
+## Browser compatibility
+
+enCounter is a local browser application served by its bundled localhost server. For the best Alpha experience, use a current desktop release of **Google Chrome, Microsoft Edge, or Mozilla Firefox**. Keep the DM Console and Player Display in the **same browser profile** so IndexedDB and the local synchronization channel are shared.
+
+Private/incognito windows use separate or temporary browser storage in many browsers. Do not rely on a private/incognito session for persistent Library, encounter, or settings data. Browser storage can also be cleared by browser privacy controls, so use enCounter's export/backup features for data that matters.
 
 ## Development and builds
 
@@ -226,7 +195,9 @@ Build a clean Linux portable release on Linux (the archive name records the mach
 ./Build\ enCounter\ Linux.sh
 ```
 
-PyInstaller builds are platform-specific. Build the Windows package on Windows and the Linux package on Linux. The build scripts intentionally exclude previous backups, imports, exports, campaign images, and browser library data.
+PyInstaller builds are platform-specific. Build the Windows package on Windows and the Linux package on Linux. The official CI Linux build uses Ubuntu 22.04 x86_64 because PyInstaller Linux executables inherit the build system's glibc compatibility baseline.
+
+The build scripts intentionally exclude previous backups, imports, exports, caches, campaign images, and user-supplied media from portable releases. **Do not publish a ZIP of your working repository folder as a release package.** A development folder can contain ignored local backups, compendium cache files, and custom assets that are not meant for distribution. Use the provided build scripts (or the GitHub Actions workflow); each portable release is checked by `programs/release_audit.py` before it is archived.
 
 ### Optional GitHub Actions builds
 
@@ -234,77 +205,34 @@ The repository also includes `.github/workflows/build-portable.yml`. After the r
 
 ## DM and Player Display workflow
 
-Use **one DM Console tab/window at a time** for an encounter.
+Use **one DM Console tab/window at a time** for an encounter. Open the Player Display from the DM Console using the same browser profile.
 
-The Player Display should normally be opened from the DM Console using the same browser profile.
+The Alpha 3 Run workspace provides separate **Display Controls**:
 
-The Player Display button changes automatically depending on its current state:
-
-| Button                   | Meaning                                                      |
-| ------------------------ | ------------------------------------------------------------ |
-| **Start Player Display** | Opens the Player Display                                     |
-| **Hide Player Display**  | Replaces encounter information with a STAND BY screen        |
-| **Show Player Display**  | Restores the Player Display using the latest encounter state |
-
-Player Display content is also controlled by the current encounter phase:
-
-| Encounter state | Player Display                                                         |
-| --------------- | ---------------------------------------------------------------------- |
-| **Stand By**    | Privacy screen; encounter information is hidden                        |
-| **Scene**       | Scene artwork and optional timers without initiative                   |
-| **Combat**      | Combat artwork, initiative order, current turn, and combat information |
+| Control | Meaning |
+| --- | --- |
+| **Open Display** | Opens or focuses the Player Display window |
+| **Show Scene** | Shows the configured Scene presentation without initiative |
+| **Show Combat** | Shows the Combat presentation and initiative |
+| **Send to Standby** | Shows the STAND BY privacy screen while the DM continues working |
 
 ### Making private DM changes
 
-When **Hide Player Display** is selected, the player-facing screen displays a **STAND BY** screen.
+Use **Send to Standby** whenever encounter information should be hidden from players. The DM Console remains fully functional, and the Player Display continues receiving synchronized state without revealing it until **Show Scene** or **Show Combat** is selected.
 
-The DM Console remains fully functional. The DM can privately:
-
-- change initiative values
-- add or remove combatants
-- advance or correct turns
-- use Set Turn or Trigger / Resume
-- adjust initiative order
-- change HP or status information
-- add reinforcements
-- hide or reveal enemies
-- make other encounter adjustments
-
-The Player Display continues receiving the latest encounter information internally but does not display those changes while hidden.
-
-When the DM selects **Show Player Display**, the current encounter state is displayed immediately.
-
-If the Player Display window is closed, the DM control returns to **Start Player Display**.
+While players are on Standby, the DM can privately change initiative, add/remove combatants, advance or correct turns, edit HP/Conditions/Recovery, add reinforcements, or hide/reveal enemies.
 
 ### Hidden combatants
 
-When a combatant is marked **Hide from Players**, it remains fully visible in the DM Console but is completely omitted from the Player Display, including the initiative track and current/next-turn names.
-
-Use **Reveal to Players** to return that combatant to the Player Display at its normal initiative position.
+When a combatant is marked **Hide from Players**, it remains visible in the DM Console but is omitted from the Player Display, including initiative and current/next-turn presentation. Use **Reveal to Players** to restore it.
 
 ### Initiative tracking
 
-The DM Console and Player Display use the same active-turn state so both screens remain synchronized as initiative advances.
-
-On the **Player Display**, the current visible combatant is highlighted and automatically centered in the initiative track.
-
-On the **DM Console**, the current combatant is highlighted and the initiative list automatically follows that combatant when:
-
-- Combat starts
-- **Next Turn** is selected
-- **Previous Turn** is selected
-- **Set Turn** is used
-- A delayed or readied combatant resumes and takes the current turn
-
-DM Auto-Follow occurs only when the active turn changes.
-
-Editing HP, applying damage or healing, changing a status or condition, adjusting resources, hiding or revealing combatants, or making other non-turn changes does not force the DM screen back to the current combatant.
+The DM Console and Player Display use the same active-turn state. The Player Display automatically centers the current visible combatant, while DM Auto-Follow brings the active combatant into view when the turn actually changes. Ordinary HP, status, resource, visibility, and note edits do not force the DM screen away from the combatant being edited.
 
 ### Display synchronization
 
-The Player Display includes a **DM Sync** connection indicator.
-
-DM Console and Player Display windows must currently use the same browser profile. A different browser, different browser profile, or private/incognito session will not share the local synchronization channel.
+The Player Display includes a **DM Sync** connection indicator. DM Console and Player Display windows must use the same browser profile. A different browser, different browser profile, or private/incognito session does not share the same local synchronization/storage context.
 
 Opening multiple DM Console windows against the same browser database is not supported in the current Alpha and may result in last-write-wins overwrites.
 

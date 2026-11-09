@@ -67,6 +67,25 @@ if not exist "assets\branding\enCounter-icon.ico" (
     exit /b 1
 )
 
+for %%F in (
+    "programs\launcher.py"
+    "programs\release_audit.py"
+    "programs\app\index.html"
+    "programs\app\display.html"
+    "programs\app\js\theme-bootstrap.js"
+    "docs\enCounter User Guide.pdf"
+    "CHANGELOG.md"
+    "README.md"
+    "PRIVACY.md"
+    "THIRD_PARTY_NOTICES.md"
+) do (
+    if not exist "%%~F" (
+        echo ERROR: Required release file %%~F was not found.
+        if not defined CI pause
+        exit /b 1
+    )
+)
+
 echo Removing previous build output...
 if exist "build" rmdir /s /q "build"
 if exist "dist" rmdir /s /q "dist"
@@ -130,6 +149,7 @@ mkdir "%RELEASE_DIR%\data\cache\compendium" >nul 2>nul
 if exist "docs" xcopy "docs" "%RELEASE_DIR%\docs\" /E /I /Y >nul
 copy /Y "LICENSE" "%RELEASE_DIR%\LICENSE" >nul
 copy /Y "README.md" "%RELEASE_DIR%\README.md" >nul
+copy /Y "CHANGELOG.md" "%RELEASE_DIR%\CHANGELOG.md" >nul
 copy /Y "AI_ASSISTANCE.md" "%RELEASE_DIR%\AI_ASSISTANCE.md" >nul
 copy /Y "PRIVACY.md" "%RELEASE_DIR%\PRIVACY.md" >nul
 copy /Y "THIRD_PARTY_NOTICES.md" "%RELEASE_DIR%\THIRD_PARTY_NOTICES.md" >nul
@@ -141,6 +161,16 @@ del /q "%RELEASE_DIR%\data\exports\*" >nul 2>nul
 del /q "%RELEASE_DIR%\data\imports\*" >nul 2>nul
 del /q "%RELEASE_DIR%\data\cache\compendium\*" >nul 2>nul
 del /q "%RELEASE_DIR%\data\enCounter-startup-error.log" >nul 2>nul
+
+echo.
+echo Auditing portable release contents...
+%PYTHON_CMD% "programs\release_audit.py" "%RELEASE_DIR%" --platform windows
+if errorlevel 1 (
+    echo.
+    echo RELEASE AUDIT FAILED.
+    if not defined CI pause
+    exit /b 1
+)
 
 echo.
 echo Creating ZIP package...

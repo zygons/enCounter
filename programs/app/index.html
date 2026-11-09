@@ -16,22 +16,24 @@
 
     <link rel="stylesheet" href="css/base.css?v=alpha3-phase3-1-14-1a" />
     <link rel="stylesheet" href="css/timer.css" />
-    <link rel="stylesheet" href="css/theme-system.css?v=alpha3-phase3-1-13-6a" />
+    <link
+      rel="stylesheet"
+      href="css/theme-system.css?v=alpha3-phase3-1-13-6a"
+    />
     <link rel="stylesheet" href="css/theme-scifi.css?v=alpha3-phase3-1-13-6q" />
-    <link rel="stylesheet" href="css/theme-fantasy.css?v=alpha3-phase3-1-14-4a" />
+    <link
+      rel="stylesheet"
+      href="css/theme-fantasy.css?v=alpha3-phase3-1-14-4a"
+    />
+
+    <link
+      rel="stylesheet"
+      href="css/workspace-layout.css?v=alpha3-phase3-1-13-4a"
+    />
   </head>
 
   <body class="dm-body">
-    <script>
-      (() => {
-        const theme = localStorage.getItem("encounter-ui-theme") || "scifi";
-        if (["original", "scifi", "fantasy"].includes(theme)) {
-          document.body.classList.add(`theme-${theme}`);
-        } else {
-          document.body.classList.add("theme-scifi");
-        }
-      })();
-    </script>
+    <script src="js/theme-bootstrap.js?v=alpha3-hardening-1"></script>
     <!-- =========================================================
          APPLICATION HEADER
          ========================================================= -->
@@ -47,7 +49,7 @@
         <div class="brand-meta">
           <div class="eyebrow">TTRPG ENCOUNTER CONSOLE</div>
 
-          <span id="appVersion" class="version"> ALPHA · v0.2.0-alpha.2 </span>
+          <span id="appVersion" class="version"> ALPHA · v0.3.0-alpha.1 </span>
 
           <a
             class="legal-link"
@@ -78,8 +80,6 @@
             <option value="custom">Custom</option>
           </select>
         </label>
-
-
       </div>
 
       <!-- Header Actions -->
@@ -96,10 +96,16 @@
          ========================================================= -->
 
     <nav class="main-nav workspace-nav" aria-label="Primary navigation">
-      <div class="theme-sidebar-brand sci-fi-sidebar-brand" aria-label="enCounter">
+      <div
+        class="theme-sidebar-brand sci-fi-sidebar-brand"
+        aria-label="enCounter"
+      >
         <img src="../../assets/branding/enCounter-icon.png" alt="" />
       </div>
-      <div class="workspace-nav-group workspace-nav-primary" aria-label="Workspace modes">
+      <div
+        class="workspace-nav-group workspace-nav-primary"
+        aria-label="Workspace modes"
+      >
         <span class="workspace-nav-label">Workspace</span>
 
         <button
@@ -124,15 +130,27 @@
       <div class="workspace-nav-group workspace-nav-tools" aria-label="Tools">
         <span class="workspace-nav-label">Tools</span>
 
-        <button class="nav-button workspace-tool-button" data-section="soundscapeSection" type="button">
+        <button
+          class="nav-button workspace-tool-button"
+          data-section="soundscapeSection"
+          type="button"
+        >
           Audio
         </button>
 
-        <button class="nav-button workspace-tool-button" data-section="timerSection" type="button">
+        <button
+          class="nav-button workspace-tool-button"
+          data-section="timerSection"
+          type="button"
+        >
           Timer
         </button>
 
-        <button class="nav-button workspace-tool-button" data-section="settingsSection" type="button">
+        <button
+          class="nav-button workspace-tool-button"
+          data-section="settingsSection"
+          type="button"
+        >
           Settings
         </button>
       </div>
@@ -153,14 +171,20 @@
             <!-- Compact encounter command strip -->
             <div class="panel encounter-command-strip run-command-strip">
               <div class="encounter-command-copy">
-                <div class="eyebrow">RUN // ACTIVE ENCOUNTER</div>
+                <div class="eyebrow">ACTIVE ENCOUNTER</div>
                 <strong id="runEncounterTitle">Active Encounter</strong>
-                <span id="runEncounterSubtitle" class="run-encounter-subtitle">Round 1 // Prepared</span>
+                <span id="runEncounterSubtitle" class="run-encounter-subtitle"
+                  >Round 1 // Prepared</span
+                >
               </div>
 
               <div class="encounter-command-actions run-command-actions">
-                <button id="startAdHocEncounterBtn" class="primary" type="button">
-                  + Start Ad Hoc
+                <button
+                  id="startAdHocEncounterBtn"
+                  class="primary"
+                  type="button"
+                >
+                  + Quick Encounter
                 </button>
 
                 <details class="encounter-load-menu">
@@ -172,7 +196,9 @@
                         <option value="">Choose template…</option>
                       </select>
                     </label>
-                    <button id="quickLoadTemplateBtn" type="button">Load Template</button>
+                    <button id="quickLoadTemplateBtn" type="button">
+                      Load Template
+                    </button>
 
                     <label class="encounter-quick-select">
                       <span>Saved Encounter State</span>
@@ -180,11 +206,17 @@
                         <option value="">Choose saved state…</option>
                       </select>
                     </label>
-                    <button id="quickResumeStateBtn" type="button">Resume State</button>
+                    <button id="quickResumeStateBtn" type="button">
+                      Resume State
+                    </button>
                   </div>
                 </details>
 
-                <button id="openDmEncountersBtn" class="icon-text-button" type="button">
+                <button
+                  id="openDmEncountersBtn"
+                  class="icon-text-button"
+                  type="button"
+                >
                   Encounter Library
                 </button>
               </div>
@@ -197,7 +229,9 @@
                   <div class="eyebrow">INITIATIVE ORDER</div>
                   <div class="encounter-roster-title-row">
                     <h2>Combatants</h2>
-                    <span id="encounterRosterCount" class="roster-count-pill">0</span>
+                    <span id="encounterRosterCount" class="roster-count-pill"
+                      >0</span
+                    >
                   </div>
                 </div>
 
@@ -219,10 +253,17 @@
                     <div class="eyebrow">ADD COMBATANT</div>
                     <strong>Choose a source</strong>
                   </div>
-                  <span class="hint">Start with a saved Library entry, search the Compendium, or create a temporary combatant.</span>
+                  <span class="hint"
+                    >Start with a saved Library entry, search the Compendium, or
+                    create a temporary combatant.</span
+                  >
                 </div>
 
-                <div class="encounter-add-source-tabs" role="tablist" aria-label="Combatant source">
+                <div
+                  class="encounter-add-source-tabs"
+                  role="tablist"
+                  aria-label="Combatant source"
+                >
                   <button
                     class="encounter-add-source-tab active"
                     type="button"
@@ -252,13 +293,23 @@
                   </button>
                 </div>
 
-                <div class="encounter-add-source-panel active" data-add-source-panel="library">
+                <div
+                  class="encounter-add-source-panel active"
+                  data-add-source-panel="library"
+                >
                   <div class="encounter-add-heading">
                     <strong>Saved Library Combatant</strong>
-                    <span class="hint">Use an existing player, NPC, enemy, or creature. The Library entry remains reusable.</span>
+                    <span class="hint"
+                      >Use an existing player, NPC, enemy, or creature. The
+                      Library entry remains reusable.</span
+                    >
                   </div>
 
-                  <div class="encounter-library-tabs" role="tablist" aria-label="Library combatant type">
+                  <div
+                    class="encounter-library-tabs"
+                    role="tablist"
+                    aria-label="Library combatant type"
+                  >
                     <button
                       class="encounter-library-tab active"
                       type="button"
@@ -266,7 +317,10 @@
                       aria-selected="true"
                       data-library-picker-tab="player"
                     >
-                      Players <span id="libraryPlayerCount" class="library-tab-count">0</span>
+                      Players
+                      <span id="libraryPlayerCount" class="library-tab-count"
+                        >0</span
+                      >
                     </button>
                     <button
                       class="encounter-library-tab"
@@ -275,7 +329,10 @@
                       aria-selected="false"
                       data-library-picker-tab="npc"
                     >
-                      NPCs <span id="libraryNpcCount" class="library-tab-count">0</span>
+                      NPCs
+                      <span id="libraryNpcCount" class="library-tab-count"
+                        >0</span
+                      >
                     </button>
                     <button
                       class="encounter-library-tab"
@@ -284,7 +341,10 @@
                       aria-selected="false"
                       data-library-picker-tab="monster"
                     >
-                      Monsters &amp; Enemies <span id="libraryMonsterCount" class="library-tab-count">0</span>
+                      Monsters &amp; Enemies
+                      <span id="libraryMonsterCount" class="library-tab-count"
+                        >0</span
+                      >
                     </button>
                   </div>
 
@@ -299,41 +359,70 @@
                       <span>Initiative</span>
                       <input id="libraryInitiative" type="number" value="10" />
                     </label>
-                    <button id="addLibraryCombatantBtn" class="primary" type="button">
+                    <button
+                      id="addLibraryCombatantBtn"
+                      class="primary"
+                      type="button"
+                    >
                       Add to Encounter
                     </button>
                   </div>
 
                   <div class="encounter-add-footer compact-add-footer">
-                    <button id="openDmCharactersBtn" type="button">Manage Character Library</button>
+                    <button id="openDmCharactersBtn" type="button">
+                      Manage Character Library
+                    </button>
                   </div>
                 </div>
 
-                <div class="encounter-add-source-panel" data-add-source-panel="compendium">
+                <div
+                  class="encounter-add-source-panel"
+                  data-add-source-panel="compendium"
+                >
                   <div class="encounter-add-heading">
                     <strong>Search Compendium</strong>
-                    <span class="hint">Find an SRD creature, preview it, then add it directly to this encounter or save it to your Library.</span>
+                    <span class="hint"
+                      >Find an SRD creature, preview it, then add it directly to
+                      this encounter or save it to your Library.</span
+                    >
                   </div>
                   <div class="encounter-source-callout">
                     <div>
                       <strong>D&amp;D 5E SRD</strong>
-                      <span class="hint">Search by creature name and return to Run mode after adding.</span>
+                      <span class="hint"
+                        >Search by creature name and return to Run mode after
+                        adding.</span
+                      >
                     </div>
-                    <button id="openDmCompendiumBtn" class="primary" type="button">
+                    <button
+                      id="openDmCompendiumBtn"
+                      class="primary"
+                      type="button"
+                    >
                       Open Compendium Search
                     </button>
                   </div>
                 </div>
 
-                <div class="encounter-add-source-panel" data-add-source-panel="quick">
+                <div
+                  class="encounter-add-source-panel"
+                  data-add-source-panel="quick"
+                >
                   <div class="encounter-add-heading">
                     <strong>Quick Create</strong>
-                    <span class="hint">Create a temporary combatant for this encounter without adding a permanent Library entry.</span>
+                    <span class="hint"
+                      >Create a temporary combatant for this encounter without
+                      adding a permanent Library entry.</span
+                    >
                   </div>
                   <div class="encounter-add-row quick-create-row">
                     <label>
                       <span>Name</span>
-                      <input id="quickName" type="text" placeholder="Goblin 1" />
+                      <input
+                        id="quickName"
+                        type="text"
+                        placeholder="Goblin 1"
+                      />
                     </label>
                     <label>
                       <span>Type</span>
@@ -350,14 +439,25 @@
                     </label>
                     <label class="compact-number-field">
                       <span>Max HP</span>
-                      <input id="quickMaxHp" type="number" min="0" placeholder="7" />
+                      <input
+                        id="quickMaxHp"
+                        type="number"
+                        min="0"
+                        placeholder="7"
+                      />
                     </label>
-                    <button id="quickAddBtn" class="primary" type="button">Add Temporary</button>
+                    <button id="quickAddBtn" class="primary" type="button">
+                      Add Temporary
+                    </button>
                   </div>
                 </div>
               </div>
 
-              <div id="combatantTableHeader" class="combatant-table-header hidden" aria-hidden="true">
+              <div
+                id="combatantTableHeader"
+                class="combatant-table-header hidden"
+                aria-hidden="true"
+              >
                 <span>Combatant</span>
                 <span>Init</span>
                 <span>HP</span>
@@ -366,10 +466,17 @@
                 <span></span>
               </div>
 
-              <div id="combatantList" class="combatant-list combatant-table-body"></div>
+              <div
+                id="combatantList"
+                class="combatant-list combatant-table-body"
+              ></div>
 
-              <div id="emptyEncounter" class="empty-state encounter-empty-state">
-                No combatants yet. Use <strong>+ Add Combatant</strong> to add one from the Library or create a temporary entry.
+              <div
+                id="emptyEncounter"
+                class="empty-state encounter-empty-state"
+              >
+                No combatants yet. Use <strong>+ Add Combatant</strong> to add
+                one from the Library or create a temporary entry.
               </div>
             </div>
           </div>
@@ -385,18 +492,31 @@
                 <span id="saveIndicator" class="save-indicator">✓ SAVED</span>
               </div>
 
-              <div id="currentTurnFocusBody" class="current-turn-focus-body is-empty">
-                <div id="currentTurnPortraitHost" class="current-turn-portrait-host" aria-hidden="true">?</div>
+              <div
+                id="currentTurnFocusBody"
+                class="current-turn-focus-body is-empty"
+              >
+                <div
+                  id="currentTurnPortraitHost"
+                  class="current-turn-portrait-host"
+                  aria-hidden="true"
+                >
+                  ?
+                </div>
                 <div class="current-turn-identity">
                   <strong id="currentTurnName">No current turn</strong>
-                  <span id="currentTurnMeta">Start combat or set a combatant's turn.</span>
+                  <span id="currentTurnMeta"
+                    >Start combat or set a combatant's turn.</span
+                  >
                 </div>
 
                 <div class="current-turn-stat-grid">
                   <div class="current-turn-stat current-turn-hp-stat">
                     <span>HP</span>
                     <strong id="currentTurnHp">—</strong>
-                    <div class="current-turn-hp-track"><span id="currentTurnHpFill"></span></div>
+                    <div class="current-turn-hp-track">
+                      <span id="currentTurnHpFill"></span>
+                    </div>
                   </div>
                   <div class="current-turn-stat">
                     <span id="currentTurnDefenseLabel">DEF</span>
@@ -411,6 +531,211 @@
                 <div id="currentTurnStatuses" class="current-turn-statuses">
                   <span class="combatant-status-empty">No active status</span>
                 </div>
+
+                <div
+                  id="currentTurnActions"
+                  class="current-turn-actions hidden"
+                  aria-label="Current combatant actions"
+                >
+                  <div class="current-turn-actions-heading">
+                    <span class="current-turn-actions-title">Quick Actions</span>
+                    <span class="current-turn-actions-note">Auto-saved</span>
+                  </div>
+
+                  <div
+                    id="currentTurnHpActionGroup"
+                    class="current-turn-action-group"
+                  >
+                    <div class="current-turn-action-group-heading">
+                      <span class="current-turn-action-label">HP</span>
+                      <span class="current-turn-action-context">
+                        Damage ← · → Heal
+                      </span>
+                    </div>
+
+                    <div
+                      class="current-turn-action-buttons current-turn-hp-actions"
+                    >
+                      <button
+                        id="currentTurnHpMinus10"
+                        class="hp-action damage"
+                        type="button"
+                        title="Apply 10 damage"
+                      >
+                        −10
+                      </button>
+
+                      <button
+                        id="currentTurnHpMinus1"
+                        class="hp-action damage"
+                        type="button"
+                        title="Apply 1 damage"
+                      >
+                        −1
+                      </button>
+
+                      <button
+                        id="currentTurnHpPlus1"
+                        class="hp-action heal"
+                        type="button"
+                        title="Heal 1 HP"
+                      >
+                        +1
+                      </button>
+
+                      <button
+                        id="currentTurnHpPlus10"
+                        class="hp-action heal"
+                        type="button"
+                        title="Heal 10 HP"
+                      >
+                        +10
+                      </button>
+                    </div>
+                  </div>
+
+                  <div
+                    id="currentTurnStatusActionGroup"
+                    class="current-turn-action-group"
+                  >
+                    <div class="current-turn-action-group-heading">
+                      <span class="current-turn-action-label">Status &amp; State</span>
+                      <span class="current-turn-action-context">
+                        Conditions · Recovery · Visibility
+                      </span>
+                    </div>
+
+                    <div
+                      class="current-turn-action-buttons current-turn-status-actions"
+                    >
+                      <button
+                        id="currentTurnConditionBtn"
+                        class="current-turn-state-action"
+                        type="button"
+                        aria-expanded="false"
+                      >
+                        Conditions
+                      </button>
+
+                      <button
+                        id="currentTurnRecoveryBtn"
+                        class="current-turn-state-action"
+                        type="button"
+                        aria-expanded="false"
+                      >
+                        Recovery
+                      </button>
+
+                      <button
+                        id="currentTurnExhaustionBtn"
+                        class="current-turn-state-action hidden"
+                        type="button"
+                        aria-expanded="false"
+                      >
+                        Exhaustion
+                      </button>
+
+                      <button
+                        id="currentTurnVisibilityBtn"
+                        class="current-turn-state-action hidden"
+                        type="button"
+                      >
+                        Hide from Players
+                      </button>
+                    </div>
+                  </div>
+                </div>
+
+                <div
+                  id="currentTurnRecoveryPanel"
+                  class="current-turn-recovery-panel hidden"
+                  aria-label="Current combatant recovery"
+                >
+                  <div class="current-turn-recovery-heading">
+                    <span class="current-turn-action-label">RECOVERY</span>
+                    <strong id="currentTurnRecoveryState">Normal</strong>
+                  </div>
+
+                  <div
+                    id="currentTurnDeathSavePanel"
+                    class="current-turn-death-saves hidden"
+                  >
+                    <div class="current-turn-death-save-heading">
+                      <strong>Death Saves</strong>
+                      <span id="currentTurnDeathSaveSummary" class="hint">
+                        0 successes / 0 failures
+                      </span>
+                    </div>
+
+                    <div class="current-turn-death-save-track">
+                      <div>
+                        <span>Successes</span>
+                        <strong id="currentTurnDeathSuccesses">○ ○ ○</strong>
+                      </div>
+                      <div>
+                        <span>Failures</span>
+                        <strong id="currentTurnDeathFailures">○ ○ ○</strong>
+                      </div>
+                    </div>
+
+                    <div class="current-turn-death-save-actions">
+                      <button
+                        id="currentTurnRollDeathSaveBtn"
+                        class="primary"
+                        type="button"
+                      >
+                        Roll Death Save
+                      </button>
+                      <button id="currentTurnAddDeathSuccessBtn" type="button">
+                        + Success
+                      </button>
+                      <button id="currentTurnAddDeathFailureBtn" type="button">
+                        + Failure
+                      </button>
+                    </div>
+                  </div>
+
+                  <p id="currentTurnRecoveryHint" class="hint"></p>
+
+                  <div class="current-turn-recovery-actions">
+                    <button id="currentTurnMarkDownedBtn" type="button">
+                      Mark Downed
+                    </button>
+                    <button
+                      id="currentTurnStabilizeBtn"
+                      class="hidden"
+                      type="button"
+                    >
+                      Stabilize
+                    </button>
+                    <button
+                      id="currentTurnMarkDefeatedBtn"
+                      class="danger-outline"
+                      type="button"
+                    >
+                      Defeated
+                    </button>
+                    <button
+                      id="currentTurnMarkDeadBtn"
+                      class="danger-outline"
+                      type="button"
+                    >
+                      Mark Dead
+                    </button>
+                    <button
+                      id="currentTurnReturnCombatBtn"
+                      class="primary hidden"
+                      type="button"
+                    >
+                      Return to Combat
+                    </button>
+                  </div>
+                </div>
+
+                <div
+                  id="currentTurnConditionEditor"
+                  class="current-turn-condition-editor hidden"
+                ></div>
               </div>
 
               <div class="current-turn-controls">
@@ -420,7 +745,9 @@
                 </div>
                 <div class="turn-navigation-buttons">
                   <button id="previousTurnBtn" type="button">◀ Previous</button>
-                  <button id="nextTurnBtn" class="primary" type="button">Next Turn ▶</button>
+                  <button id="nextTurnBtn" class="primary" type="button">
+                    Next Turn ▶
+                  </button>
                 </div>
               </div>
             </div>
@@ -439,7 +766,9 @@
 
               <div class="rail-button-grid">
                 <button id="showSceneBtn" type="button">Scene Mode</button>
-                <button id="startCombatBtn" class="primary" type="button">Start Combat</button>
+                <button id="startCombatBtn" class="primary" type="button">
+                  Start Combat
+                </button>
                 <button id="endCombatBtn" type="button">End Combat</button>
               </div>
             </div>
@@ -448,33 +777,64 @@
               <div class="rail-section-heading">
                 <div>
                   <div class="eyebrow">PLAYER DISPLAY</div>
-                  <strong>Presentation</strong>
+                  <strong>Display Controls</strong>
                 </div>
-                <span id="playerDisplayStatus" class="rail-status-pill display-status-closed">CLOSED</span>
+                <span
+                  id="playerDisplayStatus"
+                  class="rail-status-pill display-status-closed"
+                  >CLOSED</span
+                >
               </div>
 
               <div class="rail-button-grid rail-display-actions">
-                <button id="openDisplayBtn" class="primary" type="button">Open Display</button>
-                <button id="showSceneDisplayBtn" type="button" aria-pressed="false">Show Scene</button>
-                <button id="showCombatDisplayBtn" type="button" aria-pressed="false">Show Combat</button>
-                <button id="hideEncounterDisplayBtn" class="danger-outline" type="button" aria-pressed="false">Hide / Standby</button>
+                <button id="openDisplayBtn" class="primary" type="button">
+                  Open Display
+                </button>
+                <button
+                  id="showSceneDisplayBtn"
+                  type="button"
+                  aria-pressed="false"
+                >
+                  Show Scene
+                </button>
+                <button
+                  id="showCombatDisplayBtn"
+                  type="button"
+                  aria-pressed="false"
+                >
+                  Show Combat
+                </button>
+                <button
+                  id="hideEncounterDisplayBtn"
+                  class="danger-outline"
+                  type="button"
+                  aria-pressed="false"
+                >
+                  Send to Standby
+                </button>
               </div>
               <p class="hint rail-display-hint">
-                Scene and Combat presentation are independent of encounter phase. Hide returns players to Stand By without ending the scene or combat.
+                Scene and Combat presentation are independent of encounter
+                phase. Send to Standby returns players to the standby screen
+                without ending the scene or combat.
               </p>
             </div>
 
             <div class="panel encounter-rail-panel encounter-timer-panel">
               <div class="rail-section-heading">
                 <div>
-                  <div class="eyebrow">PREPARED TIMER</div>
+                  <div class="eyebrow">TIMER</div>
                   <strong id="encounterTimerName">Countdown</strong>
                 </div>
-                <span id="encounterTimerStatus" class="rail-status-pill">READY</span>
+                <span id="encounterTimerStatus" class="rail-status-pill"
+                  >READY</span
+                >
               </div>
 
-              <div class="rail-timer-readout" aria-label="Prepared timer remaining time">
-                <div id="encounterTimerCountdown" class="rail-timer-countdown">00:00</div>
+              <div class="rail-timer-readout" aria-label="Timer remaining time">
+                <div id="encounterTimerCountdown" class="rail-timer-countdown">
+                  00:00
+                </div>
                 <div
                   id="encounterTimerProgress"
                   class="rail-timer-progress"
@@ -489,20 +849,70 @@
               </div>
 
               <div class="rail-timer-actions">
-                <button id="encounterTimerStartBtn" class="primary" type="button">▶ Start</button>
-                <button id="encounterTimerResetBtn" type="button">↺ Reset</button>
-                <button id="encounterTimerStopBtn" class="danger-outline" type="button">■ Stop</button>
+                <button
+                  id="encounterTimerStartBtn"
+                  class="primary"
+                  type="button"
+                >
+                  ▶ Start
+                </button>
+                <button id="encounterTimerResetBtn" type="button">
+                  ↺ Reset
+                </button>
+                <button
+                  id="encounterTimerStopBtn"
+                  class="danger-outline"
+                  type="button"
+                >
+                  ■ Stop
+                </button>
               </div>
 
-              <div class="rail-timer-adjustments" aria-label="Adjust prepared timer">
+              <div class="rail-timer-adjustments" aria-label="Adjust timer">
                 <span class="rail-timer-adjustments-label">Adjust Time</span>
                 <div class="rail-timer-adjust-grid">
-                  <button type="button" data-run-timer-adjust-ms="-300000" aria-label="Subtract 5 minutes">−5m</button>
-                  <button type="button" data-run-timer-adjust-ms="-60000" aria-label="Subtract 1 minute">−1m</button>
-                  <button type="button" data-run-timer-adjust-ms="-10000" aria-label="Subtract 10 seconds">−10s</button>
-                  <button type="button" data-run-timer-adjust-ms="10000" aria-label="Add 10 seconds">+10s</button>
-                  <button type="button" data-run-timer-adjust-ms="60000" aria-label="Add 1 minute">+1m</button>
-                  <button type="button" data-run-timer-adjust-ms="300000" aria-label="Add 5 minutes">+5m</button>
+                  <button
+                    type="button"
+                    data-run-timer-adjust-ms="-300000"
+                    aria-label="Subtract 5 minutes"
+                  >
+                    −5m
+                  </button>
+                  <button
+                    type="button"
+                    data-run-timer-adjust-ms="-60000"
+                    aria-label="Subtract 1 minute"
+                  >
+                    −1m
+                  </button>
+                  <button
+                    type="button"
+                    data-run-timer-adjust-ms="-10000"
+                    aria-label="Subtract 10 seconds"
+                  >
+                    −10s
+                  </button>
+                  <button
+                    type="button"
+                    data-run-timer-adjust-ms="10000"
+                    aria-label="Add 10 seconds"
+                  >
+                    +10s
+                  </button>
+                  <button
+                    type="button"
+                    data-run-timer-adjust-ms="60000"
+                    aria-label="Add 1 minute"
+                  >
+                    +1m
+                  </button>
+                  <button
+                    type="button"
+                    data-run-timer-adjust-ms="300000"
+                    aria-label="Add 5 minutes"
+                  >
+                    +5m
+                  </button>
                 </div>
               </div>
 
@@ -518,9 +928,16 @@
                 </button>
               </div>
               <p class="hint rail-timer-hint">
-                Stop preserves the remaining time. Reset restores the full prepared duration.
+                Stop preserves the remaining time. Reset restores the full
+                prepared duration.
               </p>
-              <button id="openTimerToolBtn" class="rail-link-button" type="button">Configure Timer</button>
+              <button
+                id="openTimerToolBtn"
+                class="rail-link-button"
+                type="button"
+              >
+                Configure Timer
+              </button>
             </div>
 
             <div class="panel encounter-rail-panel">
@@ -529,24 +946,34 @@
                   <div class="eyebrow">AUDIO</div>
                   <strong>Soundscape</strong>
                 </div>
-                <span id="encounterAudioStatus" class="soundscape-status">AUDIO STOPPED</span>
+                <span id="encounterAudioStatus" class="soundscape-status"
+                  >AUDIO STOPPED</span
+                >
               </div>
 
               <div class="rail-button-grid">
-                <button id="startSceneAudioBtn" type="button">▶ Scene Audio</button>
-                <button id="stopEncounterAudioBtn" class="danger-outline" type="button">■ Stop</button>
+                <button id="startSceneAudioBtn" type="button">
+                  ▶ Scene Audio
+                </button>
+                <button
+                  id="stopEncounterAudioBtn"
+                  class="danger-outline"
+                  type="button"
+                >
+                  ■ Stop
+                </button>
               </div>
             </div>
 
             <div class="panel encounter-rail-panel encounter-cue-panel">
               <div class="rail-section-heading">
                 <div>
-                  <div class="eyebrow">PREPARED CUES</div>
-                  <strong>Live Sound Effects</strong>
+                  <div class="eyebrow">SOUND CUES</div>
+                  <strong>Live Effects</strong>
                 </div>
               </div>
               <div id="encounterCueButtons" class="encounter-cue-buttons">
-                <span class="hint">No prepared sound cues.</span>
+                <span class="hint">No sound cues configured.</span>
               </div>
             </div>
 
@@ -587,7 +1014,6 @@
         </div>
       </section>
 
-
       <!-- =======================================================
            LIBRARY SECTION
            ======================================================= -->
@@ -603,19 +1029,26 @@
       <section id="dmSection" class="app-section">
         <div class="dm-workspace-shell">
           <aside class="dm-sidebar" aria-label="DM Workspace navigation">
-            <div class="dm-sidebar-heading">
-              <div class="eyebrow">PREPARE</div>
-              <strong>Library &amp; Setup</strong>
-            </div>
-
-            <button class="dm-nav-button active" data-dm-page="characters" type="button">
+            <button
+              class="dm-nav-button active"
+              data-dm-page="characters"
+              type="button"
+            >
               Characters
             </button>
-            <button class="dm-nav-button" data-dm-page="compendium" type="button">
+            <button
+              class="dm-nav-button"
+              data-dm-page="compendium"
+              type="button"
+            >
               Compendium
             </button>
-            <button class="dm-nav-button" data-dm-page="encounters" type="button">
-              Encounter Library
+            <button
+              class="dm-nav-button"
+              data-dm-page="encounters"
+              type="button"
+            >
+              Encounters
             </button>
             <button class="dm-nav-button" data-dm-page="assets" type="button">
               Assets
@@ -626,20 +1059,50 @@
           </aside>
 
           <div class="dm-workspace-content">
-            <div id="dmCharactersPage" class="dm-page active-dm-page" data-dm-page-panel="characters">
+            <div
+              id="dmCharactersPage"
+              class="dm-page active-dm-page"
+              data-dm-page-panel="characters"
+            >
               <div class="dm-page-header">
                 <div>
                   <div class="eyebrow">CHARACTERS</div>
                   <h2>Character Library</h2>
-                  <p class="hint">Manage reusable players, NPCs, enemies, and creatures.</p>
+                  <p class="hint">
+                    Manage reusable players, NPCs, enemies, and creatures.
+                  </p>
                 </div>
               </div>
 
               <div class="dm-segmented-nav" aria-label="Character categories">
-                <button class="dm-segment-button active" data-library-type="all" type="button">All</button>
-                <button class="dm-segment-button" data-library-type="player" type="button">Players</button>
-                <button class="dm-segment-button" data-library-type="npc" type="button">NPCs</button>
-                <button class="dm-segment-button" data-library-type="enemy-creature" type="button">Enemies &amp; Creatures</button>
+                <button
+                  class="dm-segment-button active"
+                  data-library-type="all"
+                  type="button"
+                >
+                  All
+                </button>
+                <button
+                  class="dm-segment-button"
+                  data-library-type="player"
+                  type="button"
+                >
+                  Players
+                </button>
+                <button
+                  class="dm-segment-button"
+                  data-library-type="npc"
+                  type="button"
+                >
+                  NPCs
+                </button>
+                <button
+                  class="dm-segment-button"
+                  data-library-type="enemy-creature"
+                  type="button"
+                >
+                  Enemies &amp; Creatures
+                </button>
               </div>
 
               <div class="character-library-toolbar panel">
@@ -651,14 +1114,24 @@
                     aria-label="Search character library"
                   />
 
-                  <select id="libraryTypeFilter" class="hidden" aria-hidden="true" tabindex="-1">
+                  <select
+                    id="libraryTypeFilter"
+                    class="hidden"
+                    aria-hidden="true"
+                    tabindex="-1"
+                  >
                     <option value="all">All Characters</option>
                     <option value="player">Players</option>
                     <option value="npc">NPCs</option>
-                    <option value="enemy-creature">Enemies &amp; Creatures</option>
+                    <option value="enemy-creature">
+                      Enemies &amp; Creatures
+                    </option>
                   </select>
 
-                  <select id="librarySystemFilter" aria-label="Filter by game system">
+                  <select
+                    id="librarySystemFilter"
+                    aria-label="Filter by game system"
+                  >
                     <option value="all">All Systems</option>
                     <option value="generic">Generic</option>
                     <option value="swse">SWSE</option>
@@ -666,7 +1139,10 @@
                     <option value="custom">Custom</option>
                   </select>
 
-                  <select id="librarySourceFilter" aria-label="Filter by library source">
+                  <select
+                    id="librarySourceFilter"
+                    aria-label="Filter by library source"
+                  >
                     <option value="all">All Sources</option>
                     <option value="custom">Custom</option>
                     <option value="compendium">Compendium (SRD 5.1)</option>
@@ -674,7 +1150,9 @@
                 </div>
 
                 <div class="character-library-toolbar-actions">
-                  <span id="libraryResultCount" class="character-count-pill">0 entries</span>
+                  <span id="libraryResultCount" class="character-count-pill"
+                    >0 entries</span
+                  >
                   <button id="newLibraryEntryBtn" class="primary" type="button">
                     + New Character
                   </button>
@@ -691,14 +1169,20 @@
                     <span>Actions</span>
                   </div>
 
-                  <div id="libraryCards" class="library-cards character-table"></div>
+                  <div
+                    id="libraryCards"
+                    class="library-cards character-table"
+                  ></div>
 
                   <div id="emptyLibrary" class="empty-state">
                     No matching characters in your library.
                   </div>
                 </div>
 
-                <aside id="libraryEditorPanel" class="panel library-editor character-editor-panel hidden">
+                <aside
+                  id="libraryEditorPanel"
+                  class="panel library-editor character-editor-panel hidden"
+                >
                   <div class="section-heading">
                     <div>
                       <div class="eyebrow">CREATE / EDIT</div>
@@ -750,7 +1234,10 @@
                     </div>
 
                     <h3>System Statistics</h3>
-                    <div id="libraryStatFields" class="form-grid stat-fields"></div>
+                    <div
+                      id="libraryStatFields"
+                      class="form-grid stat-fields"
+                    ></div>
 
                     <h3>Portrait</h3>
                     <div class="form-grid">
@@ -821,24 +1308,47 @@
               </div>
             </div>
 
-            <div id="dmCompendiumPage" class="dm-page" data-dm-page-panel="compendium">
+            <div
+              id="dmCompendiumPage"
+              class="dm-page"
+              data-dm-page-panel="compendium"
+            >
               <div class="dm-page-header compendium-page-header">
                 <div>
                   <div class="eyebrow">COMPENDIUM</div>
                   <h2>Creature Search</h2>
                   <p class="hint">
-                    Search licensed D&amp;D 5E SRD creatures, preview their stat data, add them directly to the active encounter, or save an editable local copy to your Library.
+                    Search licensed D&amp;D 5E SRD creatures, preview their stat
+                    data, add them directly to the active encounter, or save an
+                    editable local copy to your Library.
                   </p>
                 </div>
-                <button id="compendiumManageLibraryBtn" type="button">Manage Creature Library</button>
+                <button id="compendiumManageLibraryBtn" type="button">
+                  Manage Creature Library
+                </button>
               </div>
 
-              <div class="compendium-provider-tabs" role="tablist" aria-label="Compendium providers">
-                <button type="button" class="active" role="tab" aria-selected="true">
+              <div
+                class="compendium-provider-tabs"
+                role="tablist"
+                aria-label="Compendium providers"
+              >
+                <button
+                  type="button"
+                  class="active"
+                  role="tab"
+                  aria-selected="true"
+                >
                   D&amp;D 5E SRD
                   <span>Online</span>
                 </button>
-                <button type="button" role="tab" aria-selected="false" disabled title="Local/SWSE Compendium is planned for Phase 3.2.">
+                <button
+                  type="button"
+                  role="tab"
+                  aria-selected="false"
+                  disabled
+                  title="Local/SWSE Compendium is planned for Phase 3.2."
+                >
                   SWSE / Local
                   <span>Coming next</span>
                 </button>
@@ -850,23 +1360,46 @@
                     <div class="eyebrow">D&amp;D 5E SRD 5.1</div>
                     <h3>Search Creatures</h3>
                   </div>
-                  <span class="compendium-online-badge">D&D 5e API · SRD 2014</span>
+                  <span class="compendium-online-badge"
+                    >D&D 5e API · SRD 2014</span
+                  >
                 </div>
                 <div class="compendium-search-row">
                   <label class="compendium-search-field">
                     <span class="sr-only">Creature name</span>
-                    <input id="compendiumSearch" type="search" autocomplete="off" placeholder="Search goblin, dragon, skeleton…" />
+                    <input
+                      id="compendiumSearch"
+                      type="search"
+                      autocomplete="off"
+                      placeholder="Search goblin, dragon, skeleton…"
+                    />
                   </label>
-                  <button id="compendiumSearchBtn" class="primary" type="button">Search</button>
+                  <button
+                    id="compendiumSearchBtn"
+                    class="primary"
+                    type="button"
+                  >
+                    Search
+                  </button>
                 </div>
                 <div class="compendium-search-meta">
-                  <span id="compendiumStatus" class="hint">Search the SRD 2014 monster index. Results and creature details are cached when available.</span>
-                  <span id="compendiumResultCount" class="compendium-result-count">0 results</span>
+                  <span id="compendiumStatus" class="hint"
+                    >Search the SRD 2014 monster index. Results and creature
+                    details are cached when available.</span
+                  >
+                  <span
+                    id="compendiumResultCount"
+                    class="compendium-result-count"
+                    >0 results</span
+                  >
                 </div>
               </div>
 
               <div class="compendium-workspace">
-                <section class="panel compendium-results-panel" aria-label="Compendium search results">
+                <section
+                  class="panel compendium-results-panel"
+                  aria-label="Compendium search results"
+                >
                   <div class="compendium-table-header" aria-hidden="true">
                     <span>Creature</span>
                     <span>HP</span>
@@ -876,26 +1409,42 @@
                   </div>
                   <div id="compendiumResults" class="compendium-results"></div>
                   <div id="compendiumEmpty" class="empty-state">
-                    Search the SRD to find creatures. Results are limited to the SRD 5.1 source in this provider.
+                    Search the SRD to find creatures. Results are limited to the
+                    SRD 5.1 source in this provider.
                   </div>
                 </section>
 
-                <aside id="compendiumPreview" class="panel compendium-preview compendium-preview-empty" aria-live="polite">
+                <aside
+                  id="compendiumPreview"
+                  class="panel compendium-preview compendium-preview-empty"
+                  aria-live="polite"
+                >
                   Select a creature to preview its SRD details.
                 </aside>
               </div>
 
               <div class="compendium-attribution hint">
-                Creature data is sourced from the D&amp;D System Reference Document 5.1 through the D&amp;D 5e SRD API maintained by the 5e-bits project and is available under CC BY 4.0. enCounter does not import remote creature artwork.
+                Creature data is sourced from the D&amp;D System Reference
+                Document 5.1 through the D&amp;D 5e SRD API maintained by the
+                5e-bits project and is available under CC BY 4.0. enCounter does
+                not import remote creature artwork.
               </div>
             </div>
 
-            <div id="dmEncountersPage" class="dm-page" data-dm-page-panel="encounters">
+            <div
+              id="dmEncountersPage"
+              class="dm-page"
+              data-dm-page-panel="encounters"
+            >
               <div class="dm-page-header">
                 <div>
                   <div class="eyebrow">ENCOUNTER LIBRARY</div>
                   <h2>Templates &amp; Saved States</h2>
-                  <p class="hint">Build reusable encounters here before play. Run is reserved for loading a prepared encounter, resuming a saved state, or starting an ad hoc session.</p>
+                  <p class="hint">
+                    Build reusable encounters here before play. Run is reserved
+                    for loading a prepared encounter, resuming a saved state, or
+                    starting a Quick Encounter.
+                  </p>
                 </div>
                 <div class="dm-page-header-actions">
                   <button id="dmNewEncounterBtn" class="primary" type="button">
@@ -904,445 +1453,623 @@
                 </div>
               </div>
 
-          <!-- Saved Encounter Library -->
+              <!-- Saved Encounter Library -->
 
-          <div class="encounter-library-bar">
-            <div class="saved-encounter-header">
-              <strong>Saved Encounters</strong>
-              <div id="loadedEncounterSource" class="hint">
-                Unsaved working encounter
-              </div>
-            </div>
-
-            <div class="saved-encounter-groups">
-              <!-- Reusable Encounter Templates -->
-
-              <div class="saved-encounter-group">
-                <div class="saved-encounter-group-title">
-                  Reusable Encounter Templates
-                </div>
-
-                <div class="saved-encounter-controls">
-                  <select
-                    id="savedTemplateSelect"
-                    aria-label="Reusable encounter templates"
-                  >
-                    <option value="">Choose template…</option>
-                  </select>
-
-                  <button id="loadTemplateBtn" type="button">
-                    Load Template
-                  </button>
-
-
-                  <button
-                    id="saveNewTemplateBtn"
-                    class="primary"
-                    type="button"
-                  >
-                    Save Current Run as Template
-                  </button>
-
-                  <button id="updateTemplateBtn" type="button">
-                    Update Template
-                  </button>
-
-                  <button
-                    id="deleteTemplateBtn"
-                    class="danger-outline"
-                    type="button"
-                  >
-                    Delete
-                  </button>
-                </div>
-
-                <div class="hint">
-                  Select a reusable encounter above to edit its complete pre-game presentation setup directly below. Templates reset live combat progress such as current HP, conditions, exhaustion, round, and current turn when loaded.
-                </div>
-
-                <div id="encounterSetupPrompt" class="encounter-setup-prompt">
-                  <strong>Select a reusable encounter to configure it.</strong>
-                  <span>Backgrounds, music, ambience, cues, and encounter presentation can be prepared without loading the encounter for live play.</span>
-                </div>
-
-            <section
-              id="encounterSetupEditor"
-              class="panel encounter-setup-editor hidden"
-              aria-labelledby="encounterSetupTitle"
-            >
-              <div class="section-heading encounter-setup-heading">
-                <div>
-                  <div class="eyebrow">PRE-GAME PREPARATION</div>
-                  <h3 id="encounterSetupTitle">
-                    Encounter Setup · <span id="encounterSetupName">Template</span>
-                  </h3>
-                  <p class="hint">
-                    Configure visuals and audio directly on this reusable template without loading it into the active Encounter.
-                  </p>
-                </div>
-
-                <div class="encounter-setup-save-actions">
-                  <div
-                    id="encounterSetupSaveStatus"
-                    class="encounter-setup-save-status"
-                    role="status"
-                    aria-live="polite"
-                  >
-                    Saved setup loaded
-                  </div>
-                  <div class="button-row">
-                    <button id="encounterSetupManageAssetsBtn" type="button">Manage Assets</button>
-                    <button id="encounterSetupSaveBtn" class="primary" type="button">
-                      Save Encounter Setup
-                    </button>
+              <div class="encounter-library-bar">
+                <div class="saved-encounter-header">
+                  <strong>Saved Encounters</strong>
+                  <div id="loadedEncounterSource" class="hint">
+                    Unsaved working encounter
                   </div>
                 </div>
-              </div>
 
-              <div class="encounter-setup-status-row">
-                <span id="encounterSetupSystem" class="system-pill">Generic TTRPG</span>
-                <span class="hint">
-                  Changes here update the saved reusable template only. Ad hoc changes made from the live Encounter tab remain session-specific until you intentionally update the template.
-                </span>
-              </div>
+                <div class="saved-encounter-groups">
+                  <!-- Reusable Encounter Templates -->
 
-              <div class="encounter-setup-overview">
-                <label>
-                  <span>Encounter Name</span>
-                  <input id="encounterSetupTemplateName" type="text" maxlength="120" />
-                </label>
-                <div>
-                  <span class="field-caption">Combatants in Template</span>
-                  <div id="encounterSetupCombatants" class="encounter-setup-combatants"></div>
-                  <div class="encounter-template-builder-controls">
-                    <select id="encounterSetupLibraryCombatant" aria-label="Library combatant to add">
-                      <option value="">Choose Library character or creature…</option>
-                    </select>
-                    <button id="encounterSetupAddCombatantBtn" type="button">
-                      + Add to Template
-                    </button>
-                  </div>
-                  <span class="hint encounter-template-builder-hint">
-                    Add saved Library entries while preparing the encounter. Compendium creatures should be saved to the Library first.
-                  </span>
-                </div>
-              </div>
+                  <div class="saved-encounter-group">
+                    <div class="saved-encounter-group-title">
+                      Reusable Encounter Templates
+                    </div>
 
-              <div class="encounter-setup-grid">
-                <article class="encounter-setup-card">
-                  <div class="eyebrow">ROLEPLAY / EXPLORATION</div>
-                  <h3>Scene</h3>
-
-                  <div
-                    id="encounterSetupScenePreview"
-                    class="encounter-setup-background-preview"
-                    aria-label="Scene background preview"
-                  >
-                    <span>No scene background selected</span>
-                  </div>
-
-                  <label>
-                    <span>Scene Background</span>
-                    <select id="encounterSetupSceneBackground">
-                      <option value="">— Default Scene Screen —</option>
-                    </select>
-                  </label>
-
-                  <div class="encounter-setup-audio-row">
-                    <label>
-                      <span>Scene Music</span>
+                    <div class="saved-encounter-controls">
                       <select
-                        id="encounterSetupSceneMusic"
-                        data-audio-select
-                        data-audio-prefix="sounds/music"
+                        id="savedTemplateSelect"
+                        aria-label="Reusable encounter templates"
                       >
-                        <option value="">— None —</option>
+                        <option value="">Choose template…</option>
                       </select>
-                    </label>
-                    <label>
-                      <span>Volume %</span>
-                      <input id="encounterSetupSceneMusicVolume" type="number" min="0" max="100" value="35" />
-                    </label>
+
+                      <button id="loadTemplateBtn" type="button">
+                        Load Template
+                      </button>
+
+                      <button
+                        id="saveNewTemplateBtn"
+                        class="primary"
+                        type="button"
+                      >
+                        Save Current Run as Template
+                      </button>
+
+                      <button id="updateTemplateBtn" type="button">
+                        Update Template
+                      </button>
+
+                      <button
+                        id="deleteTemplateBtn"
+                        class="danger-outline"
+                        type="button"
+                      >
+                        Delete
+                      </button>
+                    </div>
+
+                    <div class="hint">
+                      Select a reusable encounter above to edit its complete
+                      pre-game presentation setup directly below. Templates
+                      reset live combat progress such as current HP, conditions,
+                      exhaustion, round, and current turn when loaded.
+                    </div>
+
+                    <div
+                      id="encounterSetupPrompt"
+                      class="encounter-setup-prompt"
+                    >
+                      <strong
+                        >Select a reusable encounter to configure it.</strong
+                      >
+                      <span
+                        >Backgrounds, music, ambience, cues, and encounter
+                        presentation can be prepared without loading the
+                        encounter for live play.</span
+                      >
+                    </div>
+
+                    <section
+                      id="encounterSetupEditor"
+                      class="panel encounter-setup-editor hidden"
+                      aria-labelledby="encounterSetupTitle"
+                    >
+                      <div class="section-heading encounter-setup-heading">
+                        <div>
+                          <div class="eyebrow">PRE-GAME PREPARATION</div>
+                          <h3 id="encounterSetupTitle">
+                            Encounter Setup ·
+                            <span id="encounterSetupName">Template</span>
+                          </h3>
+                          <p class="hint">
+                            Configure visuals and audio directly on this
+                            reusable template without loading it into the active
+                            Encounter.
+                          </p>
+                        </div>
+
+                        <div class="encounter-setup-save-actions">
+                          <div
+                            id="encounterSetupSaveStatus"
+                            class="encounter-setup-save-status"
+                            role="status"
+                            aria-live="polite"
+                          >
+                            Saved setup loaded
+                          </div>
+                          <div class="button-row">
+                            <button
+                              id="encounterSetupManageAssetsBtn"
+                              type="button"
+                            >
+                              Manage Assets
+                            </button>
+                            <button
+                              id="encounterSetupSaveBtn"
+                              class="primary"
+                              type="button"
+                            >
+                              Save Encounter Setup
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+
+                      <div class="encounter-setup-status-row">
+                        <span id="encounterSetupSystem" class="system-pill"
+                          >Generic TTRPG</span
+                        >
+                        <span class="hint">
+                          Changes here update the saved reusable template only.
+                          Quick Encounter changes made from the live Encounter
+                          workspace remain session-specific until you
+                          intentionally update the template..
+                        </span>
+                      </div>
+
+                      <div class="encounter-setup-overview">
+                        <label>
+                          <span>Encounter Name</span>
+                          <input
+                            id="encounterSetupTemplateName"
+                            type="text"
+                            maxlength="120"
+                          />
+                        </label>
+                        <div>
+                          <span class="field-caption"
+                            >Combatants in Template</span
+                          >
+                          <div
+                            id="encounterSetupCombatants"
+                            class="encounter-setup-combatants"
+                          ></div>
+                          <div class="encounter-template-builder-controls">
+                            <select
+                              id="encounterSetupLibraryCombatant"
+                              aria-label="Library combatant to add"
+                            >
+                              <option value="">
+                                Choose Library character or creature…
+                              </option>
+                            </select>
+                            <button
+                              id="encounterSetupAddCombatantBtn"
+                              type="button"
+                            >
+                              + Add to Template
+                            </button>
+                          </div>
+                          <span class="hint encounter-template-builder-hint">
+                            Add saved Library entries while preparing the
+                            encounter. Compendium creatures should be saved to
+                            the Library first.
+                          </span>
+                        </div>
+                      </div>
+
+                      <div class="encounter-setup-grid">
+                        <article class="encounter-setup-card">
+                          <div class="eyebrow">ROLEPLAY / EXPLORATION</div>
+                          <h3>Scene</h3>
+
+                          <div
+                            id="encounterSetupScenePreview"
+                            class="encounter-setup-background-preview"
+                            aria-label="Scene background preview"
+                          >
+                            <span>No scene background selected</span>
+                          </div>
+
+                          <label>
+                            <span>Scene Background</span>
+                            <select id="encounterSetupSceneBackground">
+                              <option value="">— Default Scene Screen —</option>
+                            </select>
+                          </label>
+
+                          <div class="encounter-setup-audio-row">
+                            <label>
+                              <span>Scene Music</span>
+                              <select
+                                id="encounterSetupSceneMusic"
+                                data-audio-select
+                                data-audio-prefix="sounds/music"
+                              >
+                                <option value="">— None —</option>
+                              </select>
+                            </label>
+                            <label>
+                              <span>Volume %</span>
+                              <input
+                                id="encounterSetupSceneMusicVolume"
+                                type="number"
+                                min="0"
+                                max="100"
+                                value="35"
+                              />
+                            </label>
+                          </div>
+
+                          <div class="encounter-setup-audio-row">
+                            <label>
+                              <span>Primary Ambience</span>
+                              <select
+                                id="encounterSetupSceneAmb1"
+                                data-audio-select
+                                data-audio-prefix="sounds/ambience"
+                              >
+                                <option value="">— None —</option>
+                              </select>
+                            </label>
+                            <label>
+                              <span>Volume %</span>
+                              <input
+                                id="encounterSetupSceneAmb1Volume"
+                                type="number"
+                                min="0"
+                                max="100"
+                                value="40"
+                              />
+                            </label>
+                          </div>
+                        </article>
+
+                        <article class="encounter-setup-card">
+                          <div class="eyebrow">INITIATIVE / BATTLE</div>
+                          <h3>Combat</h3>
+
+                          <div
+                            id="encounterSetupCombatPreview"
+                            class="encounter-setup-background-preview"
+                            aria-label="Combat background preview"
+                          >
+                            <span>No combat background selected</span>
+                          </div>
+
+                          <label>
+                            <span>Combat Background</span>
+                            <select id="encounterSetupCombatBackground">
+                              <option value="">
+                                — Default Combat Screen —
+                              </option>
+                            </select>
+                          </label>
+
+                          <div class="encounter-setup-audio-row">
+                            <label>
+                              <span>Combat Music</span>
+                              <select
+                                id="encounterSetupCombatMusic"
+                                data-audio-select
+                                data-audio-prefix="sounds/music"
+                              >
+                                <option value="">— None —</option>
+                              </select>
+                            </label>
+                            <label>
+                              <span>Volume %</span>
+                              <input
+                                id="encounterSetupCombatMusicVolume"
+                                type="number"
+                                min="0"
+                                max="100"
+                                value="65"
+                              />
+                            </label>
+                          </div>
+
+                          <div class="encounter-setup-audio-row">
+                            <label>
+                              <span>Primary Ambience</span>
+                              <select
+                                id="encounterSetupCombatAmb1"
+                                data-audio-select
+                                data-audio-prefix="sounds/ambience"
+                              >
+                                <option value="">— None —</option>
+                              </select>
+                            </label>
+                            <label>
+                              <span>Volume %</span>
+                              <input
+                                id="encounterSetupCombatAmb1Volume"
+                                type="number"
+                                min="0"
+                                max="100"
+                                value="35"
+                              />
+                            </label>
+                          </div>
+                        </article>
+                      </div>
+
+                      <div class="encounter-setup-options">
+                        <label>
+                          <span>Master Volume %</span>
+                          <input
+                            id="encounterSetupMasterVolume"
+                            type="number"
+                            min="0"
+                            max="100"
+                            value="80"
+                          />
+                        </label>
+
+                        <label>
+                          <span>Fade (seconds)</span>
+                          <input
+                            id="encounterSetupFadeSeconds"
+                            type="number"
+                            min="0"
+                            max="15"
+                            step="0.5"
+                            value="2.5"
+                          />
+                        </label>
+
+                        <label class="check-row">
+                          <input
+                            id="encounterSetupAutoCombat"
+                            type="checkbox"
+                            checked
+                          />
+                          Switch automatically to combat audio
+                        </label>
+
+                        <label class="check-row">
+                          <input
+                            id="encounterSetupReturnScene"
+                            type="checkbox"
+                            checked
+                          />
+                          Return to scene audio after combat
+                        </label>
+                      </div>
+
+                      <details class="encounter-setup-advanced">
+                        <summary>
+                          Additional ambience &amp; transition behavior
+                        </summary>
+
+                        <div class="encounter-setup-advanced-grid">
+                          <div class="encounter-setup-layer">
+                            <strong>Scene Ambience 1 Transition</strong>
+                            <label>
+                              <span>During Combat</span>
+                              <select id="encounterSetupSceneAmb1Behavior">
+                                <option value="duck">Lower Volume</option>
+                                <option value="continue">Continue</option>
+                                <option value="stop">Stop</option>
+                              </select>
+                            </label>
+                            <label>
+                              <span>Combat Volume %</span>
+                              <input
+                                id="encounterSetupSceneAmb1CombatVolume"
+                                type="number"
+                                min="0"
+                                max="100"
+                                value="15"
+                              />
+                            </label>
+                          </div>
+
+                          <div class="encounter-setup-layer">
+                            <strong>Scene Ambience 2</strong>
+                            <label>
+                              <span>Audio</span>
+                              <select
+                                id="encounterSetupSceneAmb2"
+                                data-audio-select
+                                data-audio-prefix="sounds/ambience"
+                              >
+                                <option value="">— None —</option>
+                              </select>
+                            </label>
+                            <label>
+                              <span>Scene Volume %</span>
+                              <input
+                                id="encounterSetupSceneAmb2Volume"
+                                type="number"
+                                min="0"
+                                max="100"
+                                value="40"
+                              />
+                            </label>
+                            <label>
+                              <span>During Combat</span>
+                              <select id="encounterSetupSceneAmb2Behavior">
+                                <option value="duck">Lower Volume</option>
+                                <option value="continue">Continue</option>
+                                <option value="stop">Stop</option>
+                              </select>
+                            </label>
+                            <label>
+                              <span>Combat Volume %</span>
+                              <input
+                                id="encounterSetupSceneAmb2CombatVolume"
+                                type="number"
+                                min="0"
+                                max="100"
+                                value="15"
+                              />
+                            </label>
+                          </div>
+
+                          <div class="encounter-setup-layer">
+                            <strong>Scene Ambience 3</strong>
+                            <label>
+                              <span>Audio</span>
+                              <select
+                                id="encounterSetupSceneAmb3"
+                                data-audio-select
+                                data-audio-prefix="sounds/ambience"
+                              >
+                                <option value="">— None —</option>
+                              </select>
+                            </label>
+                            <label>
+                              <span>Scene Volume %</span>
+                              <input
+                                id="encounterSetupSceneAmb3Volume"
+                                type="number"
+                                min="0"
+                                max="100"
+                                value="40"
+                              />
+                            </label>
+                            <label>
+                              <span>During Combat</span>
+                              <select id="encounterSetupSceneAmb3Behavior">
+                                <option value="duck">Lower Volume</option>
+                                <option value="continue">Continue</option>
+                                <option value="stop">Stop</option>
+                              </select>
+                            </label>
+                            <label>
+                              <span>Combat Volume %</span>
+                              <input
+                                id="encounterSetupSceneAmb3CombatVolume"
+                                type="number"
+                                min="0"
+                                max="100"
+                                value="15"
+                              />
+                            </label>
+                          </div>
+
+                          <div class="encounter-setup-layer">
+                            <strong>Combat Ambience 2</strong>
+                            <label>
+                              <span>Audio</span>
+                              <select
+                                id="encounterSetupCombatAmb2"
+                                data-audio-select
+                                data-audio-prefix="sounds/ambience"
+                              >
+                                <option value="">— None —</option>
+                              </select>
+                            </label>
+                            <label>
+                              <span>Volume %</span>
+                              <input
+                                id="encounterSetupCombatAmb2Volume"
+                                type="number"
+                                min="0"
+                                max="100"
+                                value="35"
+                              />
+                            </label>
+                          </div>
+                        </div>
+                      </details>
+
+                      <details class="encounter-setup-advanced">
+                        <summary>Sound cues</summary>
+
+                        <div class="encounter-setup-cues">
+                          <div class="encounter-setup-cue-row">
+                            <input
+                              id="encounterSetupCue1Name"
+                              type="text"
+                              value="Cue 1"
+                              placeholder="Alarm"
+                            />
+                            <select
+                              id="encounterSetupCue1Asset"
+                              data-audio-select
+                              data-audio-prefix="sounds/"
+                            >
+                              <option value="">— None —</option>
+                            </select>
+                            <input
+                              id="encounterSetupCue1Volume"
+                              type="number"
+                              min="0"
+                              max="100"
+                              value="80"
+                              title="Volume percent"
+                            />
+                          </div>
+
+                          <div class="encounter-setup-cue-row">
+                            <input
+                              id="encounterSetupCue2Name"
+                              type="text"
+                              value="Cue 2"
+                              placeholder="Explosion"
+                            />
+                            <select
+                              id="encounterSetupCue2Asset"
+                              data-audio-select
+                              data-audio-prefix="sounds/"
+                            >
+                              <option value="">— None —</option>
+                            </select>
+                            <input
+                              id="encounterSetupCue2Volume"
+                              type="number"
+                              min="0"
+                              max="100"
+                              value="80"
+                              title="Volume percent"
+                            />
+                          </div>
+
+                          <div class="encounter-setup-cue-row">
+                            <input
+                              id="encounterSetupCue3Name"
+                              type="text"
+                              value="Cue 3"
+                              placeholder="Door"
+                            />
+                            <select
+                              id="encounterSetupCue3Asset"
+                              data-audio-select
+                              data-audio-prefix="sounds/"
+                            >
+                              <option value="">— None —</option>
+                            </select>
+                            <input
+                              id="encounterSetupCue3Volume"
+                              type="number"
+                              min="0"
+                              max="100"
+                              value="80"
+                              title="Volume percent"
+                            />
+                          </div>
+                        </div>
+                      </details>
+                    </section>
                   </div>
 
-                  <div class="encounter-setup-audio-row">
-                    <label>
-                      <span>Primary Ambience</span>
+                  <!-- Saved Encounter States -->
+
+                  <div class="saved-encounter-group">
+                    <div class="saved-encounter-group-title">
+                      Saved Encounter States
+                    </div>
+
+                    <div class="saved-encounter-controls">
                       <select
-                        id="encounterSetupSceneAmb1"
-                        data-audio-select
-                        data-audio-prefix="sounds/ambience"
+                        id="savedStateSelect"
+                        aria-label="Saved encounter states"
                       >
-                        <option value="">— None —</option>
+                        <option value="">Choose saved state…</option>
                       </select>
-                    </label>
-                    <label>
-                      <span>Volume %</span>
-                      <input id="encounterSetupSceneAmb1Volume" type="number" min="0" max="100" value="40" />
-                    </label>
-                  </div>
-                </article>
 
-                <article class="encounter-setup-card">
-                  <div class="eyebrow">INITIATIVE / BATTLE</div>
-                  <h3>Combat</h3>
+                      <button id="loadStateBtn" type="button">
+                        Resume State
+                      </button>
 
-                  <div
-                    id="encounterSetupCombatPreview"
-                    class="encounter-setup-background-preview"
-                    aria-label="Combat background preview"
-                  >
-                    <span>No combat background selected</span>
-                  </div>
-
-                  <label>
-                    <span>Combat Background</span>
-                    <select id="encounterSetupCombatBackground">
-                      <option value="">— Default Combat Screen —</option>
-                    </select>
-                  </label>
-
-                  <div class="encounter-setup-audio-row">
-                    <label>
-                      <span>Combat Music</span>
-                      <select
-                        id="encounterSetupCombatMusic"
-                        data-audio-select
-                        data-audio-prefix="sounds/music"
+                      <button
+                        id="saveNewStateBtn"
+                        class="primary"
+                        type="button"
                       >
-                        <option value="">— None —</option>
-                      </select>
-                    </label>
-                    <label>
-                      <span>Volume %</span>
-                      <input id="encounterSetupCombatMusicVolume" type="number" min="0" max="100" value="65" />
-                    </label>
-                  </div>
+                        Save Current State
+                      </button>
 
-                  <div class="encounter-setup-audio-row">
-                    <label>
-                      <span>Primary Ambience</span>
-                      <select
-                        id="encounterSetupCombatAmb1"
-                        data-audio-select
-                        data-audio-prefix="sounds/ambience"
+                      <button id="updateStateBtn" type="button">
+                        Update State
+                      </button>
+
+                      <button
+                        id="deleteStateBtn"
+                        class="danger-outline"
+                        type="button"
                       >
-                        <option value="">— None —</option>
-                      </select>
-                    </label>
-                    <label>
-                      <span>Volume %</span>
-                      <input id="encounterSetupCombatAmb1Volume" type="number" min="0" max="100" value="35" />
-                    </label>
+                        Delete
+                      </button>
+                    </div>
+
+                    <div class="hint">
+                      Saved states preserve live encounter progress so the
+                      encounter can be resumed later from the saved HP,
+                      conditions, exhaustion, round, current turn, and other
+                      active state.
+                    </div>
                   </div>
-                </article>
+                </div>
               </div>
-
-              <div class="encounter-setup-options">
-                <label>
-                  <span>Master Volume %</span>
-                  <input id="encounterSetupMasterVolume" type="number" min="0" max="100" value="80" />
-                </label>
-
-                <label>
-                  <span>Fade (seconds)</span>
-                  <input id="encounterSetupFadeSeconds" type="number" min="0" max="15" step="0.5" value="2.5" />
-                </label>
-
-                <label class="check-row">
-                  <input id="encounterSetupAutoCombat" type="checkbox" checked />
-                  Switch automatically to combat audio
-                </label>
-
-                <label class="check-row">
-                  <input id="encounterSetupReturnScene" type="checkbox" checked />
-                  Return to scene audio after combat
-                </label>
-              </div>
-
-              <details class="encounter-setup-advanced">
-                <summary>Additional ambience &amp; transition behavior</summary>
-
-                <div class="encounter-setup-advanced-grid">
-                  <div class="encounter-setup-layer">
-                    <strong>Scene Ambience 1 Transition</strong>
-                    <label>
-                      <span>During Combat</span>
-                      <select id="encounterSetupSceneAmb1Behavior">
-                        <option value="duck">Lower Volume</option>
-                        <option value="continue">Continue</option>
-                        <option value="stop">Stop</option>
-                      </select>
-                    </label>
-                    <label>
-                      <span>Combat Volume %</span>
-                      <input id="encounterSetupSceneAmb1CombatVolume" type="number" min="0" max="100" value="15" />
-                    </label>
-                  </div>
-
-                  <div class="encounter-setup-layer">
-                    <strong>Scene Ambience 2</strong>
-                    <label>
-                      <span>Audio</span>
-                      <select
-                        id="encounterSetupSceneAmb2"
-                        data-audio-select
-                        data-audio-prefix="sounds/ambience"
-                      >
-                        <option value="">— None —</option>
-                      </select>
-                    </label>
-                    <label>
-                      <span>Scene Volume %</span>
-                      <input id="encounterSetupSceneAmb2Volume" type="number" min="0" max="100" value="40" />
-                    </label>
-                    <label>
-                      <span>During Combat</span>
-                      <select id="encounterSetupSceneAmb2Behavior">
-                        <option value="duck">Lower Volume</option>
-                        <option value="continue">Continue</option>
-                        <option value="stop">Stop</option>
-                      </select>
-                    </label>
-                    <label>
-                      <span>Combat Volume %</span>
-                      <input id="encounterSetupSceneAmb2CombatVolume" type="number" min="0" max="100" value="15" />
-                    </label>
-                  </div>
-
-                  <div class="encounter-setup-layer">
-                    <strong>Scene Ambience 3</strong>
-                    <label>
-                      <span>Audio</span>
-                      <select
-                        id="encounterSetupSceneAmb3"
-                        data-audio-select
-                        data-audio-prefix="sounds/ambience"
-                      >
-                        <option value="">— None —</option>
-                      </select>
-                    </label>
-                    <label>
-                      <span>Scene Volume %</span>
-                      <input id="encounterSetupSceneAmb3Volume" type="number" min="0" max="100" value="40" />
-                    </label>
-                    <label>
-                      <span>During Combat</span>
-                      <select id="encounterSetupSceneAmb3Behavior">
-                        <option value="duck">Lower Volume</option>
-                        <option value="continue">Continue</option>
-                        <option value="stop">Stop</option>
-                      </select>
-                    </label>
-                    <label>
-                      <span>Combat Volume %</span>
-                      <input id="encounterSetupSceneAmb3CombatVolume" type="number" min="0" max="100" value="15" />
-                    </label>
-                  </div>
-
-                  <div class="encounter-setup-layer">
-                    <strong>Combat Ambience 2</strong>
-                    <label>
-                      <span>Audio</span>
-                      <select
-                        id="encounterSetupCombatAmb2"
-                        data-audio-select
-                        data-audio-prefix="sounds/ambience"
-                      >
-                        <option value="">— None —</option>
-                      </select>
-                    </label>
-                    <label>
-                      <span>Volume %</span>
-                      <input id="encounterSetupCombatAmb2Volume" type="number" min="0" max="100" value="35" />
-                    </label>
-                  </div>
-                </div>
-              </details>
-
-              <details class="encounter-setup-advanced">
-                <summary>Prepared sound cues</summary>
-
-                <div class="encounter-setup-cues">
-                  <div class="encounter-setup-cue-row">
-                    <input id="encounterSetupCue1Name" type="text" value="Cue 1" placeholder="Alarm" />
-                    <select id="encounterSetupCue1Asset" data-audio-select data-audio-prefix="sounds/">
-                      <option value="">— None —</option>
-                    </select>
-                    <input id="encounterSetupCue1Volume" type="number" min="0" max="100" value="80" title="Volume percent" />
-                  </div>
-
-                  <div class="encounter-setup-cue-row">
-                    <input id="encounterSetupCue2Name" type="text" value="Cue 2" placeholder="Explosion" />
-                    <select id="encounterSetupCue2Asset" data-audio-select data-audio-prefix="sounds/">
-                      <option value="">— None —</option>
-                    </select>
-                    <input id="encounterSetupCue2Volume" type="number" min="0" max="100" value="80" title="Volume percent" />
-                  </div>
-
-                  <div class="encounter-setup-cue-row">
-                    <input id="encounterSetupCue3Name" type="text" value="Cue 3" placeholder="Door" />
-                    <select id="encounterSetupCue3Asset" data-audio-select data-audio-prefix="sounds/">
-                      <option value="">— None —</option>
-                    </select>
-                    <input id="encounterSetupCue3Volume" type="number" min="0" max="100" value="80" title="Volume percent" />
-                  </div>
-                </div>
-              </details>
-            </section>
-              </div>
-
-              <!-- Saved Encounter States -->
-
-              <div class="saved-encounter-group">
-                <div class="saved-encounter-group-title">
-                  Saved Encounter States
-                </div>
-
-                <div class="saved-encounter-controls">
-                  <select
-                    id="savedStateSelect"
-                    aria-label="Saved encounter states"
-                  >
-                    <option value="">Choose saved state…</option>
-                  </select>
-
-                  <button id="loadStateBtn" type="button">
-                    Resume State
-                  </button>
-
-                  <button
-                    id="saveNewStateBtn"
-                    class="primary"
-                    type="button"
-                  >
-                    Save Current State
-                  </button>
-
-                  <button id="updateStateBtn" type="button">
-                    Update State
-                  </button>
-
-                  <button
-                    id="deleteStateBtn"
-                    class="danger-outline"
-                    type="button"
-                  >
-                    Delete
-                  </button>
-                </div>
-
-                <div class="hint">
-                  Saved states preserve live encounter progress so the encounter can
-                  be resumed later from the saved HP, conditions, exhaustion, round,
-                  current turn, and other active state.
-                </div>
-              </div>
-            </div>
-          </div>
-
-
-
             </div>
 
             <div id="dmAssetsPage" class="dm-page" data-dm-page-panel="assets">
@@ -1350,25 +2077,90 @@
                 <div>
                   <div class="eyebrow">ASSETS</div>
                   <h2>Asset Library</h2>
-                  <p class="hint">Manage visual and audio assets from one workspace. Image categories use previews; audio categories use compact playback rows.</p>
+                  <p class="hint">
+                    Manage visual and audio assets from one workspace. Image
+                    categories use previews; audio categories use compact
+                    playback rows.
+                  </p>
                 </div>
               </div>
 
-              <div class="dm-segmented-nav dm-asset-nav" aria-label="Asset categories">
-                <button class="dm-segment-button active" data-asset-filter="" type="button">All</button>
-                <button class="dm-segment-button" data-asset-filter="backgrounds/" type="button">Backgrounds</button>
-                <button class="dm-segment-button" data-asset-filter="portraits/" type="button">Portraits</button>
-                <button class="dm-segment-button" data-asset-filter="tokens" type="button">Tokens</button>
-                <button class="dm-segment-button" data-asset-filter="sounds/music" type="button">Music</button>
-                <button class="dm-segment-button" data-asset-filter="sounds/ambience" type="button">Ambience</button>
-                <button class="dm-segment-button" data-asset-filter="sounds/sfx" type="button">Sound Effects</button>
-                <button class="dm-segment-button" data-asset-filter="icons/" type="button">Icons</button>
+              <div
+                class="dm-segmented-nav dm-asset-nav"
+                aria-label="Asset categories"
+              >
+                <button
+                  class="dm-segment-button active"
+                  data-asset-filter=""
+                  type="button"
+                >
+                  All
+                </button>
+                <button
+                  class="dm-segment-button"
+                  data-asset-filter="backgrounds/"
+                  type="button"
+                >
+                  Backgrounds
+                </button>
+                <button
+                  class="dm-segment-button"
+                  data-asset-filter="portraits/"
+                  type="button"
+                >
+                  Portraits
+                </button>
+                <button
+                  class="dm-segment-button"
+                  data-asset-filter="tokens"
+                  type="button"
+                >
+                  Tokens
+                </button>
+                <button
+                  class="dm-segment-button"
+                  data-asset-filter="sounds/music"
+                  type="button"
+                >
+                  Music
+                </button>
+                <button
+                  class="dm-segment-button"
+                  data-asset-filter="sounds/ambience"
+                  type="button"
+                >
+                  Ambience
+                </button>
+                <button
+                  class="dm-segment-button"
+                  data-asset-filter="sounds/sfx"
+                  type="button"
+                >
+                  Sound Effects
+                </button>
+                <button
+                  class="dm-segment-button"
+                  data-asset-filter="icons/"
+                  type="button"
+                >
+                  Icons
+                </button>
               </div>
 
               <div class="asset-library-toolbar panel">
                 <div class="asset-search-wrap">
-                  <input id="assetSearch" type="search" placeholder="Search assets…" aria-label="Search assets" />
-                  <select id="assetFilter" class="hidden" aria-hidden="true" tabindex="-1">
+                  <input
+                    id="assetSearch"
+                    type="search"
+                    placeholder="Search assets…"
+                    aria-label="Search assets"
+                  />
+                  <select
+                    id="assetFilter"
+                    class="hidden"
+                    aria-hidden="true"
+                    tabindex="-1"
+                  >
                     <option value="">All Assets</option>
                     <option value="backgrounds/">Backgrounds</option>
                     <option value="portraits/">Portraits</option>
@@ -1381,13 +2173,24 @@
                 </div>
 
                 <div class="asset-toolbar-actions">
-                  <span id="assetResultCount" class="character-count-pill">0 assets</span>
+                  <span id="assetResultCount" class="character-count-pill"
+                    >0 assets</span
+                  >
                   <button id="refreshAssetsBtn" type="button">Refresh</button>
-                  <button id="toggleAssetImportBtn" class="primary" type="button">+ Import Asset</button>
+                  <button
+                    id="toggleAssetImportBtn"
+                    class="primary"
+                    type="button"
+                  >
+                    + Import Asset
+                  </button>
                 </div>
               </div>
 
-              <div id="assetImportPanel" class="panel asset-import-panel hidden">
+              <div
+                id="assetImportPanel"
+                class="panel asset-import-panel hidden"
+              >
                 <div class="section-heading">
                   <div>
                     <div class="eyebrow">IMPORT</div>
@@ -1400,13 +2203,23 @@
                   <label>
                     <span>Import To</span>
                     <select id="assetUploadCategory">
-                      <option value="backgrounds/custom">Backgrounds / Custom</option>
-                      <option value="portraits/players">Portraits / Players</option>
+                      <option value="backgrounds/custom">
+                        Backgrounds / Custom
+                      </option>
+                      <option value="portraits/players">
+                        Portraits / Players
+                      </option>
                       <option value="portraits/npcs">Portraits / NPCs</option>
-                      <option value="portraits/enemies">Portraits / Enemies</option>
-                      <option value="portraits/custom">Portraits / Custom</option>
+                      <option value="portraits/enemies">
+                        Portraits / Enemies
+                      </option>
+                      <option value="portraits/custom">
+                        Portraits / Custom
+                      </option>
                       <option value="tokens">Tokens</option>
-                      <option value="icons/conditions">Icons / Conditions</option>
+                      <option value="icons/conditions">
+                        Icons / Conditions
+                      </option>
                       <option value="sounds/music">Audio / Music</option>
                       <option value="sounds/ambience">Audio / Ambience</option>
                       <option value="sounds/sfx">Audio / Sound Effects</option>
@@ -1416,13 +2229,23 @@
 
                   <label class="asset-file-field">
                     <span>Choose Asset File</span>
-                    <input id="assetUploadFile" type="file" accept="image/png,image/jpeg,image/webp,audio/mpeg,audio/ogg,audio/wav,audio/flac" />
+                    <input
+                      id="assetUploadFile"
+                      type="file"
+                      accept="image/png,image/jpeg,image/webp,audio/mpeg,audio/ogg,audio/wav,audio/flac"
+                    />
                   </label>
 
-                  <button id="uploadAssetBtn" class="primary" type="button">Import Asset</button>
+                  <button id="uploadAssetBtn" class="primary" type="button">
+                    Import Asset
+                  </button>
                 </div>
 
-                <p class="hint">PNG/JPEG/WebP images up to 10 MB and MP3/OGG/WAV/FLAC audio up to 50 MB. You can also copy files directly into <code>assets/</code> and click Refresh.</p>
+                <p class="hint">
+                  PNG/JPEG/WebP images up to 10 MB and MP3/OGG/WAV/FLAC audio up
+                  to 50 MB. You can also copy files directly into
+                  <code>assets/</code> and click Refresh.
+                </p>
               </div>
 
               <div id="assetGrid" class="asset-library-content"></div>
@@ -1433,98 +2256,113 @@
                 <div>
                   <div class="eyebrow">DATA &amp; TOOLS</div>
                   <h2>Backup, Restore &amp; Recovery</h2>
-                  <p class="hint">Administrative and recovery tools are collected here for the DM.</p>
+                  <p class="hint">
+                    Administrative and recovery tools are collected here for the
+                    DM.
+                  </p>
                 </div>
               </div>
 
-        <div class="data-grid">
-          <!-- Export -->
+              <div class="data-grid">
+                <!-- Export -->
 
-          <div class="panel">
-            <div class="eyebrow">EXPORT</div>
+                <div class="panel">
+                  <div class="eyebrow">EXPORT</div>
 
-            <h2>Back Up Your Data</h2>
+                  <h2>Back Up Your Data</h2>
 
-            <p>
-              Library data, presets, settings, and the active encounter are
-              saved in IndexedDB. Export creates an additional portable JSON
-              backup.
-            </p>
+                  <p>
+                    Library data, presets, settings, and the active encounter
+                    are saved in IndexedDB. Export creates an additional
+                    portable JSON backup.
+                  </p>
 
-            <div class="stacked-buttons">
-              <button id="exportEverythingBtn" class="primary" type="button">
-                Export Everything
-              </button>
+                  <div class="stacked-buttons">
+                    <button
+                      id="exportEverythingBtn"
+                      class="primary"
+                      type="button"
+                    >
+                      Export Everything
+                    </button>
 
-              <button id="exportLibraryBtn" type="button">
-                Export Library Only
-              </button>
-            </div>
+                    <button id="exportLibraryBtn" type="button">
+                      Export Library Only
+                    </button>
+                  </div>
 
-            <div class="data-inline-setting">
-              <div>
-                <strong>Automatic external backup</strong>
-                <p class="hint">When enabled with the local Python launcher, enCounter also writes recovery backups to <code>data/backups/</code>.</p>
+                  <div class="data-inline-setting">
+                    <div>
+                      <strong>Automatic external backup</strong>
+                      <p class="hint">
+                        When enabled with the local Python launcher, enCounter
+                        also writes recovery backups to
+                        <code>data/backups/</code>.
+                      </p>
+                    </div>
+                    <label class="switch-row">
+                      <input id="externalBackupEnabled" type="checkbox" />
+                      <span>Enabled</span>
+                    </label>
+                  </div>
+                </div>
+
+                <!-- Import -->
+
+                <div class="panel">
+                  <div class="eyebrow">IMPORT / RECOVERY</div>
+
+                  <h2>Restore Data</h2>
+
+                  <label>
+                    <span>Backup File</span>
+
+                    <input
+                      id="importFile"
+                      type="file"
+                      accept="application/json,.json"
+                    />
+                  </label>
+
+                  <button
+                    id="importBackupBtn"
+                    class="danger-outline"
+                    type="button"
+                  >
+                    Import &amp; Replace Current Data
+                  </button>
+
+                  <hr />
+
+                  <button id="restoreLatestBackupBtn" type="button">
+                    Restore Latest External Backup
+                  </button>
+
+                  <p class="hint">
+                    External backups are written to
+                    <code>data/backups/</code>
+                    when the local Python launcher is used.
+                  </p>
+                </div>
+
+                <!-- Browser Storage -->
+
+                <div class="panel">
+                  <div class="eyebrow">BROWSER STORAGE</div>
+
+                  <h2>Storage Protection</h2>
+
+                  <div id="storageStatus">Checking storage…</div>
+
+                  <button id="requestPersistenceBtn" type="button">
+                    Request Persistent Browser Storage
+                  </button>
+
+                  <h3>Recovery Snapshots</h3>
+
+                  <div id="snapshotList" class="snapshot-list"></div>
+                </div>
               </div>
-              <label class="switch-row">
-                <input id="externalBackupEnabled" type="checkbox" />
-                <span>Enabled</span>
-              </label>
-            </div>
-          </div>
-
-          <!-- Import -->
-
-          <div class="panel">
-            <div class="eyebrow">IMPORT / RECOVERY</div>
-
-            <h2>Restore Data</h2>
-
-            <label>
-              <span>Backup File</span>
-
-              <input
-                id="importFile"
-                type="file"
-                accept="application/json,.json"
-              />
-            </label>
-
-            <button id="importBackupBtn" class="danger-outline" type="button">
-              Import &amp; Replace Current Data
-            </button>
-
-            <hr />
-
-            <button id="restoreLatestBackupBtn" type="button">
-              Restore Latest External Backup
-            </button>
-
-            <p class="hint">
-              External backups are written to
-              <code>data/backups/</code>
-              when the local Python launcher is used.
-            </p>
-          </div>
-
-          <!-- Browser Storage -->
-
-          <div class="panel">
-            <div class="eyebrow">BROWSER STORAGE</div>
-
-            <h2>Storage Protection</h2>
-
-            <div id="storageStatus">Checking storage…</div>
-
-            <button id="requestPersistenceBtn" type="button">
-              Request Persistent Browser Storage
-            </button>
-
-            <h3>Recovery Snapshots</h3>
-
-            <div id="snapshotList" class="snapshot-list"></div>
-          </div>
-        </div>
             </div>
           </div>
         </div>
@@ -1609,11 +2447,22 @@
                   </div>
                 </div>
 
-                <div class="timer-preset-row" aria-label="Quick timer durations">
-                  <button type="button" data-timer-preset-ms="60000">1 min</button>
-                  <button type="button" data-timer-preset-ms="300000">5 min</button>
-                  <button type="button" data-timer-preset-ms="600000">10 min</button>
-                  <button type="button" data-timer-preset-ms="1800000">30 min</button>
+                <div
+                  class="timer-preset-row"
+                  aria-label="Quick timer durations"
+                >
+                  <button type="button" data-timer-preset-ms="60000">
+                    1 min
+                  </button>
+                  <button type="button" data-timer-preset-ms="300000">
+                    5 min
+                  </button>
+                  <button type="button" data-timer-preset-ms="600000">
+                    10 min
+                  </button>
+                  <button type="button" data-timer-preset-ms="1800000">
+                    30 min
+                  </button>
                 </div>
               </div>
 
@@ -1673,7 +2522,11 @@
                 <label> Timer Controls </label>
 
                 <div class="timer-actions">
-                  <button id="timerStartBtn" class="primary timer-primary-action" type="button">
+                  <button
+                    id="timerStartBtn"
+                    class="primary timer-primary-action"
+                    type="button"
+                  >
                     Start Timer
                   </button>
 
@@ -1714,7 +2567,6 @@
                 animation frames, so the visual countdown remains accurate even
                 if rendering is temporarily interrupted.
               </p>
-
             </div>
 
             <!-- ===============================================
@@ -1738,23 +2590,64 @@
             <div>
               <div class="eyebrow">LIVE ENCOUNTER AUDIO</div>
               <h2>Soundscape Live Mixer</h2>
-              <p class="hint">Live audio mixer for the currently loaded encounter. Use DM → Encounters and select a reusable encounter to prepare backgrounds, music, ambience, and cues for multiple encounters before play. Audio plays from the DM computer; the Player Display remains visual-only.</p>
+              <p class="hint">
+                Live audio mixer for the currently loaded encounter. Use DM →
+                Encounters and select a reusable encounter to prepare
+                backgrounds, music, ambience, and cues for multiple encounters
+                before play. Audio plays from the DM computer; the Player
+                Display remains visual-only.
+              </p>
             </div>
             <div class="button-row">
-              <span id="soundscapeStatus" class="soundscape-status">AUDIO STOPPED</span>
+              <span id="soundscapeStatus" class="soundscape-status"
+                >AUDIO STOPPED</span
+              >
               <button id="previewSceneAudioBtn" type="button">▶ Scene</button>
               <button id="previewCombatAudioBtn" type="button">⚔ Combat</button>
-              <button id="stopSoundscapeBtn" class="danger-outline" type="button">■ Stop</button>
-              <button id="manageAudioAssetsBtn" type="button">Manage Audio Assets</button>
-              <button id="saveSoundscapeBtn" class="primary" type="button">Apply Live Mix</button>
+              <button
+                id="stopSoundscapeBtn"
+                class="danger-outline"
+                type="button"
+              >
+                ■ Stop
+              </button>
+              <button id="manageAudioAssetsBtn" type="button">
+                Manage Audio Assets
+              </button>
+              <button id="saveSoundscapeBtn" class="primary" type="button">
+                Apply Live Mix
+              </button>
             </div>
           </div>
 
           <div class="soundscape-settings-grid">
-            <label><span>Master Volume</span><input id="soundscapeMasterVolume" type="range" min="0" max="100" value="80" /></label>
-            <label><span>Fade (seconds)</span><input id="soundscapeFadeSeconds" type="number" min="0" max="15" step="0.5" value="2.5" /></label>
-            <label class="check-row"><input id="soundscapeAutoCombat" type="checkbox" checked /> Switch to combat audio when combat starts</label>
-            <label class="check-row"><input id="soundscapeReturnScene" type="checkbox" checked /> Return to scene audio when combat ends</label>
+            <label
+              ><span>Master Volume</span
+              ><input
+                id="soundscapeMasterVolume"
+                type="range"
+                min="0"
+                max="100"
+                value="80"
+            /></label>
+            <label
+              ><span>Fade (seconds)</span
+              ><input
+                id="soundscapeFadeSeconds"
+                type="number"
+                min="0"
+                max="15"
+                step="0.5"
+                value="2.5"
+            /></label>
+            <label class="check-row"
+              ><input id="soundscapeAutoCombat" type="checkbox" checked />
+              Switch to combat audio when combat starts</label
+            >
+            <label class="check-row"
+              ><input id="soundscapeReturnScene" type="checkbox" checked />
+              Return to scene audio when combat ends</label
+            >
           </div>
         </div>
 
@@ -1762,28 +2655,277 @@
           <div class="panel">
             <div class="eyebrow">ROLEPLAY / EXPLORATION</div>
             <h2>Scene Audio</h2>
-            <div class="audio-track-row"><label><span>Scene Music</span><select id="sceneMusicAsset" data-audio-select data-audio-prefix="sounds/music"><option value="">— None —</option></select></label><label><span>Volume %</span><input id="sceneMusicVolume" type="number" min="0" max="100" value="35" /></label></div>
+            <div class="audio-track-row">
+              <label
+                ><span>Scene Music</span
+                ><select
+                  id="sceneMusicAsset"
+                  data-audio-select
+                  data-audio-prefix="sounds/music"
+                >
+                  <option value="">— None —</option>
+                </select></label
+              ><label
+                ><span>Volume %</span
+                ><input
+                  id="sceneMusicVolume"
+                  type="number"
+                  min="0"
+                  max="100"
+                  value="35"
+              /></label>
+            </div>
             <h3>Ambient Layers</h3>
-            <p class="hint">Each layer can stop, continue, or duck when combat begins.</p>
-            <div class="audio-track-row audio-track-wide"><label><span>Ambience 1</span><select id="sceneAmb1Asset" data-audio-select data-audio-prefix="sounds/ambience"><option value="">— None —</option></select></label><label><span>Scene %</span><input id="sceneAmb1Volume" type="number" min="0" max="100" value="40" /></label><label><span>During Combat</span><select id="sceneAmb1Behavior"><option value="duck">Lower Volume</option><option value="continue">Continue</option><option value="stop">Stop</option></select></label><label><span>Combat %</span><input id="sceneAmb1CombatVolume" type="number" min="0" max="100" value="15" /></label></div><div class="audio-track-row audio-track-wide"><label><span>Ambience 2</span><select id="sceneAmb2Asset" data-audio-select data-audio-prefix="sounds/ambience"><option value="">— None —</option></select></label><label><span>Scene %</span><input id="sceneAmb2Volume" type="number" min="0" max="100" value="40" /></label><label><span>During Combat</span><select id="sceneAmb2Behavior"><option value="duck">Lower Volume</option><option value="continue">Continue</option><option value="stop">Stop</option></select></label><label><span>Combat %</span><input id="sceneAmb2CombatVolume" type="number" min="0" max="100" value="15" /></label></div><div class="audio-track-row audio-track-wide"><label><span>Ambience 3</span><select id="sceneAmb3Asset" data-audio-select data-audio-prefix="sounds/ambience"><option value="">— None —</option></select></label><label><span>Scene %</span><input id="sceneAmb3Volume" type="number" min="0" max="100" value="40" /></label><label><span>During Combat</span><select id="sceneAmb3Behavior"><option value="duck">Lower Volume</option><option value="continue">Continue</option><option value="stop">Stop</option></select></label><label><span>Combat %</span><input id="sceneAmb3CombatVolume" type="number" min="0" max="100" value="15" /></label></div>
+            <p class="hint">
+              Each layer can stop, continue, or duck when combat begins.
+            </p>
+            <div class="audio-track-row audio-track-wide">
+              <label
+                ><span>Ambience 1</span
+                ><select
+                  id="sceneAmb1Asset"
+                  data-audio-select
+                  data-audio-prefix="sounds/ambience"
+                >
+                  <option value="">— None —</option>
+                </select></label
+              ><label
+                ><span>Scene %</span
+                ><input
+                  id="sceneAmb1Volume"
+                  type="number"
+                  min="0"
+                  max="100"
+                  value="40" /></label
+              ><label
+                ><span>During Combat</span
+                ><select id="sceneAmb1Behavior">
+                  <option value="duck">Lower Volume</option>
+                  <option value="continue">Continue</option>
+                  <option value="stop">Stop</option>
+                </select></label
+              ><label
+                ><span>Combat %</span
+                ><input
+                  id="sceneAmb1CombatVolume"
+                  type="number"
+                  min="0"
+                  max="100"
+                  value="15"
+              /></label>
+            </div>
+            <div class="audio-track-row audio-track-wide">
+              <label
+                ><span>Ambience 2</span
+                ><select
+                  id="sceneAmb2Asset"
+                  data-audio-select
+                  data-audio-prefix="sounds/ambience"
+                >
+                  <option value="">— None —</option>
+                </select></label
+              ><label
+                ><span>Scene %</span
+                ><input
+                  id="sceneAmb2Volume"
+                  type="number"
+                  min="0"
+                  max="100"
+                  value="40" /></label
+              ><label
+                ><span>During Combat</span
+                ><select id="sceneAmb2Behavior">
+                  <option value="duck">Lower Volume</option>
+                  <option value="continue">Continue</option>
+                  <option value="stop">Stop</option>
+                </select></label
+              ><label
+                ><span>Combat %</span
+                ><input
+                  id="sceneAmb2CombatVolume"
+                  type="number"
+                  min="0"
+                  max="100"
+                  value="15"
+              /></label>
+            </div>
+            <div class="audio-track-row audio-track-wide">
+              <label
+                ><span>Ambience 3</span
+                ><select
+                  id="sceneAmb3Asset"
+                  data-audio-select
+                  data-audio-prefix="sounds/ambience"
+                >
+                  <option value="">— None —</option>
+                </select></label
+              ><label
+                ><span>Scene %</span
+                ><input
+                  id="sceneAmb3Volume"
+                  type="number"
+                  min="0"
+                  max="100"
+                  value="40" /></label
+              ><label
+                ><span>During Combat</span
+                ><select id="sceneAmb3Behavior">
+                  <option value="duck">Lower Volume</option>
+                  <option value="continue">Continue</option>
+                  <option value="stop">Stop</option>
+                </select></label
+              ><label
+                ><span>Combat %</span
+                ><input
+                  id="sceneAmb3CombatVolume"
+                  type="number"
+                  min="0"
+                  max="100"
+                  value="15"
+              /></label>
+            </div>
           </div>
 
           <div class="panel">
             <div class="eyebrow">INITIATIVE / BATTLE</div>
             <h2>Combat Audio</h2>
-            <div class="audio-track-row"><label><span>Combat Music</span><select id="combatMusicAsset" data-audio-select data-audio-prefix="sounds/music"><option value="">— None —</option></select></label><label><span>Volume %</span><input id="combatMusicVolume" type="number" min="0" max="100" value="65" /></label></div>
+            <div class="audio-track-row">
+              <label
+                ><span>Combat Music</span
+                ><select
+                  id="combatMusicAsset"
+                  data-audio-select
+                  data-audio-prefix="sounds/music"
+                >
+                  <option value="">— None —</option>
+                </select></label
+              ><label
+                ><span>Volume %</span
+                ><input
+                  id="combatMusicVolume"
+                  type="number"
+                  min="0"
+                  max="100"
+                  value="65"
+              /></label>
+            </div>
             <h3>Combat Ambience</h3>
-            <div class="audio-track-row"><label><span>Combat Ambience 1</span><select id="combatAmb1Asset" data-audio-select data-audio-prefix="sounds/ambience"><option value="">— None —</option></select></label><label><span>Volume %</span><input id="combatAmb1Volume" type="number" min="0" max="100" value="35" /></label></div><div class="audio-track-row"><label><span>Combat Ambience 2</span><select id="combatAmb2Asset" data-audio-select data-audio-prefix="sounds/ambience"><option value="">— None —</option></select></label><label><span>Volume %</span><input id="combatAmb2Volume" type="number" min="0" max="100" value="35" /></label></div>
+            <div class="audio-track-row">
+              <label
+                ><span>Combat Ambience 1</span
+                ><select
+                  id="combatAmb1Asset"
+                  data-audio-select
+                  data-audio-prefix="sounds/ambience"
+                >
+                  <option value="">— None —</option>
+                </select></label
+              ><label
+                ><span>Volume %</span
+                ><input
+                  id="combatAmb1Volume"
+                  type="number"
+                  min="0"
+                  max="100"
+                  value="35"
+              /></label>
+            </div>
+            <div class="audio-track-row">
+              <label
+                ><span>Combat Ambience 2</span
+                ><select
+                  id="combatAmb2Asset"
+                  data-audio-select
+                  data-audio-prefix="sounds/ambience"
+                >
+                  <option value="">— None —</option>
+                </select></label
+              ><label
+                ><span>Volume %</span
+                ><input
+                  id="combatAmb2Volume"
+                  type="number"
+                  min="0"
+                  max="100"
+                  value="35"
+              /></label>
+            </div>
           </div>
         </div>
 
         <div class="panel">
-          <div class="section-heading"><div><div class="eyebrow">ONE-SHOT SOUNDS</div><h2>Prepared Cues</h2></div></div>
+          <div class="section-heading">
+            <div>
+              <div class="eyebrow">ONE-SHOT SOUNDS</div>
+              <h2>Sound Cues</h2>
+            </div>
+          </div>
           <div class="cue-grid">
-            <div class="cue-row"><input id="cue1Name" type="text" value="Cue 1" placeholder="Alarm" /><select id="cue1Asset" data-audio-select data-audio-prefix="sounds/"><option value="">— None —</option></select><input id="cue1Volume" type="number" min="0" max="100" value="80" title="Volume percent" /><button id="playCue1Btn" type="button">▶ Play</button></div><div class="cue-row"><input id="cue2Name" type="text" value="Cue 2" placeholder="Alarm" /><select id="cue2Asset" data-audio-select data-audio-prefix="sounds/"><option value="">— None —</option></select><input id="cue2Volume" type="number" min="0" max="100" value="80" title="Volume percent" /><button id="playCue2Btn" type="button">▶ Play</button></div><div class="cue-row"><input id="cue3Name" type="text" value="Cue 3" placeholder="Alarm" /><select id="cue3Asset" data-audio-select data-audio-prefix="sounds/"><option value="">— None —</option></select><input id="cue3Volume" type="number" min="0" max="100" value="80" title="Volume percent" /><button id="playCue3Btn" type="button">▶ Play</button></div>
+            <div class="cue-row">
+              <input
+                id="cue1Name"
+                type="text"
+                value="Cue 1"
+                placeholder="Alarm"
+              /><select
+                id="cue1Asset"
+                data-audio-select
+                data-audio-prefix="sounds/"
+              >
+                <option value="">— None —</option></select
+              ><input
+                id="cue1Volume"
+                type="number"
+                min="0"
+                max="100"
+                value="80"
+                title="Volume percent"
+              /><button id="playCue1Btn" type="button">▶ Play</button>
+            </div>
+            <div class="cue-row">
+              <input
+                id="cue2Name"
+                type="text"
+                value="Cue 2"
+                placeholder="Alarm"
+              /><select
+                id="cue2Asset"
+                data-audio-select
+                data-audio-prefix="sounds/"
+              >
+                <option value="">— None —</option></select
+              ><input
+                id="cue2Volume"
+                type="number"
+                min="0"
+                max="100"
+                value="80"
+                title="Volume percent"
+              /><button id="playCue2Btn" type="button">▶ Play</button>
+            </div>
+            <div class="cue-row">
+              <input
+                id="cue3Name"
+                type="text"
+                value="Cue 3"
+                placeholder="Alarm"
+              /><select
+                id="cue3Asset"
+                data-audio-select
+                data-audio-prefix="sounds/"
+              >
+                <option value="">— None —</option></select
+              ><input
+                id="cue3Volume"
+                type="number"
+                min="0"
+                max="100"
+                value="80"
+                title="Volume percent"
+              /><button id="playCue3Btn" type="button">▶ Play</button>
+            </div>
           </div>
         </div>
-
       </section>
 
       <!-- =======================================================
@@ -1798,14 +2940,24 @@
         <div class="panel settings-intro-panel">
           <div class="eyebrow">APPLICATION SETTINGS</div>
           <h2>Settings</h2>
-          <p class="hint">Configure tracker behavior and custom rules. Backup, restore, storage, and recovery tools are managed under DM → Data &amp; Tools.</p>
+          <p class="hint">
+            Configure tracker behavior and custom rules. Backup, restore,
+            storage, and recovery tools are managed under DM → Data &amp; Tools.
+          </p>
         </div>
         <div class="panel ui-theme-settings-panel">
           <div class="eyebrow">INTERFACE APPEARANCE</div>
           <h2>Interface Theme</h2>
-          <p class="hint">Choose one visual style for both the DM Console and Player Display. The workflow and encounter data do not change.</p>
+          <p class="hint">
+            Choose one visual style for both the DM Console and Player Display.
+            The workflow and encounter data do not change.
+          </p>
 
-          <div class="ui-theme-grid" role="radiogroup" aria-label="Interface theme">
+          <div
+            class="ui-theme-grid"
+            role="radiogroup"
+            aria-label="Interface theme"
+          >
             <label class="ui-theme-card ui-theme-card-original">
               <input type="radio" name="uiTheme" value="original" />
               <span class="ui-theme-swatch" aria-hidden="true">
@@ -1830,7 +2982,10 @@
                 <span></span><span></span><span></span>
               </span>
               <strong>Fantasy Console</strong>
-              <small>Same tactical layout with bronze, leather, gold, and parchment</small>
+              <small
+                >Same tactical layout with bronze, leather, gold, and
+                parchment</small
+              >
             </label>
           </div>
         </div>
@@ -1913,7 +3068,6 @@
 
     <div id="toast" class="toast"></div>
 
-
     <!-- =========================================================
          UPGRADE / COMPATIBILITY ASSISTANT
          ========================================================= -->
@@ -1936,16 +3090,28 @@
         </p>
 
         <div id="upgradePreviewNotice" class="upgrade-preview-notice hidden">
-          Preview mode: the DM Workspace is available in this build.
-          This preview does not mark the upgrade as completed.
+          Preview mode: the DM Workspace is available in this build. This
+          preview does not mark the upgrade as completed.
         </div>
 
         <div class="upgrade-count-grid" aria-label="Existing data summary">
-          <div><strong id="upgradeCountLibrary">0</strong><span>Library entries</span></div>
-          <div><strong id="upgradeCountTemplates">0</strong><span>Templates</span></div>
-          <div><strong id="upgradeCountStates">0</strong><span>Saved states</span></div>
-          <div><strong id="upgradeCountPresets">0</strong><span>Presets</span></div>
-          <div><strong id="upgradeCountSnapshots">0</strong><span>Recovery snapshots</span></div>
+          <div>
+            <strong id="upgradeCountLibrary">0</strong
+            ><span>Library entries</span>
+          </div>
+          <div>
+            <strong id="upgradeCountTemplates">0</strong><span>Templates</span>
+          </div>
+          <div>
+            <strong id="upgradeCountStates">0</strong><span>Saved states</span>
+          </div>
+          <div>
+            <strong id="upgradeCountPresets">0</strong><span>Presets</span>
+          </div>
+          <div>
+            <strong id="upgradeCountSnapshots">0</strong
+            ><span>Recovery snapshots</span>
+          </div>
         </div>
 
         <div class="upgrade-safety-note">
@@ -2021,7 +3187,7 @@
 
     <!-- Core -->
 
-    <script src="js/core/config.js?v=alpha3-phase3-no-srd-artwork1"></script>
+    <script src="js/core/config.js?v=alpha3-recovery-1"></script>
     <script src="js/core/db.js?v=alpha3-phase3-compendium1"></script>
     <script src="js/core/sync.js?v=alpha3-phase3-compendium1"></script>
 
@@ -2033,7 +3199,7 @@
     <script src="js/modules/assets.js?v=alpha3-phase3-1-13-6k"></script>
     <script src="js/modules/settings.js?v=alpha3-phase3-1-13-6a"></script>
     <script src="js/modules/library.js?v=alpha3-phase3-1-14-3"></script>
-    <script src="js/modules/combat.js?v=alpha3-phase3-1-14-3"></script>
+    <script src="js/modules/combat.js?v=alpha3-phase3-1-13-3"></script>
     <script src="js/modules/compendium.js?v=alpha3-phase3-1-14-3"></script>
     <script src="js/modules/audio.js?v=alpha3-phase3-compendium1"></script>
     <script src="js/modules/encounters.js?v=alpha3-phase3-1-14-4"></script>
